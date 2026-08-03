@@ -1,0 +1,84 @@
+---
+description: Vertical Slice Architecture v2.1 layout for Product.Template v2
+globs: src/App/**, tests/App.Tests/**
+alwaysApply: false
+---
+
+# Architecture VSA v2.1
+
+## Layout
+
+```
+src/App/
+├── Program.cs              # ≤40 lines — never edit per slice
+├── Host/                   # HTTP cross-cutting only
+├── Shared/                 # Kernel, Infrastructure, Platform
+└── Features/{Module}/
+    ├── {Entity}.cs         # noun = domain + repo + EF config
+    └── {Slice}.cs          # verb = Command + Validator + Handler + IEndpoint
+
+tests/App.Tests/{Module}/{Slice}Tests.cs   # flat mirror (no Features/ prefix)
+```
+
+## New slice checklist
+
+1. Create `src/App/Features/{Module}/{Slice}.cs`
+2. Create `tests/App.Tests/{Module}/{Slice}Tests.cs`
+3. Update `features.json` (app, test, route, featureFlag)
+4. Do NOT edit `Program.cs` — use `IEndpoint` auto-discovery
+
+## Feature flags
+
+- Constants: `App.Host.FeatureFlags`
+- Gate endpoint: `.RequireFeature(FeatureFlags.X)`
+- Config: `appsettings.json` → `FeatureFlags` section
+
+## Module registration
+
+Each module exposes `{Module}Module.cs`:
+
+- `Add{Module}Module(this IServiceCollection)` — repos, providers, tenant filters
+- `Add{Module}ModulePolicies(this AuthorizationOptions)` — RBAC (when applicable)
+
+`Program.cs` calls `AddFeatureModules()` in `Host/Configurations/FeatureModulesConfiguration.cs`.
+
+## Contracts
+
+Cross-slice DTOs live in `{Module}Contracts.cs` (e.g. `AuthContracts.cs`, `TenantContracts.cs`).
+
+## Repositories
+
+Per-aggregate interfaces only — **no** generic `IRepository<T>` in public contracts.
+
+| Layer | Location | Rule |
+|-------|----------|------|
+| Interface | `{Entity}.cs` | `I{Entity}Repository` — domain-specific methods only |
+| Implementation | `{Entity}.cs` | `internal sealed class {Entity}Repository(AppDbContext db)` |
+| Shared EF boilerplate | `Shared/EfRepositoryHelpers.cs` | `internal static` — `GetByIdAsync`, `AddAsync`, `Update` |
+
+```csharp
+// Delegate generic CRUD; keep domain queries in the repo
+public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
+    EfRepositoryHelpers.GetByIdAsync(db.Set<User>(), id, ct);
+
+public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default) =>
+    db.Set<User>().FirstOrDefaultAsync(u => u.Email.Value == normalized, ct);
+```
+
+- Use `db.Set<T>()` — `AppDbContext` has no explicit `DbSet` properties.
+- Tenant query filters: register `ITenantQueryFilterConfigurator` in `{Module}Module.cs`.
+- Tests: call `TestServiceFactory.SetTenant(provider, tenantId)` before repo/handler resolution.
+
+## Anti-patterns (never)
+
+- Folders per layer (`Handlers/`, `Mappers/`, `Validators/`)
+- Subfolder per slice (`RegisterUser/RegisterUser.cs`) — use flat file
+- Tests inside `src/App/`
+- Controllers monolithic per module
+- `[Authorize]` without policy name
+- Generic `IRepository<T>` or base repository class exposed outside `Shared/`
+
+## Shared rules
+
+- `Kernel.cs` / `Platform.cs` must NOT reference `App.Features.*`
+- Slice file cap: ~150 lines — split endpoint if exceeded

@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: product-template-v2-postgres
+    env_file:
+      - path: compose.env
+        required: false
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-postgres-change-me}
+      POSTGRES_USER: postgres
+      POSTGRES_DB: ProductTemplateV2
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: product-template-v2-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=ProductTemplateV2;Username=postgres;Password=${POSTGRES_PASSWORD:-dev-postgres-change-me}
+      Database__UseInMemory: "false"
+      Jwt__Secret: dev-only-secret-key-minimum-32-characters-long
+      Seed__AdminPassword: Admin@123
+    ports:
+      - "5080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:

@@ -1,0 +1,11 @@
+**/.git
+**/.vs
+**/bin
+**/obj
+**/.cursor
+**/.specs
+**/tests
+**/*.md
+compose.env
+.env
+*.user

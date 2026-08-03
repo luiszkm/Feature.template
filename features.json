@@ -1,0 +1,258 @@
+{
+  "RegisterUser": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/RegisterUser.cs",
+    "test": "tests/App.Tests/Identity/RegisterUserTests.cs",
+    "route": "POST /api/v1/identity/register",
+    "featureFlag": null,
+    "policy": "anonymous"
+  },
+  "Login": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/Login.cs",
+    "test": "tests/App.Tests/Identity/LoginTests.cs",
+    "route": "POST /api/v1/identity/login",
+    "featureFlag": null,
+    "policy": "anonymous"
+  },
+  "RefreshAccessToken": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/RefreshAccessToken.cs",
+    "test": "tests/App.Tests/Identity/RefreshAccessTokenTests.cs",
+    "route": "POST /api/v1/identity/refresh",
+    "featureFlag": null,
+    "policy": "anonymous"
+  },
+  "GetAuthProviders": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/GetAuthProviders.cs",
+    "test": "tests/App.Tests/Identity/OAuthTests.cs",
+    "route": "GET /api/v1/identity/providers",
+    "featureFlag": null,
+    "policy": "anonymous"
+  },
+  "ExternalLogin": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/ExternalLogin.cs",
+    "test": "tests/App.Tests/Identity/OAuthTests.cs",
+    "route": "POST /api/v1/identity/external-login",
+    "featureFlag": null,
+    "policy": "anonymous"
+  },
+  "GetUser": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/GetUser.cs",
+    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
+    "route": "GET /api/v1/identity/users/{userId}",
+    "featureFlag": null,
+    "policy": "UserReadOrSelf"
+  },
+  "ListUsers": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/ListUsers.cs",
+    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
+    "route": "GET /api/v1/identity/users",
+    "featureFlag": null,
+    "policy": "UsersRead"
+  },
+  "UpdateUser": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/UpdateUser.cs",
+    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
+    "route": "PUT /api/v1/identity/users/{userId}",
+    "featureFlag": null,
+    "policy": "UserManageOrSelf"
+  },
+  "DeleteUser": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/DeleteUser.cs",
+    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
+    "route": "DELETE /api/v1/identity/users/{userId}",
+    "featureFlag": null,
+    "policy": "UsersManage"
+  },
+  "ConfirmEmail": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/ConfirmEmail.cs",
+    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
+    "route": "POST /api/v1/identity/users/{userId}/confirm-email",
+    "featureFlag": null,
+    "policy": "anonymous"
+  },
+  "GetUserRoles": {
+    "m": "Identity",
+    "app": "src/App/Features/Identity/GetUserRoles.cs",
+    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
+    "route": "GET /api/v1/identity/users/{userId}/roles",
+    "featureFlag": null,
+    "policy": "UsersManage"
+  },
+  "CreateRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/CreateRole.cs",
+    "test": "tests/App.Tests/Authorization/CreateRoleTests.cs",
+    "route": "POST /api/v1/authorization/roles",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "ListRoles": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/ListRoles.cs",
+    "test": "tests/App.Tests/Authorization/CreateRoleTests.cs",
+    "route": "GET /api/v1/authorization/roles",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesRead"
+  },
+  "GetRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/GetRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "GET /api/v1/authorization/roles/{roleId}",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesRead"
+  },
+  "GetRolePermissions": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/GetRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "GET /api/v1/authorization/roles/{roleId}/permissions",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesRead"
+  },
+  "UpdateRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/UpdateRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "PUT /api/v1/authorization/roles/{roleId}",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "DeleteRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/DeleteRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "DELETE /api/v1/authorization/roles/{roleId}",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "CreatePermission": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/CreatePermission.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "POST /api/v1/authorization/permissions",
+    "featureFlag": null,
+    "policy": "AuthorizationPermissionsManage"
+  },
+  "ListPermissions": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/ListPermissions.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "GET /api/v1/authorization/permissions",
+    "featureFlag": null,
+    "policy": "AuthorizationPermissionsRead"
+  },
+  "UpdatePermission": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/UpdatePermission.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "PUT /api/v1/authorization/permissions/{permissionId}",
+    "featureFlag": null,
+    "policy": "AuthorizationPermissionsManage"
+  },
+  "DeletePermission": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/DeletePermission.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "DELETE /api/v1/authorization/permissions/{permissionId}",
+    "featureFlag": null,
+    "policy": "AuthorizationPermissionsManage"
+  },
+  "AssignPermissionToRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/AssignPermissionToRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "POST /api/v1/authorization/roles/{roleId}/permissions",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "RevokePermissionFromRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/RevokePermissionFromRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "DELETE /api/v1/authorization/roles/{roleId}/permissions/{permissionId}",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "AssignUserToRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/AssignUserToRole.cs",
+    "test": "tests/App.Tests/Authorization/CreateRoleTests.cs",
+    "route": "POST /api/v1/authorization/users/{userId}/roles",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "GetUserAssignments": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/GetUserAssignments.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "GET /api/v1/authorization/users/{userId}/roles",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesRead"
+  },
+  "RevokeUserFromRole": {
+    "m": "Authorization",
+    "app": "src/App/Features/Authorization/RevokeUserFromRole.cs",
+    "test": "tests/App.Tests/Authorization/AuthorizationManagementTests.cs",
+    "route": "DELETE /api/v1/authorization/users/{userId}/roles/{roleId}",
+    "featureFlag": null,
+    "policy": "AuthorizationRolesManage"
+  },
+  "CreateTenant": {
+    "m": "Tenants",
+    "app": "src/App/Features/Tenants/CreateTenant.cs",
+    "test": "tests/App.Tests/Tenants/CreateTenantTests.cs",
+    "route": "POST /api/v1/tenants",
+    "featureFlag": null,
+    "policy": "TenantsManage"
+  },
+  "ListTenants": {
+    "m": "Tenants",
+    "app": "src/App/Features/Tenants/ListTenants.cs",
+    "test": "tests/App.Tests/Tenants/CreateTenantTests.cs",
+    "route": "GET /api/v1/tenants",
+    "featureFlag": null,
+    "policy": "TenantsRead"
+  },
+  "GetTenant": {
+    "m": "Tenants",
+    "app": "src/App/Features/Tenants/GetTenant.cs",
+    "test": "tests/App.Tests/Tenants/CreateTenantTests.cs",
+    "route": "GET /api/v1/tenants/{id}",
+    "featureFlag": null,
+    "policy": "TenantsRead"
+  },
+  "UpdateTenant": {
+    "m": "Tenants",
+    "app": "src/App/Features/Tenants/UpdateTenant.cs",
+    "test": "tests/App.Tests/Tenants/TenantManagementTests.cs",
+    "route": "PUT /api/v1/tenants/{id}",
+    "featureFlag": null,
+    "policy": "TenantsManage"
+  },
+  "DeactivateTenant": {
+    "m": "Tenants",
+    "app": "src/App/Features/Tenants/DeactivateTenant.cs",
+    "test": "tests/App.Tests/Tenants/TenantManagementTests.cs",
+    "route": "DELETE /api/v1/tenants/{id}",
+    "featureFlag": null,
+    "policy": "TenantsManage"
+  },
+  "ChatAi": {
+    "m": "Ai",
+    "app": "src/App/Features/Ai/ChatAi.cs",
+    "test": "tests/App.Tests/Ai/ChatAiHandlerTests.cs",
+    "route": "POST /api/v1/ai/chat",
+    "featureFlag": "EnableAI",
+    "policy": "Authenticated"
+  }
+}
