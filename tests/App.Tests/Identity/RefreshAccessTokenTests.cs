@@ -2,6 +2,7 @@ using App.Features.Identity;
 using App.Shared;
 using App.Tests.Common;
 using FluentValidation.TestHelper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace App.Tests.Identity;
@@ -103,6 +104,25 @@ public sealed class RefreshAccessTokenTests
 
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
             handler.Handle(new RefreshTokenCommand("any-token"), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Login_ShouldPersistHashedRefreshToken_NotRawValue()
+    {
+        var provider = TestServiceFactory.CreateWithAuth(nameof(Login_ShouldPersistHashedRefreshToken_NotRawValue));
+        await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+
+        var loginHandler = scope.ServiceProvider.GetRequiredService<LoginHandler>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var loginResult = await loginHandler.Handle(UserBuilder.ValidLoginCommand(), CancellationToken.None);
+        var stored = Assert.Single(db.Set<RefreshToken>().ToList());
+
+        Assert.NotEqual(loginResult.RefreshToken, stored.Token);
+        Assert.Equal(RefreshToken.HashToken(loginResult.RefreshToken), stored.Token);
     }
 
     #endregion

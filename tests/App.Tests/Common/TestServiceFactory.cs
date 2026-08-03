@@ -6,6 +6,8 @@ using App.Host.Security;
 using App.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 
 namespace App.Tests.Common;
 
@@ -20,6 +22,7 @@ public static class TestServiceFactory
         services.AddTenantsModule();
         services.AddScoped<ITenantContext, TenantContext>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.AddSingleton<IHostEnvironment>(_ => new TestHostEnvironment());
         services.AddHttpContextAccessor();
         services.Configure<JwtSettings>(options =>
         {
@@ -35,6 +38,14 @@ public static class TestServiceFactory
             new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
     }
 
+    private sealed class TestHostEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Development;
+        public string ApplicationName { get; set; } = "App.Tests";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+
     private static IServiceProvider BuildProvider(IServiceCollection services)
     {
         var provider = services.BuildServiceProvider();
@@ -46,24 +57,28 @@ public static class TestServiceFactory
     {
         using var scope = provider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        if (db.Set<Tenant>().Any())
-            return;
 
-        db.Set<Tenant>().AddRange(
-            Tenant.CreateWithId(
-                WellKnownTenants.Public,
-                "public",
-                "Public Tenant",
-                null,
-                TenantIsolationMode.SharedDb),
-            Tenant.CreateWithId(
-                WellKnownTenants.Development,
-                "dev",
-                "Development Tenant",
-                null,
-                TenantIsolationMode.SharedDb));
+        EnsureTenant(
+            db,
+            WellKnownTenants.Public,
+            "public",
+            "Public Tenant");
+        EnsureTenant(
+            db,
+            WellKnownTenants.Development,
+            "dev",
+            "Development Tenant");
 
         db.SaveChanges();
+    }
+
+    private static void EnsureTenant(AppDbContext db, Guid id, string key, string displayName)
+    {
+        if (db.Set<Tenant>().Any(t => t.Id == id))
+            return;
+
+        db.Set<Tenant>().Add(
+            Tenant.CreateWithId(id, key, displayName, null, TenantIsolationMode.SharedDb));
     }
 
     public static IServiceProvider Create(string databaseName)

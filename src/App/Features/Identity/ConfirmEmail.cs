@@ -1,3 +1,4 @@
+using App.Host.Configurations;
 using App.Shared;
 using FluentValidation;
 using MediatR;
@@ -55,6 +56,7 @@ public sealed class ConfirmEmailEndpoint : IEndpoint
         .WithName("ConfirmEmail")
         .WithTags("Identity")
         .AllowAnonymous()
+        .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status404NotFound);

@@ -1,9 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using App.Features.Identity;
-using App.Shared;
 using E2ETests.Common;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace E2ETests.Identity;
 
@@ -32,21 +30,11 @@ public sealed class IdentityAuthE2ETests
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
         var registered = await registerResponse.Content.ReadFromJsonAsync<RegisterUserResponse>();
         Assert.NotNull(registered);
+        Assert.False(string.IsNullOrWhiteSpace(registered.EmailConfirmationToken));
 
-        using var scope = factory.Services.CreateScope();
-        var tenantContext = scope.ServiceProvider.GetRequiredService<ITenantContext>();
-        if (tenantContext is TenantContext mutable)
-            mutable.SetTenant(WellKnownTenants.Development, "dev");
-
-        var tokenService = scope.ServiceProvider.GetRequiredService<IEmailConfirmationTokenService>();
-        var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var user = await userRepository.GetByIdAsync(registered.Id, CancellationToken.None)
-            ?? throw new InvalidOperationException("User not found.");
-
-        var token = tokenService.GenerateToken(user.Id, user.SecurityStamp);
         var confirmResponse = await client.PostAsJsonAsync(
-            $"/api/v1/identity/users/{user.Id}/confirm-email",
-            new { token });
+            $"/api/v1/identity/users/{registered.Id}/confirm-email",
+            new { token = registered.EmailConfirmationToken });
         Assert.Equal(HttpStatusCode.NoContent, confirmResponse.StatusCode);
 
         var loginResponse = await client.PostAsJsonAsync("/api/v1/identity/login", new { email, password });

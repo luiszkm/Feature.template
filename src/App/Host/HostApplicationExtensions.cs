@@ -21,9 +21,16 @@ public static class HostApplicationExtensions
 
     public static WebApplication UseHostApplication(this WebApplication app)
     {
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHsts();
+            app.UseHttpsRedirection();
+        }
+
         app.UseSerilogRequestLogging();
         app.UseExceptionHandling();
         app.UseCors(SecurityConfiguration.DefaultCorsPolicyName);
+        app.UseRateLimiter();
         app.UseHostPipeline();
         app.UseAuthentication();
         app.UseAuthorization();

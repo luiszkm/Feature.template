@@ -1,3 +1,61 @@
-# Build output
+# Build
 [Bb]in/
 [Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+*.tmp
+project.lock.json
+artifacts/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# .NET / NuGet
+*.nupkg
+*.snupkg
+**/packages/
+*.nuget.props
+*.nuget.targets
+
+# Secrets & local env (never commit)
+compose.env
+.env
+.env.*
+!.env.example
+!compose.env.example
+**/appsettings.*.local.json
+**/secrets.json
+*.pfx
+*.pem
+*.key
+
+# User secrets / local overrides
+**/Properties/launchSettings.user.json
+*.user
+*.userosscache
+*.suo
+*.userprefs
+
+# IDE
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Docker / tooling
+docker-compose.override.yml
+*.DotSettings.user

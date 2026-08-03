@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using App.Host.Configurations;
 using App.Host.Security;
 using App.Shared;
 using FluentValidation;
@@ -111,6 +112,7 @@ public sealed class RefreshTokenEndpoint : IEndpoint
         .WithName("RefreshToken")
         .WithTags("Identity")
         .AllowAnonymous()
+        .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
         .Produces<AuthTokenOutput>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)

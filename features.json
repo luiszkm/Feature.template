@@ -34,6 +34,7 @@
   "ExternalLogin": {
     "m": "Identity",
     "app": "src/App/Features/Identity/ExternalLogin.cs",
+    "endpoint": "src/App/Features/Identity/ExternalLoginEndpoint.cs",
     "test": "tests/App.Tests/Identity/OAuthTests.cs",
     "route": "POST /api/v1/identity/external-login",
     "featureFlag": null,

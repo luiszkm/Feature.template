@@ -176,6 +176,39 @@ public sealed class ConfirmEmailTests
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             confirmHandler.Handle(new ConfirmEmailCommand(user.Id, "invalid-token"), CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Handle_ShouldThrow_WhenTokenIsExpired()
+    {
+        var provider = TestServiceFactory.CreateWithIdentityManagement(
+            IdentityTestDb.Name(nameof(Handle_ShouldThrow_WhenTokenIsExpired)));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+
+        var registerHandler = scope.ServiceProvider.GetRequiredService<RegisterUserHandler>();
+        var confirmHandler = scope.ServiceProvider.GetRequiredService<ConfirmEmailHandler>();
+        var tokenService = scope.ServiceProvider.GetRequiredService<IEmailConfirmationTokenService>();
+
+        var registered = await registerHandler.Handle(UserBuilder.ValidCommand(), CancellationToken.None);
+        var user = await scope.ServiceProvider.GetRequiredService<IUserRepository>()
+            .GetByIdAsync(registered.Id, CancellationToken.None)
+            ?? throw new InvalidOperationException("User was not created.");
+
+        var expiredUnix = DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeSeconds();
+        var payload = $"{user.Id:N}:{user.SecurityStamp}:{expiredUnix}";
+        var secret = System.Text.Encoding.UTF8.GetBytes("test-secret-key-minimum-32-characters-long");
+        var hash = System.Security.Cryptography.HMACSHA256.HashData(
+            secret,
+            System.Text.Encoding.UTF8.GetBytes(payload));
+        var expiredToken = $"{expiredUnix}.{Convert.ToBase64String(hash)}";
+
+        // Sanity: token service rejects expired tokens.
+        Assert.False(tokenService.ValidateToken(user.Id, user.SecurityStamp, expiredToken));
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            confirmHandler.Handle(new ConfirmEmailCommand(user.Id, expiredToken), CancellationToken.None));
+    }
 }
 
 public sealed class GetUserRolesTests

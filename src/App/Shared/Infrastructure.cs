@@ -52,10 +52,15 @@ public static class InfrastructureExtensions
         var connectionString = configuration.GetConnectionString("Default")
             ?? databaseOptions.ConnectionString;
 
-        var useInMemory = databaseOptions.UseInMemory;
+        // InMemory is allowed only when explicitly opted in, or under the Testing environment.
+        var useInMemory = databaseOptions.UseInMemory || environment.IsEnvironment("Testing");
 
         if (!useInMemory && string.IsNullOrWhiteSpace(connectionString))
-            useInMemory = true;
+        {
+            throw new InvalidOperationException(
+                "A database connection string is required when Database:UseInMemory is false. " +
+                "Set ConnectionStrings:Default (or Database:ConnectionString), or set Database:UseInMemory=true.");
+        }
 
         services.AddDbContext<AppDbContext>((_, options) =>
         {

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using App.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -8,7 +10,10 @@ public sealed class RefreshToken : Entity, IMultiTenantEntity
 {
     public Guid TenantId { get; private set; }
     public Guid UserId { get; private set; }
+
+    /// <summary>SHA-256 hash of the raw refresh token. Never store the raw value.</summary>
     public string Token { get; private set; } = string.Empty;
+
     public DateTime ExpiresAt { get; private set; }
     public bool IsRevoked { get; private set; }
     public string? ReplacedByToken { get; private set; }
@@ -21,10 +26,17 @@ public sealed class RefreshToken : Entity, IMultiTenantEntity
 
     private RefreshToken() { }
 
+    public static string HashToken(string rawToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rawToken);
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
+        return Convert.ToHexString(hash);
+    }
+
     public static RefreshToken Create(
         Guid tenantId,
         Guid userId,
-        string token,
+        string rawToken,
         int expirationDays,
         string createdByIp)
     {
@@ -35,7 +47,7 @@ public sealed class RefreshToken : Entity, IMultiTenantEntity
         {
             TenantId = tenantId,
             UserId = userId,
-            Token = token,
+            Token = HashToken(rawToken),
             ExpiresAt = DateTime.UtcNow.AddDays(expirationDays),
             IsRevoked = false,
             CreatedByIp = createdByIp,
@@ -43,66 +55,69 @@ public sealed class RefreshToken : Entity, IMultiTenantEntity
         };
     }
 
-    public void Revoke(string revokedByIp, string? replacedByToken = null)
+    public void Revoke(string revokedByIp, string? replacedByRawToken = null)
     {
         IsRevoked = true;
         RevokedAt = DateTime.UtcNow;
         RevokedByIp = revokedByIp;
-        ReplacedByToken = replacedByToken;
+        ReplacedByToken = replacedByRawToken is null ? null : HashToken(replacedByRawToken);
     }
 }
 
 public interface IRefreshTokenRepository
 {
-    Task<RefreshToken?> GetActiveByTokenAsync(string token, CancellationToken cancellationToken = default);
+    Task<RefreshToken?> GetActiveByTokenAsync(string rawToken, CancellationToken cancellationToken = default);
     Task<bool> TryRevokeAsync(
-        string token,
+        string rawToken,
         string revokedByIp,
-        string? replacedByToken,
+        string? replacedByRawToken,
         CancellationToken cancellationToken = default);
     Task AddAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default);
 }
 
 internal sealed class RefreshTokenRepository(AppDbContext db) : IRefreshTokenRepository
 {
-    public Task<RefreshToken?> GetActiveByTokenAsync(string token, CancellationToken cancellationToken = default)
+    public Task<RefreshToken?> GetActiveByTokenAsync(string rawToken, CancellationToken cancellationToken = default)
     {
+        var tokenHash = RefreshToken.HashToken(rawToken);
         var now = DateTime.UtcNow;
         return db.Set<RefreshToken>().FirstOrDefaultAsync(
-            rt => rt.Token == token && !rt.IsRevoked && rt.ExpiresAt > now,
+            rt => rt.Token == tokenHash && !rt.IsRevoked && rt.ExpiresAt > now,
             cancellationToken);
     }
 
     public async Task<bool> TryRevokeAsync(
-        string token,
+        string rawToken,
         string revokedByIp,
-        string? replacedByToken,
+        string? replacedByRawToken,
         CancellationToken cancellationToken = default)
     {
+        var tokenHash = RefreshToken.HashToken(rawToken);
+        var replacedByHash = replacedByRawToken is null ? null : RefreshToken.HashToken(replacedByRawToken);
         var now = DateTime.UtcNow;
 
         if (db.Database.IsInMemory())
         {
             var tokenEntity = await db.Set<RefreshToken>().FirstOrDefaultAsync(
-                rt => rt.Token == token && !rt.IsRevoked && rt.ExpiresAt > now,
+                rt => rt.Token == tokenHash && !rt.IsRevoked && rt.ExpiresAt > now,
                 cancellationToken);
 
             if (tokenEntity is null)
                 return false;
 
-            tokenEntity.Revoke(revokedByIp, replacedByToken);
+            tokenEntity.Revoke(revokedByIp, replacedByRawToken);
             await db.SaveChangesAsync(cancellationToken);
             return true;
         }
 
         var rowsAffected = await db.Set<RefreshToken>()
-            .Where(rt => rt.Token == token && !rt.IsRevoked && rt.ExpiresAt > now)
+            .Where(rt => rt.Token == tokenHash && !rt.IsRevoked && rt.ExpiresAt > now)
             .ExecuteUpdateAsync(
                 setters => setters
                     .SetProperty(rt => rt.IsRevoked, true)
                     .SetProperty(rt => rt.RevokedAt, now)
                     .SetProperty(rt => rt.RevokedByIp, revokedByIp)
-                    .SetProperty(rt => rt.ReplacedByToken, replacedByToken),
+                    .SetProperty(rt => rt.ReplacedByToken, replacedByHash),
                 cancellationToken);
 
         return rowsAffected > 0;

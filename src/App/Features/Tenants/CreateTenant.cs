@@ -19,6 +19,10 @@ public sealed class CreateTenantValidator : AbstractValidator<CreateTenantComman
         RuleFor(x => x.DisplayName).NotEmpty().MaximumLength(200);
         RuleFor(x => x.ContactEmail).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.ContactEmail));
         RuleFor(x => x.IsolationMode).IsInEnum();
+        RuleFor(x => x.IsolationMode)
+            .Equal(TenantIsolationMode.SharedDb)
+            .WithMessage(
+                "Only SharedDb isolation is supported. SchemaPerTenant and DedicatedDb are not implemented.");
     }
 }
 
@@ -28,6 +32,13 @@ public sealed class CreateTenantHandler(
 {
     public async Task<TenantOutput> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
+        if (request.IsolationMode != TenantIsolationMode.SharedDb)
+        {
+            throw new BusinessRuleException(
+                $"Tenant isolation mode '{request.IsolationMode}' is not implemented. " +
+                $"Only '{TenantIsolationMode.SharedDb}' is supported.");
+        }
+
         var existing = await tenantRepository.GetByKeyAsync(request.TenantKey, cancellationToken);
         if (existing is not null)
             throw new BusinessRuleException($"Tenant with key '{request.TenantKey}' already exists.");

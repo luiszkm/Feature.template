@@ -50,8 +50,11 @@ public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidat
             return await next(cancellationToken);
 
         var context = new ValidationContext<TRequest>(request);
-        var failures = validators
-            .Select(v => v.Validate(context))
+        var validationResults = new List<FluentValidation.Results.ValidationResult>();
+        foreach (var validator in validators)
+            validationResults.Add(await validator.ValidateAsync(context, cancellationToken));
+
+        var failures = validationResults
             .SelectMany(r => r.Errors)
             .Where(f => f is not null)
             .ToList();

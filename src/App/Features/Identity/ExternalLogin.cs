@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using App.Host.Security;
 using App.Shared;
 using FluentValidation;
@@ -27,6 +28,7 @@ public sealed class ExternalLoginHandler(
     IUserRepository userRepository,
     IRefreshTokenRepository refreshTokenRepository,
     IJwtTokenService jwtTokenService,
+    IPasswordHasher passwordHasher,
     IUnitOfWork unitOfWork,
     ITenantContext tenantContext,
     IUserRolesProvider userRolesProvider,
@@ -68,10 +70,13 @@ public sealed class ExternalLoginHandler(
             var firstName = authResult.UserInfo.GetValueOrDefault("firstName", email.Split('@')[0]);
             var lastName = authResult.UserInfo.GetValueOrDefault("lastName", "External");
 
+            // Unusable password: hashed cryptographically random secret that is never returned.
+            var unusableSecret = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+
             user = User.Create(
                 tenantId,
                 Email.Create(email),
-                Guid.NewGuid().ToString("N"),
+                passwordHasher.Hash(unusableSecret),
                 firstName,
                 lastName);
 
@@ -131,22 +136,3 @@ public sealed class ExternalLoginHandler(
     }
 }
 
-public sealed class ExternalLoginEndpoint : IEndpoint
-{
-    public void Map(IEndpointRouteBuilder app)
-    {
-        app.MapPost("/api/v1/identity/external-login", async (
-            ExternalLoginCommand command,
-            IMediator mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await mediator.Send(command, cancellationToken);
-            return Results.Ok(result);
-        })
-        .WithName("ExternalLogin")
-        .WithTags("Identity")
-        .AllowAnonymous()
-        .Produces<AuthTokenOutput>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status401Unauthorized);
-    }
-}

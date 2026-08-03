@@ -24,15 +24,16 @@ public sealed class TenantContextBehaviorTests
     }
 
     [Fact]
-    public async Task ListTenants_ShouldRequireTenantContext()
+    public async Task ListTenants_ShouldNotRequireTenantContext()
     {
         var tenantContext = new TenantContext();
         var behavior = new TenantContextBehavior<ListTenantsQuery, PaginatedListOutput<TenantOutput>>(tenantContext);
 
-        await Assert.ThrowsAsync<BusinessRuleException>(() =>
-            behavior.Handle(
-                new ListTenantsQuery(),
-                _ => Task.FromResult(new PaginatedListOutput<TenantOutput>(1, 20, 0, [])),
-                CancellationToken.None));
+        var result = await behavior.Handle(
+            new ListTenantsQuery(),
+            _ => Task.FromResult(new PaginatedListOutput<TenantOutput>(1, 20, 0, [])),
+            CancellationToken.None);
+
+        Assert.Equal(0, result.TotalCount);
     }
 }

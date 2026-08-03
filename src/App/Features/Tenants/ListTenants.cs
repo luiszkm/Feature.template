@@ -12,7 +12,8 @@ public sealed record ListTenantsQuery(
     string? SortBy = null,
     string? SortDirection = null)
     : ListQuery(PageNumber, PageSize, SearchTerm, SortBy, SortDirection),
-        IQuery<PaginatedListOutput<TenantOutput>>;
+        IQuery<PaginatedListOutput<TenantOutput>>,
+        ITenantExemptRequest;
 
 public sealed class ListTenantsQueryValidator : ListQueryValidator<ListTenantsQuery>;
 

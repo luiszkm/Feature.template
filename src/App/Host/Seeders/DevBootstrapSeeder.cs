@@ -31,42 +31,9 @@ internal static class DevBootstrapSeeder
         var seedOptions = configuration.GetSection(SeedOptions.SectionName).Get<SeedOptions>() ?? new SeedOptions();
 
         await SeedPermissionsAsync(db, WellKnownTenants.Development, cancellationToken);
-
-        if (await db.Set<Role>().IgnoreQueryFilters()
-                .AnyAsync(r => r.Id == AdminRoleId, cancellationToken))
-            return;
-
-        var permissions = await db.Set<Permission>()
-            .IgnoreQueryFilters()
-            .Where(p => p.TenantId == WellKnownTenants.Development)
-            .ToListAsync(cancellationToken);
-
-        var adminRole = Role.CreateWithId(
-            AdminRoleId,
-            WellKnownTenants.Development,
-            "Admin",
-            "Full system access");
-
-        foreach (var permission in permissions)
-            adminRole.AssignPermission(permission.Id);
-
-        await db.Set<Role>().AddAsync(adminRole, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
-
-        await SeedAdminUserAsync(
-            db,
-            passwordHasher,
-            seedOptions,
-            environment,
-            cancellationToken);
-
-        var assignment = UserAssignment.Create(
-            AdminUserId,
-            AdminRoleId,
-            WellKnownTenants.Development);
-
-        await db.Set<UserAssignment>().AddAsync(assignment, cancellationToken);
-        await db.SaveChangesAsync(cancellationToken);
+        await EnsureAdminRoleWithPermissionsAsync(db, WellKnownTenants.Development, cancellationToken);
+        await SeedAdminUserAsync(db, passwordHasher, seedOptions, environment, cancellationToken);
+        await EnsureAdminAssignmentAsync(db, cancellationToken);
     }
 
     private static async Task SeedPermissionsAsync(
@@ -90,6 +57,54 @@ internal static class DevBootstrapSeeder
             return;
 
         await db.Set<Permission>().AddRangeAsync(toAdd, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureAdminRoleWithPermissionsAsync(
+        AppDbContext db,
+        Guid tenantId,
+        CancellationToken cancellationToken)
+    {
+        var adminRoleExists = await db.Set<Role>()
+            .IgnoreQueryFilters()
+            .AnyAsync(r => r.Id == AdminRoleId, cancellationToken);
+
+        if (!adminRoleExists)
+        {
+            var adminRole = Role.CreateWithId(
+                AdminRoleId,
+                tenantId,
+                "Admin",
+                "Full system access");
+
+            await db.Set<Role>().AddAsync(adminRole, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        var permissions = await db.Set<Permission>()
+            .IgnoreQueryFilters()
+            .Where(p => p.TenantId == tenantId)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
+
+        var assignedIds = (await db.Set<RolePermission>()
+                .IgnoreQueryFilters()
+                .Where(rp => rp.RoleId == AdminRoleId)
+                .Select(rp => rp.PermissionId)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+
+        var missingIds = permissions.Where(id => !assignedIds.Contains(id)).ToList();
+        if (missingIds.Count == 0)
+            return;
+
+        foreach (var permissionId in missingIds)
+        {
+            await db.Set<RolePermission>().AddAsync(
+                RolePermission.Create(AdminRoleId, permissionId, tenantId),
+                cancellationToken);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -122,6 +137,28 @@ internal static class DevBootstrapSeeder
         admin.ConfirmEmail();
 
         await db.Set<User>().AddAsync(admin, cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task EnsureAdminAssignmentAsync(
+        AppDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var exists = await db.Set<UserAssignment>()
+            .IgnoreQueryFilters()
+            .AnyAsync(
+                a => a.UserId == AdminUserId && a.RoleId == AdminRoleId,
+                cancellationToken);
+
+        if (exists)
+            return;
+
+        var assignment = UserAssignment.Create(
+            AdminUserId,
+            AdminRoleId,
+            WellKnownTenants.Development);
+
+        await db.Set<UserAssignment>().AddAsync(assignment, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }
 }

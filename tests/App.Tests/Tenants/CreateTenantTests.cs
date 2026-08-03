@@ -50,6 +50,36 @@ public sealed class CreateTenantTests
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
             handler.Handle(command, CancellationToken.None));
     }
+
+    [Fact]
+    public void Validator_ShouldFail_WhenIsolationModeIsNotSharedDb()
+    {
+        var validator = new CreateTenantValidator();
+        var command = new CreateTenantCommand(
+            "acme",
+            "Acme Corp",
+            null,
+            TenantIsolationMode.SchemaPerTenant);
+
+        var result = validator.TestValidate(command);
+
+        result.ShouldHaveValidationErrorFor(x => x.IsolationMode);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrowBusinessRule_WhenIsolationModeIsDedicatedDb()
+    {
+        var provider = TestServiceFactory.CreateWithTenants(
+            nameof(Handle_ShouldThrowBusinessRule_WhenIsolationModeIsDedicatedDb));
+
+        using var scope = provider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<CreateTenantHandler>();
+
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            handler.Handle(
+                new CreateTenantCommand("solo", "Solo", null, TenantIsolationMode.DedicatedDb),
+                CancellationToken.None));
+    }
 }
 
 public sealed class ListTenantsTests
@@ -68,6 +98,12 @@ public sealed class ListTenantsTests
         Assert.True(result.TotalCount >= 2);
         Assert.Contains(result.Data, t => t.TenantKey == "public");
         Assert.Contains(result.Data, t => t.TenantKey == "dev");
+    }
+
+    [Fact]
+    public void Query_ShouldImplement_ITenantExemptRequest()
+    {
+        Assert.IsAssignableFrom<ITenantExemptRequest>(new ListTenantsQuery());
     }
 }
 

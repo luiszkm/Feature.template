@@ -6,7 +6,7 @@ services:
       - path: compose.env
         required: false
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev-postgres-change-me}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose.env}
       POSTGRES_USER: postgres
       POSTGRES_DB: ProductTemplateV2
     ports:
@@ -28,12 +28,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    env_file:
+      - path: compose.env
+        required: false
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Default: Host=postgres;Port=5432;Database=ProductTemplateV2;Username=postgres;Password=${POSTGRES_PASSWORD:-dev-postgres-change-me}
+      # Prefer Production so Development appsettings secrets are not loaded.
+      # Override JWT/CORS/DB/seed via env vars (see compose.env.example).
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=ProductTemplateV2;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in compose.env}
       Database__UseInMemory: "false"
-      Jwt__Secret: dev-only-secret-key-minimum-32-characters-long
-      Seed__AdminPassword: Admin@123
+      Jwt__Enabled: "true"
+      Jwt__Secret: ${JWT_SECRET:?Set JWT_SECRET in compose.env}
+      Jwt__Issuer: ${JWT_ISSUER:-Product.Template}
+      Jwt__Audience: ${JWT_AUDIENCE:-Product.Template.Api}
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost:5080}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in compose.env}
+      Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-admin@producttemplate.com}
     ports:
       - "5080:8080"
     healthcheck:

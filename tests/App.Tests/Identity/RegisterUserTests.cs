@@ -49,6 +49,30 @@ public sealed class RegisterUserTests
 
         Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal("user@example.com", result.Email);
+        Assert.False(string.IsNullOrWhiteSpace(result.EmailConfirmationToken));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldReturnConfirmableToken_WhenRegistered()
+    {
+        var provider = TestServiceFactory.CreateWithIdentityManagement(
+            nameof(Handle_ShouldReturnConfirmableToken_WhenRegistered));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var registerHandler = scope.ServiceProvider.GetRequiredService<RegisterUserHandler>();
+        var confirmHandler = scope.ServiceProvider.GetRequiredService<ConfirmEmailHandler>();
+        var loginHandler = scope.ServiceProvider.GetRequiredService<LoginHandler>();
+
+        var registered = await registerHandler.Handle(UserBuilder.ValidCommand(), CancellationToken.None);
+        Assert.False(string.IsNullOrWhiteSpace(registered.EmailConfirmationToken));
+
+        await confirmHandler.Handle(
+            new ConfirmEmailCommand(registered.Id, registered.EmailConfirmationToken!),
+            CancellationToken.None);
+
+        var auth = await loginHandler.Handle(UserBuilder.ValidLoginCommand(), CancellationToken.None);
+        Assert.False(string.IsNullOrWhiteSpace(auth.AccessToken));
     }
 
     [Fact]
