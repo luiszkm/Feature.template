@@ -1,6 +1,6 @@
 ---
-description: Vertical Slice Architecture v2.1 layout for Product.Template v2
-globs: src/App/**, tests/App.Tests/**
+description: "VSA v2.1 layout for Product.Template. WHEN: editing Features/, Host/, Shared/, or tests. SKIP: unrelated docs/CI-only edits."
+globs: src/App/**, tests/App.Tests/**, tests/ArchitectureTests/**, tests/E2ETests/**
 alwaysApply: false
 ---
 
@@ -68,6 +68,13 @@ public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
 - Use `db.Set<T>()` — `AppDbContext` has no explicit `DbSet` properties.
 - Tenant query filters: register `ITenantQueryFilterConfigurator` in `{Module}Module.cs`.
 - Tests: call `TestServiceFactory.SetTenant(provider, tenantId)` before repo/handler resolution.
+
+## Tests
+
+- Unit/handler: `tests/App.Tests` + InMemory via `TestServiceFactory`; set tenant with `SetTenant` before resolve
+- Architecture: `tests/ArchitectureTests` enforces slice layout — keep green on every slice add
+- E2E: `tests/E2ETests` + `E2EWebApplicationFactory`; prefer HTTP contracts over internals
+- Never put tests under `src/App/`
 
 ## Anti-patterns (never)
 

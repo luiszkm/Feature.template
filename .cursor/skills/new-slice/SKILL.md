@@ -1,7 +1,7 @@
 ---
 name: new-slice
 version: 1
-description: "Scaffold a VSA slice in Product.Template v2. TRIGGER: \"new slice\", \"add slice\", \"create endpoint\". SKIP: use new-module for new bounded context."
+description: "Scaffold a VSA slice in Product.Template v2. TRIGGER: \"new slice\", \"add slice\", \"create endpoint\". SKIP: use /new-module for new bounded context."
 disable-model-invocation: true
 ---
 

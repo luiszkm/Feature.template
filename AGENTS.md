@@ -37,8 +37,8 @@ features.json           # app + test + featureFlag
 - Slice = arquivo plano; substantivo = entidade; verbo = slice
 - Zero pastas por camada; zero testes em `src/App/`
 - Repositórios: interface por agregado em `{Entity}.cs`; CRUD repetido via `Shared/EfRepositoryHelpers.cs` (`internal`) — sem `IRepository<T>` genérico
-- Skill: `/new-slice {Module} {Slice}`
-- Rule: `.cursor/rules/architecture-vsa.mdc`
+- Skills: `/new-module {Module}` · `/new-slice {Module} {Slice}` · `/vsa-review`
+- Rules: `.cursor/rules/architecture-vsa.mdc` · `.cursor/rules/agent-boundaries.mdc`
 
 ## Module registration
 
@@ -46,6 +46,8 @@ Each module: `{Module}Module.cs` → `Add{Module}Module()` + optional `Add{Modul
 Orchestration: `AddFeatureModules()` in Host (Program.cs).
 
 ## Verificação
+
+Analyzers correm via `dotnet build` (`EnforceCodeStyleInBuild` / `EnableNETAnalyzers` em `Directory.Build.props`).
 
 ```bash
 make verify
@@ -55,6 +57,30 @@ dotnet test tests/ArchitectureTests
 dotnet test tests/App.Tests
 dotnet test tests/E2ETests
 ```
+
+## Commits
+
+- Conventional Commits: `feat(module):`, `fix(module):`, `test:`, `docs:`, `chore:`
+- Só commitar quando o utilizador pedir; mensagem foca no *porquê*
+
+## Plan → Execute → Verify
+
+- **Plan Mode**: multi-módulo, auth/tenancy/security, migrations, ou blast radius incerto
+- **Ask Mode**: exploração read-only
+- **Agent Mode**: slice/test scoped com critérios claros
+- Plano mínimo: scope, ficheiros, success criteria (`make verify` ou filter)
+- Após falha de verify: no máximo 2 ciclos fix→retest; depois parar e perguntar
+- Plans: Cursor Plan Mode (salvar no workspace se o time usar `.cursor/plans/`)
+
+## Paralelismo
+
+- Tasks independentes → `git worktree add ../Feature.template-wt-<task> -b <branch>` ou Cloud Agents
+- Cloud/Background: jobs longos/isolados; Agent local supervisionado para edits partilhados
+- Nunca dois agents a escrever o mesmo ficheiro sem worktree isolado
+
+## Sessões longas
+
+- Se o contexto crescer (>1h ou muitos slices): resumir decisões no chat ou abrir chat novo; AGENTS.md + features.json são a fonte de verdade do template
 
 ## Docker + CI
 
