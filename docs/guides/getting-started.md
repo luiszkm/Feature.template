@@ -4,6 +4,24 @@ Product.Template v2 é um **template novo** (greenfield). Não há caminho de mi
 
 Arquitetura: **Vertical Slice Architecture (VSA) v2.1** — um projeto `App` + slices planos em `Features/{Module}/`.
 
+## Instalar como dotnet new template
+
+```bash
+# instalar (1x por máquina, a partir do clone deste repo)
+dotnet new install .
+
+# gerar novo produto a partir do template
+dotnet new product-template -n MeuErp --ProductName "Meu ERP" -o ../MeuErp
+
+# atualizar template após mudanças no repo
+dotnet new install . --force
+
+# remover
+dotnet new uninstall .
+```
+
+`--ProductName` substitui a string `Product.Template` em JWT Issuer/Audience, título OpenAPI, `ServiceName` (observability) e `Directory.Build.props`. Namespace `App` **não muda** (convenção fixa do template). GUIDs de projeto no `.sln` são regenerados automaticamente a cada geração (`.template.config/template.json` → `guids`).
+
 ## Pré-requisitos
 
 - .NET 10 SDK

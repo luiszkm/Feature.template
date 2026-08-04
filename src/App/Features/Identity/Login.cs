@@ -42,9 +42,6 @@ public sealed class LoginHandler(
             throw new UnauthorizedAccessException("Invalid email or password.");
         }
 
-        if (!user.EmailConfirmed)
-            throw new BusinessRuleException("Email address must be confirmed before login.");
-
         var rolesData = await userRolesProvider.GetUserRolesAndPermissionsAsync(user.Id, cancellationToken);
 
         var permissionClaims = rolesData.Permissions

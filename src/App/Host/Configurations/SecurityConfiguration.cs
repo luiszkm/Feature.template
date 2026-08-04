@@ -31,7 +31,6 @@ public static class SecurityConfiguration
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddHttpContextAccessor();
-        services.AddAuthenticationProviders(configuration);
 
         services.AddAuthorization(options =>
         {

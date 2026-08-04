@@ -12,7 +12,6 @@ public sealed class User : AggregateRoot, IMultiTenantEntity
     public string FirstName { get; private set; } = string.Empty;
     public string LastName { get; private set; } = string.Empty;
     public bool IsActive { get; private set; } = true;
-    public bool EmailConfirmed { get; private set; }
     public string SecurityStamp { get; private set; } = Guid.NewGuid().ToString("N");
     public DateTime? LastLoginAt { get; private set; }
 
@@ -36,7 +35,6 @@ public sealed class User : AggregateRoot, IMultiTenantEntity
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             IsActive = true,
-            EmailConfirmed = false,
             SecurityStamp = Guid.NewGuid().ToString("N"),
             CreatedAt = DateTime.UtcNow
         };
@@ -54,8 +52,6 @@ public sealed class User : AggregateRoot, IMultiTenantEntity
         user.Id = id;
         return user;
     }
-
-    public void ConfirmEmail() => EmailConfirmed = true;
 
     public void UpdateLastLogin() => LastLoginAt = DateTime.UtcNow;
 

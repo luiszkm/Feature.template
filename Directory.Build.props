@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Authors>Luis Soares</Authors>
     <Company>Luis Soares</Company>
-    <Product>Feature.Template</Product>
+    <Product>Product.Template</Product>
     <VersionPrefix>2.0.0</VersionPrefix>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>

@@ -134,8 +134,6 @@ internal static class DevBootstrapSeeder
             seedOptions.AdminFirstName,
             seedOptions.AdminLastName);
 
-        admin.ConfirmEmail();
-
         await db.Set<User>().AddAsync(admin, cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
     }

@@ -44,8 +44,7 @@ public sealed class GetUsersSummaryTool(
             {
                 id = u.Id,
                 email = u.Email,
-                name = $"{u.FirstName} {u.LastName}".Trim(),
-                email_confirmed = u.EmailConfirmed
+                name = $"{u.FirstName} {u.LastName}".Trim()
             })
         };
 

@@ -5,7 +5,6 @@ public sealed record UserOutput(
     string Email,
     string FirstName,
     string LastName,
-    bool EmailConfirmed,
     DateTime CreatedAt,
     DateTime? LastLoginAt);
 
@@ -17,7 +16,6 @@ internal static class UserMapper
             user.Email.Value,
             user.FirstName,
             user.LastName,
-            user.EmailConfirmed,
             user.CreatedAt,
             user.LastLoginAt);
 }

@@ -14,7 +14,6 @@ public static class IdentityModule
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ISecurityStampService, SecurityStampService>();
         services.AddMemoryCache();
-        services.AddSingleton<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
         services.AddSingleton<IAuthorizationHandler, SelfOrPermissionHandler>();
         services.AddSingleton<ITenantQueryFilterConfigurator, IdentityTenantQueryFilters>();
         return services;

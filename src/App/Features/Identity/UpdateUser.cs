@@ -1,5 +1,4 @@
 using App.Host.Security;
-using App.Shared;
 using FluentValidation;
 using MediatR;
 
