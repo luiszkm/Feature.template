@@ -33,9 +33,6 @@ public static class TestServiceFactory
             options.RefreshTokenExpirationDays = 30;
         });
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
-        services.AddScoped<App.Host.Security.IAuthenticationProviderFactory, App.Host.Security.AuthenticationProviderFactory>();
-        services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(
-            new Microsoft.Extensions.Configuration.ConfigurationBuilder().Build());
     }
 
     private sealed class TestHostEnvironment : IHostEnvironment
@@ -154,9 +151,7 @@ public static class TestServiceFactory
         services.AddScoped<ListUsersHandler>();
         services.AddScoped<UpdateUserHandler>();
         services.AddScoped<DeleteUserHandler>();
-        services.AddScoped<ConfirmEmailHandler>();
         services.AddScoped<GetUserRolesHandler>();
-        services.AddScoped<ExternalLoginHandler>();
         services.AddScoped<CreateRoleHandler>();
         services.AddScoped<AssignUserToRoleHandler>();
         return BuildProvider(services);
@@ -180,7 +175,7 @@ public static class TestServiceFactory
             mutable.SetTenant(tenantId, tenantKey);
     }
 
-    public static async Task<User> SeedConfirmedUserAsync(
+    public static async Task<User> SeedUserAsync(
         IServiceProvider provider,
         Guid tenantId,
         RegisterUserCommand? command = null)
@@ -190,26 +185,19 @@ public static class TestServiceFactory
 
         var registerHandler = scope.ServiceProvider.GetRequiredService<RegisterUserHandler>();
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
 
         command ??= UserBuilder.ValidCommand();
         await registerHandler.Handle(command, CancellationToken.None);
 
-        var user = await userRepository.GetByEmailAsync(command.Email, CancellationToken.None)
+        return await userRepository.GetByEmailAsync(command.Email, CancellationToken.None)
             ?? throw new InvalidOperationException("User was not created.");
-
-        user.ConfirmEmail();
-        await userRepository.UpdateAsync(user, CancellationToken.None);
-        await unitOfWork.SaveChangesAsync(CancellationToken.None);
-
-        return user;
     }
 
     public static async Task<(User User, RoleOutput AdminRole)> SeedUserWithAdminRoleAsync(
         IServiceProvider provider,
         Guid tenantId)
     {
-        var user = await SeedConfirmedUserAsync(provider, tenantId);
+        var user = await SeedUserAsync(provider, tenantId);
 
         using var scope = provider.CreateScope();
         SetTenant(scope.ServiceProvider, tenantId);

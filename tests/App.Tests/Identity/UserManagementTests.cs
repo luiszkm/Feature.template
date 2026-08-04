@@ -20,7 +20,7 @@ public sealed class GetUserTests
     public async Task Handle_ShouldReturnUser_WhenUserExists()
     {
         var provider = TestServiceFactory.CreateWithIdentityManagement(IdentityTestDb.Name(nameof(Handle_ShouldReturnUser_WhenUserExists)));
-        var user = await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        var user = await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -30,7 +30,6 @@ public sealed class GetUserTests
 
         Assert.Equal(user.Id, result.Id);
         Assert.Equal("user@example.com", result.Email);
-        Assert.True(result.EmailConfirmed);
     }
 
     [Fact]
@@ -91,7 +90,7 @@ public sealed class UpdateUserTests
     public async Task Handle_ShouldUpdateProfile_WhenInputIsValid()
     {
         var provider = TestServiceFactory.CreateWithIdentityManagement(IdentityTestDb.Name(nameof(Handle_ShouldUpdateProfile_WhenInputIsValid)));
-        var user = await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        var user = await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -114,7 +113,7 @@ public sealed class DeleteUserTests
     public async Task Handle_ShouldDeactivateUser_WhenUserExists()
     {
         var provider = TestServiceFactory.CreateWithIdentityManagement(IdentityTestDb.Name(nameof(Handle_ShouldDeactivateUser_WhenUserExists)));
-        var user = await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        var user = await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -125,89 +124,6 @@ public sealed class DeleteUserTests
         var loginHandler = scope.ServiceProvider.GetRequiredService<LoginHandler>();
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             loginHandler.Handle(UserBuilder.ValidLoginCommand(), CancellationToken.None));
-    }
-}
-
-public sealed class ConfirmEmailTests
-{
-    private static readonly Guid TenantId = TenantTestDefaults.DevelopmentTenantId;
-
-    [Fact]
-    public async Task Handle_ShouldConfirmEmail_WhenTokenIsValid()
-    {
-        var provider = TestServiceFactory.CreateWithIdentityManagement(IdentityTestDb.Name(nameof(Handle_ShouldConfirmEmail_WhenTokenIsValid)));
-
-        using var scope = provider.CreateScope();
-        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
-
-        var registerHandler = scope.ServiceProvider.GetRequiredService<RegisterUserHandler>();
-        var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var tokenService = scope.ServiceProvider.GetRequiredService<IEmailConfirmationTokenService>();
-        var confirmHandler = scope.ServiceProvider.GetRequiredService<ConfirmEmailHandler>();
-        var loginHandler = scope.ServiceProvider.GetRequiredService<LoginHandler>();
-
-        await registerHandler.Handle(UserBuilder.ValidCommand(), CancellationToken.None);
-        var user = await userRepository.GetByEmailAsync("user@example.com", CancellationToken.None)
-            ?? throw new InvalidOperationException("User was not created.");
-
-        var token = tokenService.GenerateToken(user.Id, user.SecurityStamp);
-        await confirmHandler.Handle(new ConfirmEmailCommand(user.Id, token), CancellationToken.None);
-
-        var auth = await loginHandler.Handle(UserBuilder.ValidLoginCommand(), CancellationToken.None);
-        Assert.NotEmpty(auth.AccessToken);
-    }
-
-    [Fact]
-    public async Task Handle_ShouldThrow_WhenTokenIsInvalid()
-    {
-        var provider = TestServiceFactory.CreateWithIdentityManagement(IdentityTestDb.Name(nameof(Handle_ShouldThrow_WhenTokenIsInvalid)));
-
-        using var scope = provider.CreateScope();
-        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
-
-        var registerHandler = scope.ServiceProvider.GetRequiredService<RegisterUserHandler>();
-        var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        var confirmHandler = scope.ServiceProvider.GetRequiredService<ConfirmEmailHandler>();
-
-        await registerHandler.Handle(UserBuilder.ValidCommand(), CancellationToken.None);
-        var user = await userRepository.GetByEmailAsync("user@example.com", CancellationToken.None)
-            ?? throw new InvalidOperationException("User was not created.");
-
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            confirmHandler.Handle(new ConfirmEmailCommand(user.Id, "invalid-token"), CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task Handle_ShouldThrow_WhenTokenIsExpired()
-    {
-        var provider = TestServiceFactory.CreateWithIdentityManagement(
-            IdentityTestDb.Name(nameof(Handle_ShouldThrow_WhenTokenIsExpired)));
-
-        using var scope = provider.CreateScope();
-        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
-
-        var registerHandler = scope.ServiceProvider.GetRequiredService<RegisterUserHandler>();
-        var confirmHandler = scope.ServiceProvider.GetRequiredService<ConfirmEmailHandler>();
-        var tokenService = scope.ServiceProvider.GetRequiredService<IEmailConfirmationTokenService>();
-
-        var registered = await registerHandler.Handle(UserBuilder.ValidCommand(), CancellationToken.None);
-        var user = await scope.ServiceProvider.GetRequiredService<IUserRepository>()
-            .GetByIdAsync(registered.Id, CancellationToken.None)
-            ?? throw new InvalidOperationException("User was not created.");
-
-        var expiredUnix = DateTimeOffset.UtcNow.AddHours(-1).ToUnixTimeSeconds();
-        var payload = $"{user.Id:N}:{user.SecurityStamp}:{expiredUnix}";
-        var secret = System.Text.Encoding.UTF8.GetBytes("test-secret-key-minimum-32-characters-long");
-        var hash = System.Security.Cryptography.HMACSHA256.HashData(
-            secret,
-            System.Text.Encoding.UTF8.GetBytes(payload));
-        var expiredToken = $"{expiredUnix}.{Convert.ToBase64String(hash)}";
-
-        // Sanity: token service rejects expired tokens.
-        Assert.False(tokenService.ValidateToken(user.Id, user.SecurityStamp, expiredToken));
-
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            confirmHandler.Handle(new ConfirmEmailCommand(user.Id, expiredToken), CancellationToken.None));
     }
 }
 

@@ -9,13 +9,7 @@ public sealed record RegisterUserCommand(
     string Email,
     string Password,
     string FirstName,
-    string LastName) : ICommand<RegisterUserResponse>;
-
-public sealed record RegisterUserResponse(
-    Guid Id,
-    string Email,
-    string FirstName,
-    string LastName);
+    string LastName) : ICommand<UserOutput>;
 
 public sealed class RegisterUserValidator : AbstractValidator<RegisterUserCommand>
 {
@@ -32,9 +26,9 @@ public sealed class RegisterUserHandler(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     ITenantContext tenantContext,
-    IPasswordHasher passwordHasher) : IRequestHandler<RegisterUserCommand, RegisterUserResponse>
+    IPasswordHasher passwordHasher) : IRequestHandler<RegisterUserCommand, UserOutput>
 {
-    public async Task<RegisterUserResponse> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async Task<UserOutput> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         var tenantId = tenantContext.TenantId
             ?? throw new BusinessRuleException("Tenant must be resolved before registering a user.");
@@ -53,11 +47,7 @@ public sealed class RegisterUserHandler(
         await userRepository.AddAsync(user, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new RegisterUserResponse(
-            user.Id,
-            user.Email.Value,
-            user.FirstName,
-            user.LastName);
+        return user.ToOutput();
     }
 }
 
@@ -77,7 +67,7 @@ public sealed class RegisterUserEndpoint : IEndpoint
         .WithTags("Identity")
         .AllowAnonymous()
         .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
-        .Produces<RegisterUserResponse>(StatusCodes.Status201Created)
+        .Produces<UserOutput>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict);
     }

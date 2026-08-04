@@ -52,6 +52,7 @@ public sealed class DevBootstrapSeederTests
     [Fact]
     public async Task SeedAsync_ShouldCreateAdminUser_WhenRoleExistsButUserMissing()
     {
+        const string adminEmail = "admin@producttemplate.com";
         await using var provider = CreateSeedProvider(
             nameof(SeedAsync_ShouldCreateAdminUser_WhenRoleExistsButUserMissing));
 
@@ -62,12 +63,12 @@ public sealed class DevBootstrapSeederTests
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var admin = await db.Set<User>()
                 .IgnoreQueryFilters()
-                .FirstAsync(u => u.Id == DevBootstrapSeeder.AdminUserId);
+                .FirstAsync(u => u.Email.Value == adminEmail);
             db.Set<User>().Remove(admin);
 
             var assignments = await db.Set<UserAssignment>()
                 .IgnoreQueryFilters()
-                .Where(a => a.UserId == DevBootstrapSeeder.AdminUserId)
+                .Where(a => a.UserId == admin.Id)
                 .ToListAsync();
             db.Set<UserAssignment>().RemoveRange(assignments);
             await db.SaveChangesAsync();
@@ -78,13 +79,13 @@ public sealed class DevBootstrapSeederTests
         await using (var scope = provider.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            Assert.True(await db.Set<User>()
+            var admin = await db.Set<User>()
                 .IgnoreQueryFilters()
-                .AnyAsync(u => u.Id == DevBootstrapSeeder.AdminUserId));
+                .SingleAsync(u => u.Email.Value == adminEmail);
             Assert.True(await db.Set<UserAssignment>()
                 .IgnoreQueryFilters()
                 .AnyAsync(a =>
-                    a.UserId == DevBootstrapSeeder.AdminUserId
+                    a.UserId == admin.Id
                     && a.RoleId == DevBootstrapSeeder.AdminRoleId));
         }
     }

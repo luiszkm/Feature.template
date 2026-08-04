@@ -21,7 +21,7 @@
 
 - [x] Login + RefreshToken (JWT + rotation)
 - [x] PBKDF2 password hasher
-- [x] EmailConfirmed gate
+- [x] ~~EmailConfirmed gate~~ — removido 2026-08-04, não faz sentido em template greenfield
 
 **Authorization**
 

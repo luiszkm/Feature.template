@@ -1,10 +1,8 @@
 using System.Security.Claims;
 using App.Host.Configurations;
 using App.Host.Security;
-using App.Shared;
 using FluentValidation;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 
 namespace App.Features.Identity;
 

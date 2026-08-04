@@ -62,5 +62,5 @@ None.
 - [x] Getting started greenfield (`docs/guides/getting-started.md`)
 - [x] RBAC matrix v2 (`docs/security/RBAC_MATRIX.md`)
 - [x] JWT hardening (security_stamp + tenant_id validation)
-- [x] OAuth providers + external-login
+- [x] ~~OAuth providers + external-login~~ — removido 2026-08-04, providers (Google/Microsoft) ficam sob demanda por produto
 - [ ] (Opcional) Azure OpenAI real, E2E Authorization HTTP expandido

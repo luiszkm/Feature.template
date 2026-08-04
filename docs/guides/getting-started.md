@@ -63,7 +63,6 @@ Tenants seed: `public`, `dev`.
 
 - JWT + refresh token rotation
 - `security_stamp` no JWT — revogado em delete user / assign-revoke role
-- OAuth Microsoft (opcional): `MicrosoftAuth:Enabled=true` + secrets via user-secrets/Key Vault
 
 ## Índice de features
 

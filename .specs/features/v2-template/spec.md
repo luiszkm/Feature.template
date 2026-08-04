@@ -156,7 +156,7 @@ Precisamos de um v2 que preserve qualidade de produção (.NET 10, CQRS, EF, JWT
 
 **Acceptance Criteria**:
 
-1. WHEN comparado com v1 (referência) THEN v2 SHALL expor rotas Identity equivalentes (register, login, refresh, CRUD user, confirm email)
+1. WHEN comparado com v1 (referência) THEN v2 SHALL expor rotas Identity equivalentes (register, login, refresh, CRUD user)
 2. WHEN JWT emitido THEN SHALL seguir claims/policies alinhadas ao v1
 3. WHEN cada slice implementado THEN SHALL ter teste espelhado em `App.Tests`
 4. WHEN RBAC aplicável THEN endpoint SHALL declarar policy explícita (nunca `[Authorize]` bare)

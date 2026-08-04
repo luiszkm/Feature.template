@@ -40,7 +40,7 @@ public sealed class RefreshAccessTokenTests
     public async Task Handle_ShouldRotateTokens_WhenRefreshTokenIsValid()
     {
         var provider = TestServiceFactory.CreateWithAuth(nameof(Handle_ShouldRotateTokens_WhenRefreshTokenIsValid));
-        await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -64,7 +64,7 @@ public sealed class RefreshAccessTokenTests
     public async Task Handle_ShouldThrowUnauthorized_WhenRefreshTokenIsReused()
     {
         var provider = TestServiceFactory.CreateWithAuth(nameof(Handle_ShouldThrowUnauthorized_WhenRefreshTokenIsReused));
-        await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -110,7 +110,7 @@ public sealed class RefreshAccessTokenTests
     public async Task Login_ShouldPersistHashedRefreshToken_NotRawValue()
     {
         var provider = TestServiceFactory.CreateWithAuth(nameof(Login_ShouldPersistHashedRefreshToken_NotRawValue));
-        await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);

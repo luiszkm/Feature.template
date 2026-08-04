@@ -39,20 +39,6 @@ public sealed class User : AggregateRoot, IMultiTenantEntity
             CreatedAt = DateTime.UtcNow
         };
     }
-
-    public static User CreateWithId(
-        Guid id,
-        Guid tenantId,
-        Email email,
-        string passwordHash,
-        string firstName,
-        string lastName)
-    {
-        var user = Create(tenantId, email, passwordHash, firstName, lastName);
-        user.Id = id;
-        return user;
-    }
-
     public void UpdateLastLogin() => LastLoginAt = DateTime.UtcNow;
 
     public void RegenerateSecurityStamp() => SecurityStamp = Guid.NewGuid().ToString("N");

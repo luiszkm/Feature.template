@@ -10,7 +10,6 @@ namespace App.Host.Seeders;
 
 internal static class DevBootstrapSeeder
 {
-    public static readonly Guid AdminUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     public static readonly Guid AdminRoleId = Guid.Parse("aaaaaaaa-aaaa-aaaa-cccc-aaaaaaaaaaaa");
 
     public static async Task SeedAsync(
@@ -33,7 +32,7 @@ internal static class DevBootstrapSeeder
         await SeedPermissionsAsync(db, WellKnownTenants.Development, cancellationToken);
         await EnsureAdminRoleWithPermissionsAsync(db, WellKnownTenants.Development, cancellationToken);
         await SeedAdminUserAsync(db, passwordHasher, seedOptions, environment, cancellationToken);
-        await EnsureAdminAssignmentAsync(db, cancellationToken);
+        await EnsureAdminAssignmentAsync(db, seedOptions, cancellationToken);
     }
 
     private static async Task SeedPermissionsAsync(
@@ -115,8 +114,9 @@ internal static class DevBootstrapSeeder
         IHostEnvironment environment,
         CancellationToken cancellationToken)
     {
+        var adminEmail = Email.Create(seedOptions.AdminEmail);
         if (await db.Set<User>().IgnoreQueryFilters()
-                .AnyAsync(u => u.Id == AdminUserId, cancellationToken))
+                .AnyAsync(u => u.Email.Value == adminEmail.Value, cancellationToken))
             return;
 
         var password = seedOptions.AdminPassword
@@ -126,10 +126,9 @@ internal static class DevBootstrapSeeder
             throw new InvalidOperationException(
                 "Seed:AdminPassword must be configured outside Development.");
 
-        var admin = User.CreateWithId(
-            AdminUserId,
+        var admin = User.Create(
             WellKnownTenants.Development,
-            Email.Create(seedOptions.AdminEmail),
+            adminEmail,
             passwordHasher.Hash(password),
             seedOptions.AdminFirstName,
             seedOptions.AdminLastName);
@@ -140,19 +139,28 @@ internal static class DevBootstrapSeeder
 
     private static async Task EnsureAdminAssignmentAsync(
         AppDbContext db,
+        SeedOptions seedOptions,
         CancellationToken cancellationToken)
     {
+        var adminEmail = Email.Create(seedOptions.AdminEmail).Value;
+        var admin = await db.Set<User>().IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Email.Value == adminEmail, cancellationToken);
+
+        if (admin is null)
+            throw new InvalidOperationException(
+                $"Seed admin user '{adminEmail}' was not found after SeedAdminUserAsync.");
+
         var exists = await db.Set<UserAssignment>()
             .IgnoreQueryFilters()
             .AnyAsync(
-                a => a.UserId == AdminUserId && a.RoleId == AdminRoleId,
+                a => a.UserId == admin.Id && a.RoleId == AdminRoleId,
                 cancellationToken);
 
         if (exists)
             return;
 
         var assignment = UserAssignment.Create(
-            AdminUserId,
+            admin.Id,
             AdminRoleId,
             WellKnownTenants.Development);
 

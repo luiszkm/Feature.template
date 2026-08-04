@@ -10,7 +10,7 @@ public sealed class IdentityAuthE2ETests
     private const string TestPassword = "TestPassword1!";
 
     [Fact]
-    public async Task RegisterAndLogin_ShouldSucceed_WhenEmailIsConfirmed()
+    public async Task RegisterAndLogin_ShouldSucceed()
     {
         await using var factory = E2EWebApplicationFactory.Create();
         using var client = factory.CreateClient();
@@ -28,14 +28,8 @@ public sealed class IdentityAuthE2ETests
         });
 
         Assert.Equal(HttpStatusCode.Created, registerResponse.StatusCode);
-        var registered = await registerResponse.Content.ReadFromJsonAsync<RegisterUserResponse>();
+        var registered = await registerResponse.Content.ReadFromJsonAsync<UserOutput>();
         Assert.NotNull(registered);
-        Assert.False(string.IsNullOrWhiteSpace(registered.EmailConfirmationToken));
-
-        var confirmResponse = await client.PostAsJsonAsync(
-            $"/api/v1/identity/users/{registered.Id}/confirm-email",
-            new { token = registered.EmailConfirmationToken });
-        Assert.Equal(HttpStatusCode.NoContent, confirmResponse.StatusCode);
 
         var loginResponse = await client.PostAsJsonAsync("/api/v1/identity/login", new { email, password });
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);

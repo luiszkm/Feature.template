@@ -24,16 +24,13 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 
 | Método | Rota | Acesso | Policy |
 |--------|------|--------|--------|
-| GET | `/api/v1/identity/providers` | Público | — |
 | POST | `/api/v1/identity/login` | Público | — |
 | POST | `/api/v1/identity/refresh` | Público | — |
 | POST | `/api/v1/identity/register` | Público | — |
-| POST | `/api/v1/identity/external-login` | Público | — |
 | GET | `/api/v1/identity/users` | Protegido | `UsersRead` |
 | GET | `/api/v1/identity/users/{userId}` | Protegido | `UserReadOrSelf` |
 | GET | `/api/v1/identity/users/{userId}/roles` | Protegido | `UsersManage` |
 | PUT | `/api/v1/identity/users/{userId}` | Protegido | `UserManageOrSelf` |
-| POST | `/api/v1/identity/users/{userId}/confirm-email` | Público | — |
 | DELETE | `/api/v1/identity/users/{userId}` | Protegido | `UsersManage` |
 
 ## Authorization

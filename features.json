@@ -23,23 +23,6 @@
     "featureFlag": null,
     "policy": "anonymous"
   },
-  "GetAuthProviders": {
-    "m": "Identity",
-    "app": "src/App/Features/Identity/GetAuthProviders.cs",
-    "test": "tests/App.Tests/Identity/OAuthTests.cs",
-    "route": "GET /api/v1/identity/providers",
-    "featureFlag": null,
-    "policy": "anonymous"
-  },
-  "ExternalLogin": {
-    "m": "Identity",
-    "app": "src/App/Features/Identity/ExternalLogin.cs",
-    "endpoint": "src/App/Features/Identity/ExternalLoginEndpoint.cs",
-    "test": "tests/App.Tests/Identity/OAuthTests.cs",
-    "route": "POST /api/v1/identity/external-login",
-    "featureFlag": null,
-    "policy": "anonymous"
-  },
   "GetUser": {
     "m": "Identity",
     "app": "src/App/Features/Identity/GetUser.cs",
@@ -71,14 +54,6 @@
     "route": "DELETE /api/v1/identity/users/{userId}",
     "featureFlag": null,
     "policy": "UsersManage"
-  },
-  "ConfirmEmail": {
-    "m": "Identity",
-    "app": "src/App/Features/Identity/ConfirmEmail.cs",
-    "test": "tests/App.Tests/Identity/UserManagementTests.cs",
-    "route": "POST /api/v1/identity/users/{userId}/confirm-email",
-    "featureFlag": null,
-    "policy": "anonymous"
   },
   "GetUserRoles": {
     "m": "Identity",

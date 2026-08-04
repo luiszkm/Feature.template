@@ -238,7 +238,7 @@ public sealed class GetUserAssignmentsTests
     public async Task Handle_ShouldReturnAssignedRoles()
     {
         var provider = TestServiceFactory.CreateWithAuthorization(AuthorizationTestDb.Name(nameof(Handle_ShouldReturnAssignedRoles)));
-        var user = await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        var user = await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -283,7 +283,7 @@ public sealed class RevokeUserFromRoleTests
     public async Task Handle_ShouldThrow_WhenAssignmentNotFound()
     {
         var provider = TestServiceFactory.CreateWithAuthorization(AuthorizationTestDb.Name(nameof(Handle_ShouldThrow_WhenAssignmentNotFound)));
-        var user = await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        var user = await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);

@@ -59,7 +59,7 @@ public sealed class AssignUserToRoleTests
     public async Task Handle_ShouldAssignRole_WhenUserAndRoleExist()
     {
         var provider = TestServiceFactory.CreateWithAuthorization(nameof(Handle_ShouldAssignRole_WhenUserAndRoleExist));
-        var user = await TestServiceFactory.SeedConfirmedUserAsync(provider, TenantId);
+        var user = await TestServiceFactory.SeedUserAsync(provider, TenantId);
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
