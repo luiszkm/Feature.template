@@ -6,6 +6,9 @@ alwaysApply: false
 
 # Architecture VSA v2.1
 
+Full docs: `docs/architecture/vsa.md` · `docs/architecture/guidelines.md`  
+Module context: `src/App/Features/{Module}/AGENTS.md` is source of truth for that Feature folder.
+
 ## Layout
 
 ```
@@ -14,6 +17,7 @@ src/App/
 ├── Host/                   # HTTP cross-cutting only
 ├── Shared/                 # Kernel, Infrastructure, Platform
 └── Features/{Module}/
+    ├── AGENTS.md           # module context — read before editing
     ├── {Entity}.cs         # noun = domain + repo + EF config
     └── {Slice}.cs          # verb = Command + Validator + Handler + IEndpoint
 
@@ -22,10 +26,12 @@ tests/App.Tests/{Module}/{Slice}Tests.cs   # flat mirror (no Features/ prefix)
 
 ## New slice checklist
 
-1. Create `src/App/Features/{Module}/{Slice}.cs`
-2. Create `tests/App.Tests/{Module}/{Slice}Tests.cs`
-3. Update `features.json` (app, test, route, featureFlag)
-4. Do NOT edit `Program.cs` — use `IEndpoint` auto-discovery
+1. Read `src/App/Features/{Module}/AGENTS.md`
+2. Create `src/App/Features/{Module}/{Slice}.cs`
+3. Create `tests/App.Tests/{Module}/{Slice}Tests.cs`
+4. Update `features.json` (app, test, route, featureFlag)
+5. Update module `AGENTS.md` if public surface changed
+6. Do NOT edit `Program.cs` — use `IEndpoint` auto-discovery
 
 ## Feature flags
 

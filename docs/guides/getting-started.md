@@ -2,7 +2,8 @@
 
 Product.Template v2 é um **template novo** (greenfield). Não há caminho de migração a partir do v1 — use este repositório como ponto de partida para novos produtos.
 
-Arquitetura: **Vertical Slice Architecture (VSA) v2.1** — um projeto `App` + slices planos em `Features/{Module}/`.
+Arquitetura: **Vertical Slice Architecture (VSA) v2.1** — um projeto `App` + slices planos em `Features/{Module}/`.  
+Docs: [architecture/vsa.md](../architecture/vsa.md) · [guidelines.md](../architecture/guidelines.md)
 
 ## Instalar como dotnet new template
 
@@ -67,6 +68,7 @@ Tenants seed: `public`, `dev`.
 ## Índice de features
 
 - `features.json` — slices, rotas, feature flags
+- `src/App/Features/{Module}/AGENTS.md` — contexto por módulo
 - `docs/security/RBAC_MATRIX.md` — políticas e permissões
 
 ## Verificação
@@ -88,19 +90,11 @@ make verify
 | DI do módulo | `{Module}Module.cs` |
 | Seeders | `src/App/Host/Seeders/` |
 | Host / segurança | `src/App/Host/` |
+| Contexto do módulo | `src/App/Features/{Module}/AGENTS.md` |
 
-## Comparação com v1 (referência opcional)
+## Notas
 
-O v1 (`Product.Template` — Clean Architecture, ~16 projetos) serve apenas como **referência de funcionalidades**, não como origem de migração.
-
-| Aspecto | v1 | v2 |
-|---------|----|----|
-| Projetos | Domain/Application/Infrastructure por módulo | 1 App + testes |
-| Organização | Por camada | 1 arquivo por caso de uso |
-| DB | SQL Server / PostgreSQL | PostgreSQL |
-| Índice | Controllers + docs | `features.json` |
-
-Itens ainda não portados do v1 (não bloqueiam uso greenfield):
+Itens opcionais / evolução futura:
 
 | Item | Notas |
 |------|--------|

@@ -12,7 +12,7 @@
 - Manter **paridade funcional** com v1 (Identity, Authorization, Tenants, AI, multi-tenancy, JWT/RBAC)
 - Seguir **padrão .NET**: produção e testes em projetos separados
 - Preservar **feature flags** (`Microsoft.FeatureManagement`) com gate por slice
-- Fornecer **harness LLM** mínimo (`AGENTS.md`, `features.json`, skill `new-slice`)
+- Fornecer **harness LLM** (`AGENTS.md` raiz + `Features/{Module}/AGENTS.md`, `features.json`, skills)
 
 ## Tech Stack
 
@@ -38,7 +38,7 @@
 - Feature flags (runtime gate + middleware condicional)
 - Testes espelhados em `App.Tests/` (plano)
 - ArchitectureTests (fronteiras namespace/pasta)
-- Harness agente (`AGENTS.md`, `features.json`, `.cursor/` mínimo)
+- Harness agente (`AGENTS.md` + AGENTS por módulo, `features.json`, `.cursor/` mínimo)
 - Docker + CI/CD (paridade v1 — milestone posterior)
 
 **Explicitly out of scope (v2 inicial):**
@@ -56,5 +56,7 @@
 
 ## Reference Documents
 
-- `docs/architecture/RELATORIO-VSA-EFICIENCIA-TOKENS.md`
-- v1: `docs/guides/feature-flags.md`, `docs/security/RBAC_MATRIX.md`
+- `docs/architecture/vsa.md`
+- `docs/architecture/guidelines.md`
+- `docs/guides/getting-started.md`
+- `docs/security/RBAC_MATRIX.md`

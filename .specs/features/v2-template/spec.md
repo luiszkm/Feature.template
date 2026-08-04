@@ -4,7 +4,7 @@
 **Status:** Approved (2026-08-03)  
 **M1 scope:** Scaffold + RegisterUser + **Host + Feature Flags + Harness**  
 **P3:** AI module (explicitly deferred from M1/M2)  
-**Related:** `.specs/project/PROJECT.md`, `docs/architecture/RELATORIO-VSA-EFICIENCIA-TOKENS.md`
+**Related:** `.specs/project/PROJECT.md`, `docs/architecture/vsa.md`, `docs/architecture/guidelines.md`
 
 ---
 
@@ -136,11 +136,12 @@ Precisamos de um v2 que preserve qualidade de produção (.NET 10, CQRS, EF, JWT
 
 **Acceptance Criteria**:
 
-1. WHEN agente inicia THEN `AGENTS.md` SHALL existir com ≤120 linhas
-2. WHEN agente busca slice THEN `features.json` SHALL mapear `app` + `test` paths
-3. WHEN skill `new-slice` é invocada THEN SHALL criar par prod + test nos paths corretos
-4. WHEN rule `architecture-vsa.mdc` existe THEN SHALL listar anti-patterns (pastas por camada, testes em src)
-5. WHEN novo slice é registrado THEN `features.json` SHALL ser atualizado
+1. WHEN agente inicia THEN `AGENTS.md` (raiz) SHALL existir com regras cross-cutting
+2. WHEN agente edita módulo THEN `Features/{Module}/AGENTS.md` SHALL existir com contexto local
+3. WHEN agente busca slice THEN `features.json` SHALL mapear `app` + `test` paths
+4. WHEN skill `new-slice` é invocada THEN SHALL criar par prod + test nos paths corretos
+5. WHEN rule `architecture-vsa.mdc` existe THEN SHALL listar anti-patterns (pastas por camada, testes em src)
+6. WHEN novo slice é registrado THEN `features.json` SHALL ser atualizado
 
 **Independent Test**: Agente cria slice `Login` seguindo AGENTS.md sem perguntas.
 

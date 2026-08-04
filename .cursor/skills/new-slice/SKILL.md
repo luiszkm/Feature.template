@@ -9,6 +9,8 @@ disable-model-invocation: true
 
 Arguments: `{Module} {Slice}` — e.g. `/new-slice Identity Login`
 
+Read `src/App/Features/{Module}/AGENTS.md` first. See also `docs/architecture/guidelines.md`.
+
 ## Creates (always both)
 
 ```
@@ -51,6 +53,7 @@ public sealed class {Slice}Endpoint : IEndpoint
 
 ## Rules
 
+- Update `Features/{Module}/AGENTS.md` if slice list or public surface changed
 - Do NOT edit `Program.cs`
 - Entity file = noun only (`User.cs`), slice = verb (`Login.cs`)
 - Tests: validator + handler sections in one `{Slice}Tests.cs`

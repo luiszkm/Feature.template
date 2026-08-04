@@ -9,14 +9,17 @@ disable-model-invocation: true
 
 Arguments: `{Module}` — e.g. `/new-module Billing`
 
+Read `docs/architecture/guidelines.md` before scaffolding.
+
 ## Creates
-1. `src/App/Features/{Module}/{Entity}.cs` (aggregate + repo + EF config as needed)
-2. `src/App/Features/{Module}/{Module}Module.cs` — `Add{Module}Module` (+ policies if RBAC)
-3. Register in `Host/Configurations/FeatureModulesConfiguration.cs` via `AddFeatureModules()`
-4. Optional: `{Module}Contracts.cs` for cross-slice DTOs
-5. First slice via `/new-slice {Module} {Slice}` (or create both in one pass)
-6. Tests under `tests/App.Tests/{Module}/`
-7. Update `features.json`
+1. `src/App/Features/{Module}/AGENTS.md` — module context (required)
+2. `src/App/Features/{Module}/{Entity}.cs` (aggregate + repo + EF config as needed)
+3. `src/App/Features/{Module}/{Module}Module.cs` — `Add{Module}Module` (+ policies if RBAC)
+4. Register in `Host/Configurations/FeatureModulesConfiguration.cs` via `AddFeatureModules()`
+5. Optional: `{Module}Contracts.cs` for cross-slice DTOs
+6. First slice via `/new-slice {Module} {Slice}` (or create both in one pass)
+7. Tests under `tests/App.Tests/{Module}/`
+8. Update `features.json`
 
 ## Rules
 - Do NOT edit `Program.cs` for endpoint wiring

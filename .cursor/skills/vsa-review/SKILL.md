@@ -7,8 +7,11 @@ disable-model-invocation: true
 
 # Skill: /vsa-review
 
+See also: `docs/architecture/vsa.md` · `docs/architecture/guidelines.md`
+
 ## Checklist
 
+0. Module has `Features/{Module}/AGENTS.md`; changes to public surface reflected there
 1. Flat slice file; no layer folders; noun vs verb naming
 2. No `Program.cs` edits for endpoints; `IEndpoint` + module registration only when needed
 3. Repo: per-aggregate interface; no public `IRepository<T>`
