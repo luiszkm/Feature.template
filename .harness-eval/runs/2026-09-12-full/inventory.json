@@ -1,0 +1,79 @@
+{
+  "root": "/Users/luissoares/Repos/Feature.template",
+  "generated_at": "2026-09-12T20:51:25.682188+00:00",
+  "t0": [
+    ".cursor/rules/agent-boundaries.mdc",
+    ".cursor/rules/architecture-vsa.mdc",
+    "AGENTS.md"
+  ],
+  "t1": [
+    ".cursor/skills/chrome-devtools/SKILL.md",
+    ".cursor/skills/harness-eval/SKILL.md",
+    ".cursor/skills/new-module/SKILL.md",
+    ".cursor/skills/new-slice/SKILL.md",
+    ".cursor/skills/spec-driven-eval/SKILL.md",
+    ".cursor/skills/the-judge/SKILL.md",
+    ".cursor/skills/tlc-discover/SKILL.md",
+    ".cursor/skills/tlc-implement/SKILL.md",
+    ".cursor/skills/tlc-plan/SKILL.md",
+    ".cursor/skills/tlc-spec-driven/SKILL.md",
+    ".cursor/skills/tlc-spec-lean/SKILL.md",
+    ".cursor/skills/vsa-review/SKILL.md"
+  ],
+  "t2": [
+    ".cursor/skills/harness-eval/references/GLOSSARY.md",
+    ".cursor/skills/harness-eval/references/PROTOCOL.md",
+    ".cursor/skills/harness-eval/references/claims.schema.json",
+    ".cursor/skills/harness-eval/references/judge-prompts.md",
+    ".cursor/skills/spec-driven-eval/references/quickstart.md",
+    ".cursor/skills/spec-driven-eval/references/reference.md",
+    ".cursor/skills/the-judge/references/comment-voice.md",
+    ".cursor/skills/the-judge/references/review-standards.md",
+    ".cursor/skills/tlc-discover/references/document-format.md",
+    ".cursor/skills/tlc-implement/references/checklist-format.md",
+    ".cursor/skills/tlc-implement/references/screens.md",
+    ".cursor/skills/tlc-implement/references/test-policy.md",
+    ".cursor/skills/tlc-implement/references/verify.md",
+    ".cursor/skills/tlc-plan/references/document-format.md",
+    ".cursor/skills/tlc-spec-driven/references/code-analysis.md",
+    ".cursor/skills/tlc-spec-driven/references/coding-principles.md",
+    ".cursor/skills/tlc-spec-driven/references/context-limits.md",
+    ".cursor/skills/tlc-spec-driven/references/design.md",
+    ".cursor/skills/tlc-spec-driven/references/discuss.md",
+    ".cursor/skills/tlc-spec-driven/references/implement.md",
+    ".cursor/skills/tlc-spec-driven/references/lessons.md",
+    ".cursor/skills/tlc-spec-driven/references/memory.md",
+    ".cursor/skills/tlc-spec-driven/references/specify.md",
+    ".cursor/skills/tlc-spec-driven/references/sub-agents.md",
+    ".cursor/skills/tlc-spec-driven/references/tasks.md",
+    ".cursor/skills/tlc-spec-driven/references/validate.md",
+    ".cursor/skills/tlc-spec-lean/references/build.md",
+    ".cursor/skills/tlc-spec-lean/references/checks.md",
+    ".cursor/skills/tlc-spec-lean/references/memory.md",
+    ".cursor/skills/tlc-spec-lean/references/plan.md",
+    ".cursor/skills/tlc-spec-lean/references/verify.md"
+  ],
+  "manifests": [
+    "Makefile"
+  ],
+  "manifest_commands": [
+    "build",
+    "test",
+    "verify",
+    "health",
+    "docker-up"
+  ],
+  "doc_scope": {
+    "included_optional_docs": [],
+    "included_doc_types": [],
+    "excluded_decision_record_count": 0,
+    "optional_type_count": {
+      ".github": 1,
+      "docs/architecture": 2,
+      "docs/guides": 1,
+      "docs/security": 1,
+      "features.json": 1,
+      "src": 4
+    }
+  }
+}

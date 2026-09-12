@@ -1,0 +1,34 @@
+{
+  "policy": {
+    "agent_harness_refs": "always_include",
+    "adr_rfc_decision_records": "always_exclude",
+    "other_cited_docs": "opt_in_after_user_approval"
+  },
+  "excluded_decision_records": [],
+  "optional_by_type": {
+    ".github": [
+      ".github/workflows/ci.yml"
+    ],
+    "docs/architecture": [
+      "docs/architecture/guidelines.md",
+      "docs/architecture/vsa.md"
+    ],
+    "docs/guides": [
+      "docs/guides/getting-started.md"
+    ],
+    "docs/security": [
+      "docs/security/RBAC_MATRIX.md"
+    ],
+    "features.json": [
+      "features.json"
+    ],
+    "src": [
+      "src/App/Features/Ai/AGENTS.md",
+      "src/App/Features/Authorization/AGENTS.md",
+      "src/App/Features/Identity/AGENTS.md",
+      "src/App/Features/Tenants/AGENTS.md"
+    ]
+  },
+  "included_optional_docs": [],
+  "included_doc_types": []
+}
