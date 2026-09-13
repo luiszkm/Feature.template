@@ -65,7 +65,7 @@ const ROW = {
   tenantKey: 'dev',
   displayName: 'Development',
   isActive: true,
-  isolationMode: 'Shared',
+  isolationMode: 0,
   createdAt: '2026-01-02T10:00:00Z',
   lastLoginAt: null,
 };

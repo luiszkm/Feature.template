@@ -14,7 +14,11 @@ import { ConfirmService } from '../../shared/confirm';
 import { ListState } from '../../shared/list-state';
 import { ListStore } from '../../shared/list-store';
 import { handleMutationError } from '../../shared/problem-details';
-import { TenantOutput } from './tenants.contracts';
+import {
+  TENANT_ISOLATION_MODE_LABELS,
+  TenantIsolationMode,
+  TenantOutput,
+} from './tenants.contracts';
 
 @Injectable()
 export class TenantsStore extends ListStore<TenantOutput> {
@@ -105,7 +109,7 @@ export class TenantsStore extends ListStore<TenantOutput> {
         <ng-container matColumnDef="isolationMode">
           <th mat-header-cell *matHeaderCellDef>Isolamento</th>
           <td mat-cell *matCellDef="let tenant" [attr.data-testid]="'isolation-' + tenant.tenantId">
-            {{ tenant.isolationMode }}
+            {{ isolationModeLabel(tenant.isolationMode) }}
           </td>
         </ng-container>
 
@@ -158,6 +162,10 @@ export class TenantsList {
   readonly store = inject(TenantsStore);
   readonly columns = ['tenantKey', 'displayName', 'isActive', 'isolationMode', 'actions'];
   readonly rows = computed(() => [...this.store.items()]);
+
+  isolationModeLabel(mode: TenantIsolationMode): string {
+    return TENANT_ISOLATION_MODE_LABELS[mode];
+  }
 
   private readonly confirm = inject(ConfirmService);
   private readonly snackBar = inject(MatSnackBar);

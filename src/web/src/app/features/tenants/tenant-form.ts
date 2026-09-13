@@ -10,7 +10,13 @@ import { firstValueFrom } from 'rxjs';
 import { API_BASE } from '../../core/api';
 import { NotFound } from '../../shared/screens';
 import { Problem, fieldError, parseProblem, problemKind } from '../../shared/problem-details';
-import { CreateTenantRequest, TenantOutput, UpdateTenantRequest } from './tenants.contracts';
+import {
+  CreateTenantRequest,
+  TENANT_ISOLATION_MODE_LABELS,
+  TenantIsolationMode,
+  TenantOutput,
+  UpdateTenantRequest,
+} from './tenants.contracts';
 
 @Component({
   selector: 'app-tenant-form',
@@ -59,7 +65,7 @@ import { CreateTenantRequest, TenantOutput, UpdateTenantRequest } from './tenant
           <dd data-testid="field-displayName">{{ loaded.displayName }}</dd>
           <dd data-testid="field-contactEmail">{{ loaded.contactEmail }}</dd>
           <dd data-testid="field-isActive">{{ loaded.isActive ? 'Sim' : 'Não' }}</dd>
-          <dd data-testid="field-isolationMode">{{ loaded.isolationMode }}</dd>
+          <dd data-testid="field-isolationMode">{{ isolationModeLabel(loaded.isolationMode) }}</dd>
           <dd data-testid="field-createdAt">{{ loaded.createdAt | date: 'short' }}</dd>
         </dl>
       }
@@ -101,6 +107,10 @@ export class TenantForm {
     if (this.tenantId) {
       void this.load(this.tenantId);
     }
+  }
+
+  isolationModeLabel(mode: TenantIsolationMode): string {
+    return TENANT_ISOLATION_MODE_LABELS[mode];
   }
 
   notFound(): boolean {
@@ -158,7 +168,7 @@ export class TenantForm {
             tenantKey: value.tenantKey,
             displayName: value.displayName,
             contactEmail: value.contactEmail || null,
-            isolationMode: 'Shared',
+            isolationMode: TenantIsolationMode.SharedDb,
           } satisfies CreateTenantRequest),
         );
         await this.router.navigateByUrl('/tenants');

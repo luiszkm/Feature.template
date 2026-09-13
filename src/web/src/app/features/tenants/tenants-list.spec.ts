@@ -27,7 +27,7 @@ const PAGE = {
       displayName: 'Development',
       contactEmail: 'dev@example.com',
       isActive: true,
-      isolationMode: 'Shared',
+      isolationMode: 0,
       createdAt: '2026-01-02T10:00:00Z',
     },
   ],
@@ -52,7 +52,7 @@ describe('TenantsList', () => {
     expect(text(fixture, 'row-tenant-1')).toContain('dev');
     expect(text(fixture, 'name-tenant-1')).toBe('Development');
     expect(text(fixture, 'active-tenant-1')).toBe('Sim');
-    expect(text(fixture, 'isolation-tenant-1')).toBe('Shared');
+    expect(text(fixture, 'isolation-tenant-1')).toBe('Partilhado');
   });
 
   it('204 marca a linha como inativa', async () => {

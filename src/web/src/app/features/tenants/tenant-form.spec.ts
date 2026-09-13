@@ -25,7 +25,7 @@ const TENANT = {
   displayName: 'Development',
   contactEmail: 'dev@example.com',
   isActive: true,
-  isolationMode: 'Shared',
+  isolationMode: 0,
   createdAt: '2026-01-02T10:00:00Z',
 };
 
@@ -119,7 +119,7 @@ describe('TenantForm', () => {
     expect(text(fixture, 'field-displayName')).toBe('Development');
     expect(text(fixture, 'field-contactEmail')).toBe('dev@example.com');
     expect(text(fixture, 'field-isActive')).toBe('Sim');
-    expect(text(fixture, 'field-isolationMode')).toBe('Shared');
+    expect(text(fixture, 'field-isolationMode')).toBe('Partilhado');
     expect(text(fixture, 'field-createdAt')).not.toBe('');
   });
 });
