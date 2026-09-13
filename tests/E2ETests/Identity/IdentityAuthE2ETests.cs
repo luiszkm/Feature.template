@@ -138,6 +138,58 @@ public sealed class IdentityAuthE2ETests
         Assert.Equal(HttpStatusCode.Unauthorized, refresh.StatusCode);
     }
 
+    [Fact]
+    public async Task Logout_WithoutCookie_ShouldReturn204_AndTouchNothing()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var login = await LoginAsAdmin(client);
+        var cookie = RefreshCookieValue(login);
+
+        // No cookie presented: the endpoint has nothing to revoke and says so with 204.
+        var logout = await client.PostAsync("/api/v1/identity/logout", content: null);
+
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+
+        // The untouched token still works, which is what "changed no records" means here.
+        var refresh = await PostWithCookie(client, "/api/v1/identity/refresh", cookie);
+
+        Assert.Equal(HttpStatusCode.OK, refresh.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_CookieShouldNotBeSecure_OverPlainHttp()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var response = await LoginAsAdmin(client);
+
+        var cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
+
+        // The test host speaks http, so a `Secure` cookie would be dropped by a real browser.
+        Assert.DoesNotContain("secure", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Logout_ShouldReturn429_WhenTheAuthLimiterTrips()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        // The `auth` policy permits 20 per minute with no queue; the 21st is rejected.
+        HttpStatusCode last = HttpStatusCode.NoContent;
+        for (var attempt = 0; attempt < 21 && last != HttpStatusCode.TooManyRequests; attempt++)
+        {
+            var response = await client.PostAsync("/api/v1/identity/logout", content: null);
+            last = response.StatusCode;
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, last);
+    }
+
     private static HttpClient CreateClient(WebApplicationFactory<Program> factory)
     {
         // Cookies are set by hand so each test states exactly which credential it presents.

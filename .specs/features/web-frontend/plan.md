@@ -40,7 +40,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | Produção | imagem nginx separada a servir `dist/` e a fazer proxy de `/api` | espelha o `docker-compose.yml` atual, que já separa `api` de infra | n |
 | Tenant por omissão no campo de login | `dev` | é o tenant semeado e documentado em `getting-started.md` | y |
 | Idioma da UI | português de Portugal, igual aos docs do repo | os docs e o `AGENTS.md` estão em pt-PT | n |
-| Utilizador delegou o resto das escolhas visuais | densidade compacta nas tabelas, ordenação por `createdAt` desc | user delegated | y |
+| Utilizador delegou o resto das escolhas visuais | densidade compacta nas tabelas; a ordem das listas é a que a API devolver, porque nenhum endpoint aceita sort | user delegated | y |
 
 **Open questions:** none - all resolved or logged above.
 
@@ -163,7 +163,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | screen `users-list` | estado de carregamento | AC 14 |
 | screen `users-list` | estado de erro | AC 16 |
 | screen `users-list` | estado não autorizado | AC 10, AC 21 |
-| screen `users-list` | densidade e ordenação | AC 13, AC 17 - densidade compacta, `createdAt` desc por omissão |
+| screen `users-list` | densidade e ordenação | AC 13, AC 17 - densidade compacta; ordenação n/a - a API não expõe sort e o front não inventa uma |
 | screen `users-list` | ação destrutiva confirma | AC 19, AC 20 |
 | screen `user-form` | estado de erro | AC 3 - mesma regra de `ValidationProblemDetails` do login |
 | screen `user-form` | estado de carregamento | AC 22 - skeleton nos campos até `GET` responder |
@@ -172,16 +172,16 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | screen `roles-list` | estado de carregamento | AC 14 - mesmo padrão partilhado |
 | screen `roles-list` | estado de erro | AC 16 - mesmo padrão partilhado |
 | screen `roles-list` | ação destrutiva confirma | AC 30 |
-| screen `roles-list` | densidade e ordenação | AC 24 - ordenação por nome asc |
+| screen `roles-list` | densidade e ordenação | AC 24 - densidade compacta; ordenação n/a - a API não expõe sort |
 | screen `role-detail` | estado vazio | AC 25 - "Sem permissões atribuídas" |
 | screen `role-detail` | ação destrutiva confirma | AC 27 - revogar permissão pede confirmação |
 | screen `permissions-list` | estado vazio | AC 32 - "Nenhuma permissão" |
 | screen `permissions-list` | ação destrutiva confirma | AC 32 - eliminar permissão pede confirmação |
-| screen `permissions-list` | densidade e ordenação | AC 32 - ordenação por `name` asc |
+| screen `permissions-list` | densidade e ordenação | AC 32 - densidade compacta; ordenação n/a - a API não expõe sort |
 | screen `tenants-list` | estado vazio | AC 33 - "Nenhum tenant" |
 | screen `tenants-list` | estado de erro | AC 16 - mesmo padrão partilhado |
 | screen `tenants-list` | ação destrutiva confirma | AC 37 - desativar pede confirmação e diz que é reversível por edição |
-| screen `tenants-list` | densidade e ordenação | AC 33 - ordenação por `tenantKey` asc |
+| screen `tenants-list` | densidade e ordenação | AC 33 - densidade compacta; ordenação n/a - a API não expõe sort |
 | screen `tenant-form` | estado de erro | AC 35 |
 | screen `ai-chat` | estado vazio | AC 40 - "Faça uma pergunta" antes da primeira mensagem |
 | screen `ai-chat` | estado de carregamento | AC 41 |
@@ -263,6 +263,7 @@ URLs de aplicação expostos pelo front (sem statuses — são rotas do router, 
 | `dist/` e `node_modules/` excluídos do template | acrescentar `**/node_modules/**` e `**/dist/**` ao `exclude` de `.template.config/template.json` | deixar como está — `dotnet new install .` passa a empacotar `node_modules`, e isso só se descobre ao gerar o primeiro produto |
 
 - Nada mais nesta mudança é difícil de reverter: escolha de componentes, nomes de ficheiro, número de componentes por ecrã e organização de estilos ficam no diff.
+- **A door "Persistência da sessão no browser" foi superseded** pela feature `auth-cookie-contract`: o refresh token deixou de viver em `localStorage` e passou ao cookie `pt_refresh` (`HttpOnly`). A linha acima fica como registo do que foi aprovado na altura; a forma que shipou está em `.specs/features/auth-cookie-contract/plan.md`.
 
 ## Impact
 

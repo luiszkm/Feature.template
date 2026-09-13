@@ -53,6 +53,7 @@ public sealed class LogoutEndpoint : IEndpoint
         // refresh token they already hold.
         .AllowAnonymous()
         .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
-        .Produces(StatusCodes.Status204NoContent);
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests);
     }
 }

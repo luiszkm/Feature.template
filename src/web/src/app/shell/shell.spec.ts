@@ -51,4 +51,23 @@ describe('Shell', () => {
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
     await waitFor(fixture, () => expect(TestBed.inject(Router).url).toBe('/login'));
   });
+
+  it('cancelar o dialogo nao termina a sessao', async () => {
+    const requests = recorder();
+    stubConfirm(false);
+
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: ['Admin'] }), accessToken: tokenWith([]) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    el(fixture, 'logout').click();
+    await settle(fixture);
+
+    expect(requests).toHaveLength(0);
+    expect(localStorage.getItem(AUTH_STORAGE_KEY)).not.toBeNull();
+    expect(session.user()).not.toBeNull();
+  });
 });

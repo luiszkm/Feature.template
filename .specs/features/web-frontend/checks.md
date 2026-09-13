@@ -5,7 +5,7 @@ Plan: `.specs/features/web-frontend/plan.md`
 
 ## Intent
 
-64 checks in 6 slices · 7 one-way doors · 0 open
+65 checks in 6 slices · 7 one-way doors · 0 open
 
 ## Checks
 
@@ -14,208 +14,210 @@ correm a partir da raiz do repositório.
 
 ### S1 - Sessão, tenant e shell · 11 ficheiros novos · ~34 KB · ~9k
 
-**C1** - Login com credenciais válidas guarda `refreshToken` e `tenantKey` em `localStorage['pt.auth']`, mantém o `accessToken` fora de `localStorage`, e navega para `/users` (WEB-01, AC 1)
-Proof: `cd src/web && npx vitest run src/app/features/identity/login.spec.ts -t "guarda a sessao e navega para users"`
+**C1** - Login com credenciais válidas guarda `tenantKey` e `user` em `localStorage['pt.auth']`, deixa `accessToken` e refresh token fora de qualquer storage, e navega para `/users` (WEB-01, AC 1)
+Nota: a forma original desta claim (refresh token em `localStorage`) foi invalidada pela feature `auth-cookie-contract`, que moveu o token para o cookie `pt_refresh`.
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/login.spec.ts --filter "guarda a sessao e navega para users"`
 
 **C2** - Login que devolve `401` mantém a rota `/login`, renderiza o `detail` do ProblemDetails e preserva o valor do campo email (WEB-01, AC 2)
-Proof: `cd src/web && npx vitest run src/app/features/identity/login.spec.ts -t "401 mantem o email e mostra o detail"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/login.spec.ts --filter "401 mantem o email e mostra o detail"`
 
 **C3** - Uma resposta `400` com `ValidationProblemDetails` renderiza cada mensagem de `errors[campo]` sob o campo com esse nome (WEB-01, AC 3)
-Proof: `cd src/web && npx vitest run src/app/shared/problem-details.spec.ts -t "mapeia errors para os campos do formulario"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/problem-details.spec.ts --filter "mapeia errors para os campos do formulario"`
 
 **C4** - Toda a requisição para `/api/v1/**` leva o header `X-Tenant` com o valor de `localStorage['pt.tenant']` (WEB-01, AC 4)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "adiciona X-Tenant"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "adiciona X-Tenant"`
 
 **C5** - Com `accessToken` em memória, toda a requisição para `/api/v1/**` leva `Authorization: Bearer <accessToken>` (WEB-01, AC 5)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "adiciona Authorization Bearer"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "adiciona Authorization Bearer"`
 
 **C6** - Um `401` numa requisição autenticada dispara exatamente um `POST /api/v1/identity/refresh`, repete a requisição original com o token novo, e um `401` no refresh limpa a sessão e navega para `/login` (WEB-01, AC 6)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "401 renova e repete"`
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "refresh 401 limpa a sessao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "401 renova e repete"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "refresh 401 limpa a sessao"`
 
 **C7** - Três requisições que recebem `401` em paralelo produzem uma única chamada a `/api/v1/identity/refresh` e as três são repetidas com o mesmo token (WEB-01, AC 7)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "401 em paralelo renova uma vez"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "401 em paralelo renova uma vez"`
 
 **C8** - Navegar para uma rota protegida sem sessão redireciona para `/login?redirectTo=<rota>` e, após login, navega para essa rota (WEB-01, AC 8)
-Proof: `cd src/web && npx vitest run src/app/core/guards/guards.spec.ts -t "redireciona com redirectTo e volta"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/guards/guards.spec.ts --filter "redireciona com redirectTo e volta"`
 
 **C9** - `hasPermission('identity.user.manage')` devolve `true` quando o payload do access token traz essa claim `permission` e `false` quando não traz (WEB-01, AC 9)
-Proof: `cd src/web && npx vitest run src/app/core/session/session.store.spec.ts -t "hasPermission le as claims permission"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/session/session.store.spec.ts --filter "hasPermission le as claims permission"`
 
 **C10** - Uma resposta `403` renderiza o ecrã `forbidden` com a mensagem "Sem permissão para esta operação" e um botão que volta à rota anterior (WEB-01, AC 10)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "403 abre o ecra forbidden"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "403 abre o ecra forbidden"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/screens.spec.ts --filter "mostra a mensagem de sem permissao"`
 
 **C11** - Sair remove a chave `pt.auth` de `localStorage`, esvazia o `accessToken` em memória e navega para `/login` (WEB-01, AC 11)
-Proof: `cd src/web && npx vitest run src/app/core/session/session.store.spec.ts -t "logout limpa pt.auth e o token em memoria"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/session/session.store.spec.ts --filter "logout limpa pt.auth e o token em memoria"`
 
 **C12** - Com sessão ativa, a barra superior mostra o `firstName` do utilizador e o `tenantKey` corrente (WEB-01, AC 12)
-Proof: `cd src/web && npx vitest run src/app/shell/shell.spec.ts -t "mostra firstName e tenantKey"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shell/shell.spec.ts --filter "mostra firstName e tenantKey"`
 
 **C13** - Login que devolve `429` mostra "Demasiadas tentativas, tente dentro de um minuto" e mantém os campos preenchidos (WEB-01, AC 2)
-Proof: `cd src/web && npx vitest run src/app/features/identity/login.spec.ts -t "429 mostra limite de tentativas"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/login.spec.ts --filter "429 mostra limite de tentativas"`
 
 **C14** - Refresh que devolve `404` limpa a sessão e navega para `/login` (WEB-01, AC 6)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "refresh 404 limpa a sessao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "refresh 404 limpa a sessao"`
 
 **C15** - Login ou refresh que devolve `409` mostra "Tenant inválido" junto ao campo tenant e não guarda sessão (WEB-01, AC 2)
-Proof: `cd src/web && npx vitest run src/app/features/identity/login.spec.ts -t "409 mostra tenant invalido"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/login.spec.ts --filter "409 mostra tenant invalido"`
 
 **C16** - Refresh que devolve `400` limpa a sessão e navega para `/login` (WEB-01, AC 6)
-Proof: `cd src/web && npx vitest run src/app/core/http/api.interceptor.spec.ts -t "refresh 400 limpa a sessao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/http/api.interceptor.spec.ts --filter "refresh 400 limpa a sessao"`
 
 ### S2 - Utilizadores · 9 ficheiros novos · ~30 KB · ~8k
 
 **C17** - Abrir `/users` emite `GET /api/v1/identity/users?pageNumber=1&pageSize=20` e renderiza as colunas email, nome, `createdAt` e `lastLoginAt` (WEB-02, AC 13)
-Proof: `cd src/web && npx vitest run src/app/features/identity/users-list.spec.ts -t "carrega a primeira pagina com as quatro colunas"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/users-list.spec.ts --filter "carrega a primeira pagina com as quatro colunas"`
 
 **C18** - Enquanto a lista carrega, o ecrã mostra `mat-progress-bar` e o paginador fica desativado, nos 4 ecrãs de lista (WEB-02, AC 14)
-Proof: `cd src/web && npx vitest run src/app/shared/list-state.spec.ts -t "estado de carregamento"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento"`
 
 **C19** - `totalCount` igual a `0` mostra o estado vazio com a ação de criar, nos 4 ecrãs de lista (WEB-02, AC 15)
-Proof: `cd src/web && npx vitest run src/app/shared/list-state.spec.ts -t "estado vazio"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado vazio"`
 
 **C20** - Uma lista que falha com `500` ou com erro de ligação mostra o `title` do ProblemDetails e o botão "Tentar de novo" repete a mesma query, nos 4 ecrãs de lista (WEB-02, AC 16)
-Proof: `cd src/web && npx vitest run src/app/shared/list-state.spec.ts -t "estado de erro repete a query"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query"`
 
 **C21** - Mudar de página ou pesquisar escreve `pageNumber`, `pageSize` e `searchTerm` nos query params do URL e a lista recarrega a partir deles (WEB-02, AC 17)
-Proof: `cd src/web && npx vitest run src/app/features/identity/users-list.spec.ts -t "sincroniza query params"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/users-list.spec.ts --filter "sincroniza query params"`
 
 **C22** - Submeter o formulário de criação emite `POST /api/v1/identity/register` e, com `201`, navega para `/users` e mostra o snackbar "Utilizador criado" (WEB-02, AC 18)
-Proof: `cd src/web && npx vitest run src/app/features/identity/user-form.spec.ts -t "201 navega e mostra o snackbar"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-form.spec.ts --filter "201 navega e mostra o snackbar"`
 
 **C23** - Confirmar a eliminação emite `DELETE /api/v1/identity/users/{userId}` e, com `204`, a linha desaparece da tabela (WEB-02, AC 19)
-Proof: `cd src/web && npx vitest run src/app/features/identity/users-list.spec.ts -t "204 remove a linha"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/users-list.spec.ts --filter "204 remove a linha"`
 
 **C24** - Fechar o diálogo de eliminação sem confirmar não emite nenhuma requisição HTTP (WEB-02, AC 20)
-Proof: `cd src/web && npx vitest run src/app/features/identity/users-list.spec.ts -t "cancelar nao emite requisicao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/users-list.spec.ts --filter "cancelar nao emite requisicao"`
 
 **C25** - Sem a permissão de gestão e sem a role `Admin`, as ações de gestão não são renderizadas, nas 5 permissões de gestão (WEB-02, AC 21)
-Proof: `cd src/web && npx vitest run src/app/core/session/permission.directive.spec.ts -t "esconde acoes sem permissao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/core/session/permission.directive.spec.ts --filter "esconde acoes sem permissao"`
 
 **C26** - Abrir `/users/{userId}` emite `GET /api/v1/identity/users/{userId}` e `GET /api/v1/identity/users/{userId}/roles` e mostra os dois resultados no mesmo ecrã (WEB-02, AC 22)
-Proof: `cd src/web && npx vitest run src/app/features/identity/user-detail.spec.ts -t "carrega utilizador e roles"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-detail.spec.ts --filter "carrega utilizador e roles"`
 
 **C27** - Guardar a edição emite `PUT /api/v1/identity/users/{userId}` e, com `200`, os campos em ecrã passam a mostrar os valores da resposta (WEB-02, AC 23)
-Proof: `cd src/web && npx vitest run src/app/features/identity/user-form.spec.ts -t "200 substitui os dados em ecra"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-form.spec.ts --filter "200 substitui os dados em ecra"`
 
 **C28** - Um `404` num GET de detalhe renderiza o ecrã not-found com o `title` do ProblemDetails (WEB-02, AC 16)
-Proof: `cd src/web && npx vitest run src/app/shared/problem-details.spec.ts -t "404 renderiza not found"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/problem-details.spec.ts --filter "404 renderiza not found"`
 
 **C29** - `POST /api/v1/identity/register` que devolve `409` mostra o `detail` junto ao campo email e mantém o formulário preenchido (WEB-02, AC 18)
-Proof: `cd src/web && npx vitest run src/app/features/identity/user-form.spec.ts -t "409 marca o campo email"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-form.spec.ts --filter "409 marca o campo email"`
 
 **C30** - Um `404` num `PUT` ou `DELETE` mostra o snackbar "Registo não encontrado" e recarrega a lista (WEB-02, AC 19)
-Proof: `cd src/web && npx vitest run src/app/shared/problem-details.spec.ts -t "404 em mutacao recarrega a lista"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/problem-details.spec.ts --filter "404 em mutacao recarrega a lista"`
 
 **C31** - Um `403` em `GET /api/v1/identity/users/{userId}/roles` renderiza o bloco "Sem acesso aos roles" e mantém o resto do ecrã de detalhe renderizado (WEB-02, AC 22)
-Proof: `cd src/web && npx vitest run src/app/features/identity/user-detail.spec.ts -t "403 nos roles mantem o ecra"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-detail.spec.ts --filter "403 nos roles mantem o ecra"`
 
 ### S3 - Roles e permissões · 8 ficheiros novos · ~28 KB · ~7k
 
 **C32** - Abrir `/roles` emite `GET /api/v1/authorization/roles?pageNumber=1&pageSize=20` e renderiza nome e descrição por linha (WEB-03, AC 24)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/roles-list.spec.ts -t "carrega a primeira pagina"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/roles-list.spec.ts --filter "carrega a primeira pagina"`
 
 **C33** - Abrir `/roles/{roleId}` emite `GET /api/v1/authorization/roles/{roleId}` e mostra nome e descrição do role (WEB-03, AC 25)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/role-detail.spec.ts -t "carrega o role"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/role-detail.spec.ts --filter "carrega o role"`
 
 **C34** - O ecrã de detalhe emite `GET /api/v1/authorization/roles/{roleId}/permissions` e lista as permissões atribuídas por `name` (WEB-03, AC 25)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/role-detail.spec.ts -t "lista as permissoes do role"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/role-detail.spec.ts --filter "lista as permissoes do role"`
 
 **C35** - Atribuir uma permissão emite `POST /api/v1/authorization/roles/{roleId}/permissions` e, com `204`, a permissão aparece na lista sem nova chamada de leitura (WEB-03, AC 26)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/role-detail.spec.ts -t "204 acrescenta a permissao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/role-detail.spec.ts --filter "204 acrescenta a permissao"`
 
 **C36** - Revogar uma permissão emite `DELETE /api/v1/authorization/roles/{roleId}/permissions/{permissionId}` e, com `204`, a permissão sai da lista (WEB-03, AC 27)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/role-detail.spec.ts -t "204 remove a permissao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/role-detail.spec.ts --filter "204 remove a permissao"`
 
 **C37** - Criar role emite `POST /api/v1/authorization/roles` e, com `201`, o role aparece na lista e o diálogo fecha (WEB-03, AC 24)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/roles-list.spec.ts -t "201 acrescenta o role"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/roles-list.spec.ts --filter "201 acrescenta o role"`
 
 **C38** - Criar role que devolve `409` mantém o diálogo aberto e mostra o `detail` junto ao campo Nome (WEB-03, AC 28)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/roles-list.spec.ts -t "409 mantem o dialogo aberto"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/roles-list.spec.ts --filter "409 mantem o dialogo aberto"`
 
 **C39** - Guardar a edição de um role emite `PUT /api/v1/authorization/roles/{roleId}` e, com `200`, a linha na lista passa a mostrar os valores da resposta (WEB-03, AC 29)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/roles-list.spec.ts -t "200 atualiza a linha"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/roles-list.spec.ts --filter "200 atualiza a linha"`
 
 **C40** - Confirmar a eliminação de um role emite `DELETE /api/v1/authorization/roles/{roleId}` e, com `204`, a linha desaparece (WEB-03, AC 30)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/roles-list.spec.ts -t "204 remove o role"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/roles-list.spec.ts --filter "204 remove o role"`
 
 **C41** - Atribuir e revogar um role a um utilizador emitem `POST /api/v1/authorization/users/{userId}/roles` e `DELETE /api/v1/authorization/users/{userId}/roles/{roleId}`, e cada um é seguido de `GET /api/v1/authorization/users/{userId}/roles` (WEB-03, AC 31)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/user-roles.spec.ts -t "atribui e revoga recarregando"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/user-roles.spec.ts --filter "atribui e revoga recarregando"`
 
 **C42** - Abrir `/permissions` emite `GET /api/v1/authorization/permissions` e renderiza nome e descrição por linha (WEB-03, AC 32)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/permissions-list.spec.ts -t "carrega a primeira pagina"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/permissions-list.spec.ts --filter "carrega a primeira pagina"`
 
 **C43** - Criar permissão emite `POST /api/v1/authorization/permissions` e, com `201`, a permissão aparece na lista (WEB-03, AC 32)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/permissions-list.spec.ts -t "201 acrescenta a permissao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/permissions-list.spec.ts --filter "201 acrescenta a permissao"`
 
 **C44** - Criar permissão que devolve `409` mantém o diálogo aberto e mostra o `detail` junto ao campo Nome (WEB-03, AC 32)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/permissions-list.spec.ts -t "409 mantem o dialogo aberto"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/permissions-list.spec.ts --filter "409 mantem o dialogo aberto"`
 
 **C45** - Guardar a edição de uma permissão emite `PUT /api/v1/authorization/permissions/{permissionId}` e, com `200`, a linha passa a mostrar os valores da resposta (WEB-03, AC 32)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/permissions-list.spec.ts -t "200 atualiza a linha"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/permissions-list.spec.ts --filter "200 atualiza a linha"`
 
 **C46** - Confirmar a eliminação de uma permissão emite `DELETE /api/v1/authorization/permissions/{permissionId}` e, com `204`, a linha desaparece (WEB-03, AC 32)
-Proof: `cd src/web && npx vitest run src/app/features/authorization/permissions-list.spec.ts -t "204 remove a permissao"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/permissions-list.spec.ts --filter "204 remove a permissao"`
 
 ### S4 - Tenants · 4 ficheiros novos · ~14 KB · ~4k
 
 **C47** - Abrir `/tenants` emite `GET /api/v1/tenants?pageNumber=1&pageSize=20` e mostra `tenantKey`, `displayName`, `isActive` e `isolationMode` (WEB-04, AC 33)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenants-list.spec.ts -t "carrega a primeira pagina com as quatro colunas"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenants-list.spec.ts --filter "carrega a primeira pagina com as quatro colunas"`
 
 **C48** - Criar tenant emite `POST /api/v1/tenants` e, com `201`, navega para `/tenants` (WEB-04, AC 34)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenant-form.spec.ts -t "201 navega para tenants"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "201 navega para tenants"`
 
 **C49** - Criar tenant que devolve `409` mantém o formulário preenchido e mostra o `detail` junto ao campo Chave (WEB-04, AC 35)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenant-form.spec.ts -t "409 marca o campo chave"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "409 marca o campo chave"`
 
 **C50** - Guardar a edição emite `PUT /api/v1/tenants/{id}` e, com `200`, os campos em ecrã passam a mostrar os valores da resposta (WEB-04, AC 36)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenant-form.spec.ts -t "200 substitui os dados em ecra"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "200 substitui os dados em ecra"`
 
 **C51** - `PUT /api/v1/tenants/{id}` que devolve `400` mostra cada mensagem de `errors[campo]` sob o campo correspondente (WEB-04, AC 36)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenant-form.spec.ts -t "400 marca os campos"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "400 marca os campos"`
 
 **C52** - Confirmar a desativação emite `DELETE /api/v1/tenants/{id}` e, com `204`, a linha passa a mostrar `isActive` falso (WEB-04, AC 37)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenants-list.spec.ts -t "204 marca a linha como inativa"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenants-list.spec.ts --filter "204 marca a linha como inativa"`
 
 **C53** - Abrir `/tenants/{id}` emite `GET /api/v1/tenants/{id}` e mostra os sete campos de `TenantOutput` (WEB-04, AC 38)
-Proof: `cd src/web && npx vitest run src/app/features/tenants/tenant-form.spec.ts -t "mostra os sete campos"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "mostra os sete campos"`
 
 ### S5 - Chat AI · 2 ficheiros novos · ~7 KB · ~2k
 
 **C54** - `POST /api/v1/ai/chat` que devolve `404` com o título "Feature disabled" remove o item AI da navegação durante a sessão corrente (WEB-05, AC 39)
-Proof: `cd src/web && npx vitest run src/app/features/ai/chat.spec.ts -t "404 esconde o item AI"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "404 esconde o item AI"`
 
 **C55** - Enviar uma mensagem acrescenta-a ao histórico local, emite `POST /api/v1/ai/chat` com `message` e `history`, e renderiza o `reply` da resposta (WEB-05, AC 40)
-Proof: `cd src/web && npx vitest run src/app/features/ai/chat.spec.ts -t "envia e renderiza o reply"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "envia e renderiza o reply"`
 
 **C56** - Enquanto a resposta está pendente, o botão Enviar está desativado e o indicador de escrita é visível (WEB-05, AC 41)
-Proof: `cd src/web && npx vitest run src/app/features/ai/chat.spec.ts -t "pendente desativa o envio"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "pendente desativa o envio"`
 
 **C57** - Um `401` no chat passa pelo caminho de refresh do interceptor antes de qualquer mensagem de erro ser mostrada (WEB-05, AC 42)
-Proof: `cd src/web && npx vitest run src/app/features/ai/chat.spec.ts -t "401 renova antes de falhar"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "401 renova antes de falhar"`
 
 ### S6 - Harness e portões · 12 ficheiros novos · ~24 KB · ~6k
 
 **C58** - Uma rota presente em `features.json` sem nenhuma referência sob `src/web/src/app/**` faz `npm test` sair com código diferente de zero (WEB-06, AC 43)
-Proof: `cd src/web && npx vitest run src/app/architecture.spec.ts -t "todas as rotas de features.json tem cliente"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "todas as rotas de features.json tem cliente"`
 
 **C59** - Uma pasta com nome `services`, `components`, `models`, `pages`, `dtos` ou `interfaces` sob `src/web/src/app/features/` faz `npm test` sair com código diferente de zero (WEB-06, AC 44)
-Proof: `cd src/web && npx vitest run src/app/architecture.spec.ts -t "sem pastas de camada"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "sem pastas de camada"`
 
 **C60** - `npm run e2e` executa login, listagem, criação e eliminação de utilizador contra `http://localhost:5080` com o tenant `dev` e sai com código zero (WEB-06, AC 45)
 Proof: `cd src/web && npx playwright test e2e/users.spec.ts -g "cria e elimina um utilizador"`
 
 **C61** - O job `web-e2e` de `.github/workflows/ci.yml` declara o passo que publica `playwright-report` como artefacto com `if: always()` (WEB-06, AC 46)
-Proof: `cd src/web && npx vitest run src/app/architecture.spec.ts -t "web-e2e publica o relatorio"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "web-e2e publica o relatorio"`
 
 **C62** - `src/web/tsconfig.json` declara `strict: true` e `npx tsc --noEmit` sai com código zero (WEB-06, AC 47)
-Proof: `cd src/web && npx vitest run src/app/architecture.spec.ts -t "tsconfig strict"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "tsconfig strict"`
 
 **C63** - `.template.config/template.json` lista `**/node_modules/**` e `**/dist/**` no `exclude` do modificador de sources (WEB-06, AC 47)
 Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~TemplateConfigTests"`
 
 **C64** - Os providers HTTP (interceptor de tenant e de autenticação) estão registados nos três sítios que montam a aplicação: `app.config.ts`, o setup do Vitest e o build servido ao Playwright (WEB-06, AC 43)
-Proof: `cd src/web && npx vitest run src/app/architecture.spec.ts -t "providers http em todas as montagens"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "providers http em todas as montagens"`
 
 **C65** - `npx playwright test e2e/auth.spec.ts` prova, contra a API real, que uma sessão sem access token em memória (o estado a seguir a recarregar a página, igual ao de um token expirado) é renovada a partir do refresh token sem devolver o utilizador ao login (WEB-01, AC 6)
 Proof: `cd src/web && npx playwright test e2e/auth.spec.ts -g "renova o token expirado"`
