@@ -6,10 +6,15 @@ export const API_BASE = '/api/v1';
 /** Opt a single request out of the global 403 -> forbidden screen redirect. */
 export const LOCAL_403 = new HttpContextToken<boolean>(() => false);
 
+export type SortDirection = 'asc' | 'desc';
+
 export interface ListQuery {
   pageNumber: number;
   pageSize: number;
   searchTerm?: string;
+  /** One of the fields the endpoint's `ApplySort` accepts; anything else falls back to its default. */
+  sortBy?: string;
+  sortDirection?: SortDirection;
 }
 
 export interface PaginatedList<T> {
@@ -26,6 +31,10 @@ export function listParams(query: ListQuery): HttpParams {
 
   if (query.searchTerm) {
     params = params.set('searchTerm', query.searchTerm);
+  }
+
+  if (query.sortBy) {
+    params = params.set('sortBy', query.sortBy).set('sortDirection', query.sortDirection ?? 'asc');
   }
 
   return params;

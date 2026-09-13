@@ -26,8 +26,8 @@ describe('NotFound', () => {
     await settle(fixture, 1);
 
     expect(text(fixture, 'not-found-title')).toBe('Not found');
-    expect(el<HTMLAnchorElement>(fixture, 'not-found').querySelector('a')?.textContent?.trim()).toBe(
-      'Voltar',
-    );
+    expect(
+      el<HTMLAnchorElement>(fixture, 'not-found').querySelector('a')?.textContent?.trim(),
+    ).toBe('Voltar');
   });
 });

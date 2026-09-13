@@ -5,11 +5,19 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
-import { API_BASE, DEFAULT_PAGE_SIZE, ListQuery, PaginatedList, listParams } from '../../core/api';
+import {
+  API_BASE,
+  DEFAULT_PAGE_SIZE,
+  ListQuery,
+  PaginatedList,
+  SortDirection,
+  listParams,
+} from '../../core/api';
 import { Permissions } from '../../core/permissions';
 import { HasPermissionDirective } from '../../core/session/permission.directive';
 import { ConfirmService } from '../../shared/confirm';
@@ -45,6 +53,7 @@ export class UsersStore extends ListStore<UserOutput> {
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
+    MatSortModule,
     MatTableModule,
     RouterLink,
   ],
@@ -73,21 +82,27 @@ export class UsersStore extends ListStore<UserOutput> {
     >
       <a mat-stroked-button emptyAction routerLink="/users/new">Criar utilizador</a>
 
-      <table mat-table [dataSource]="rows()" data-testid="users-table">
+      <table
+        mat-table
+        matSort
+        [dataSource]="rows()"
+        data-testid="users-table"
+        (matSortChange)="changeSort($event)"
+      >
         <ng-container matColumnDef="email">
-          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="email">Email</th>
           <td mat-cell *matCellDef="let user" [attr.data-testid]="'row-' + user.id">
             <a [routerLink]="['/users', user.id]">{{ user.email }}</a>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Nome</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="firstName">Nome</th>
           <td mat-cell *matCellDef="let user">{{ user.firstName }} {{ user.lastName }}</td>
         </ng-container>
 
         <ng-container matColumnDef="createdAt">
-          <th mat-header-cell *matHeaderCellDef>Criado em</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="createdAt">Criado em</th>
           <td mat-cell *matCellDef="let user">{{ user.createdAt | date: 'short' }}</td>
         </ng-container>
 
@@ -166,6 +181,14 @@ export class UsersList {
 
   async search(searchTerm: string): Promise<void> {
     await this.apply({ pageNumber: 1, searchTerm: searchTerm || undefined });
+  }
+
+  changeSort(sort: Sort): void {
+    void this.store.load({
+      pageNumber: 1,
+      sortBy: sort.direction ? sort.active : undefined,
+      sortDirection: sort.direction ? (sort.direction as SortDirection) : undefined,
+    });
   }
 
   async changePage(event: PageEvent): Promise<void> {

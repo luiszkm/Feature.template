@@ -5,7 +5,7 @@ Plan: `.specs/features/web-frontend/plan.md`
 
 ## Intent
 
-66 checks in 6 slices · 7 one-way doors · 0 open
+68 checks in 6 slices · 7 one-way doors · 0 open
 
 ## Checks
 
@@ -222,6 +222,13 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec
 **C66** - O botão Editar da lista de utilizadores abre `/users/{userId}/edit` com o formulário preenchido, e guardar mostra o valor novo na linha da lista (WEB-02, AC 23)
 Proof: `cd src/web && npx playwright test e2e/users.spec.ts -g "edita um utilizador a partir da lista"`
 
+**C67** - Escrever na caixa de pesquisa envia `searchTerm` e volta a `pageNumber=1`, nos quatro ecrãs de lista (WEB-02, AC 17)
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-query.spec.ts --filter "pesquisar envia searchTerm"`
+
+**C68** - Clicar num cabeçalho ordenável envia `sortBy` com o campo que a API aceita e `sortDirection` a alternar `asc`/`desc`; sem escolha do utilizador nenhum `sortBy` é enviado e a ordem é o default da API, nos quatro ecrãs (WEB-02, AC 13)
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-query.spec.ts --filter "ordenar por coluna"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-query.spec.ts --filter "sem ordenacao escolhida"`
+
 **C65** - `npx playwright test e2e/auth.spec.ts` prova, contra a API real, que uma sessão sem access token em memória (o estado a seguir a recarregar a página, igual ao de um token expirado) é renovada a partir do refresh token sem devolver o utilizador ao login (WEB-01, AC 6)
 Proof: `cd src/web && npx playwright test e2e/auth.spec.ts -g "renova o token expirado"`
 
@@ -262,12 +269,15 @@ Uma set row por rota da secção `Surface` do plano; os membros são os statuses
 | `POST /api/v1/ai/chat` statuses (3) | 200 C55 · 401 C57 · 404 C54 | - |
 | ecrãs do plano (14) | login C1 · shell C12 · users-list C17 · user-form C22, C66 · user-detail C26 · user-roles C41 · roles-list C32 · role-detail C33 · permissions-list C42 · tenants-list C47 · tenant-form C48 · ai-chat C55 · forbidden C10 · not-found C28 | - |
 | estados dos 4 ecrãs de lista (12) | C18, C19 e C20, cada um table-driven sobre os 4 ecrãs de lista - 12 combinações | - |
+| query dos 4 ecrãs de lista (12) | C67 e C68, table-driven sobre os 4 ecrãs - 12 combinações de pesquisa e ordenação | - |
+| campos ordenáveis que o front oferece (8) | users `email` C68 · users `firstName` C68 · users `createdAt` C68 · roles `name` C68 · permissions `name` C68 · tenants `tenantKey` C68 · tenants `displayName` C68 · nenhum, cai no default da API C68 | - |
 | one-way doors do plano (7) | VSA no front C59 · interceptor único C4 · sessão no browser C11 · permissões do JWT C9 · cliente à mão C58 · tenant por chave C4 · exclude do template C63 | - |
 | permissões que escondem ações (5) | C25, table-driven sobre `identity.user.manage`, `authorization.role.manage`, `authorization.permission.manage`, `tenants.manage` e a role `Admin` | - |
 | estados do chat AI (3) | vazio C55 · pendente C56 · indisponível C54 | - |
 | bootstrap: providers HTTP (3 montagens) | `app.config.ts` C5 · setup do Vitest C4 · build servido ao Playwright C64 | - |
 | renovação de token contra a API real (2) | interceptor C7 · ponta a ponta C65 | - |
 
+- O front só oferece campos que cada `ApplySort` aceita; um campo desconhecido cairia no default do servidor, e isso é decisão da API, não deste conjunto
 - Claims que nomeiam status code, rota ou forma de resposta: C1, C2, C6, C10, C13, C14, C15, C16, C22, C28, C29, C30, C31, C35, C36, C38, C40, C44, C46, C49, C51, C52, C54, C57 - cada um tem uma prova que atravessa a fronteira HTTP (MSW ao nível do componente, API real no E2E)
 - Nenhum outro check reclama mais do que o único caso que a sua prova exercita
 

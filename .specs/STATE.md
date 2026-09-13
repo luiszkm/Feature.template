@@ -12,15 +12,15 @@ agente precisa de saber antes de tocar nestas features.
 | AD-003 | `src/Api/openapi.json` versionado é a autoridade entre API, `features.json` e o front; regenerado por `UPDATE_OPENAPI=1 dotnet test tests/E2ETests` | active |
 | AD-004 | Clientes HTTP do front escritos à mão, sem codegen; a guarda de contrato cobre o risco | active |
 | AD-005 | Projeto renomeado `App` → `Api` (namespaces, assembly, testes, contrato, infra) | active |
-| AD-006 | As listas usam o default de ordenação da API (`createdAt` desc, estável por `Id`). O contrato **declara** `SortBy`/`SortDirection` e os quatro repositórios implementam-nos; o front não os envia. Ordenação por coluna fica por fazer | active |
+| AD-006 | As listas usam o default de ordenação da API (`createdAt` desc, estável por `Id`) até o utilizador escolher. Os cabeçalhos ordenáveis expõem só os campos que cada `ApplySort` aceita — oferecer um campo que o servidor ignora seria mentir na UI | active |
 
 ## Lacunas de implementação
 
 | Estado | Item |
 | --- | --- |
 | **fechado** | Edição de utilizador era inalcançável: `users/:userId` montava o ecrã de leitura e nenhuma rota montava o `UserForm` com um id. Rota `users/:userId/edit` acrescentada, botões da lista e do detalhe ligados, e um e2e percorre o caminho (C66). O detalhe só mostra Editar a quem tem `identity.user.manage` ou a si próprio, espelhando a policy `UserManageOrSelf` |
-| aberto | Pesquisa existe só em utilizadores; a API aceita `searchTerm` nas quatro listas e os stores já o passam. Faltam as caixas em roles, permissões e tenants |
-| aberto | Ordenação por coluna: a API declara e implementa `SortBy`/`SortDirection`, o front nunca os envia (ver `AD-006`) |
+| **fechado** | Pesquisa nos quatro ecrãs de lista (C67). Roles, permissões e tenants ganharam a caixa; todos voltam a `pageNumber=1` ao pesquisar |
+| **fechado** | Ordenação por cabeçalho (C68), só nos campos que cada `ApplySort` aceita: users `email`/`firstName`/`createdAt`, roles e permissions `name`, tenants `tenantKey`/`displayName`. Sem escolha do utilizador nenhum `sortBy` é enviado e o default da API manda |
 
 ## Achados em aberto
 

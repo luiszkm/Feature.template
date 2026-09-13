@@ -2,11 +2,14 @@ import { ChangeDetectionStrategy, Component, Injectable, computed, inject } from
 import { HttpClient } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { Observable, firstValueFrom } from 'rxjs';
-import { API_BASE, ListQuery, PaginatedList, listParams } from '../../core/api';
+import { API_BASE, ListQuery, PaginatedList, SortDirection, listParams } from '../../core/api';
 import { ConfirmService } from '../../shared/confirm';
 import { ListState } from '../../shared/list-state';
 import { ListStore } from '../../shared/list-store';
@@ -54,7 +57,15 @@ export class PermissionsStore extends ListStore<PermissionOutput> {
 @Component({
   selector: 'app-permissions-list',
   providers: [PermissionsStore],
-  imports: [ListState, MatButtonModule, MatPaginatorModule, MatTableModule],
+  imports: [
+    ListState,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatTableModule,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header>
@@ -63,6 +74,16 @@ export class PermissionsStore extends ListStore<PermissionOutput> {
         Criar permissão
       </button>
     </header>
+
+    <mat-form-field>
+      <mat-label>Pesquisar</mat-label>
+      <input
+        matInput
+        data-testid="search"
+        [value]="store.query().searchTerm ?? ''"
+        (input)="search($any($event.target).value)"
+      />
+    </mat-form-field>
 
     <app-list-state
       [status]="store.status()"
@@ -74,9 +95,15 @@ export class PermissionsStore extends ListStore<PermissionOutput> {
         Criar permissão
       </button>
 
-      <table mat-table [dataSource]="rows()" data-testid="permissions-table">
+      <table
+        mat-table
+        matSort
+        [dataSource]="rows()"
+        data-testid="permissions-table"
+        (matSortChange)="changeSort($event)"
+      >
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Nome</th>
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="name">Nome</th>
           <td mat-cell *matCellDef="let permission" [attr.data-testid]="'row-' + permission.id">
             {{ permission.name }}
           </td>
@@ -151,6 +178,18 @@ export class PermissionsList {
 
   constructor() {
     void this.store.load();
+  }
+
+  changeSort(sort: Sort): void {
+    void this.store.load({
+      pageNumber: 1,
+      sortBy: sort.direction ? sort.active : undefined,
+      sortDirection: sort.direction ? (sort.direction as SortDirection) : undefined,
+    });
+  }
+
+  search(searchTerm: string): Promise<void> {
+    return this.store.load({ pageNumber: 1, searchTerm: searchTerm || undefined });
   }
 
   changePage(event: PageEvent): Promise<void> {
