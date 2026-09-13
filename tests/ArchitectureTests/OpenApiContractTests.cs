@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace ArchitectureTests;
 
@@ -26,6 +27,8 @@ public sealed class OpenApiContractTests
         }
     }
 
+    private static string DocumentPath => Path.Combine(RepoRoot, "src", "Api", "openapi.json");
+
     private static IReadOnlySet<string> FeatureRoutes()
     {
         using var stream = File.OpenRead(Path.Combine(RepoRoot, "features.json"));
@@ -40,12 +43,11 @@ public sealed class OpenApiContractTests
 
     private static IReadOnlySet<string> DocumentedRoutes()
     {
-        var path = Path.Combine(RepoRoot, "src", "Api", "openapi.json");
         Assert.True(
-            File.Exists(path),
-            $"Missing {path}. Run: UPDATE_OPENAPI=1 dotnet test tests/E2ETests");
+            File.Exists(DocumentPath),
+            $"Missing {DocumentPath}. Run: UPDATE_OPENAPI=1 dotnet test tests/E2ETests");
 
-        using var stream = File.OpenRead(path);
+        using var stream = File.OpenRead(DocumentPath);
         using var document = JsonDocument.Parse(stream);
 
         return document.RootElement
@@ -58,7 +60,7 @@ public sealed class OpenApiContractTests
             .ToHashSet(StringComparer.Ordinal);
     }
 
-    /// <summary>`POST /api/v1/tenants/{id}` - upper-cased verb, route template as written.</summary>
+    /// <summary>`POST /api/v1/tenants/{tenantId}` - upper-cased verb, route template as written.</summary>
     private static string Canonical(string route)
     {
         var parts = route.Split(' ', 2, StringSplitOptions.TrimEntries);
@@ -86,11 +88,54 @@ public sealed class OpenApiContractTests
     }
 
     [Fact]
-    public void Document_ShouldBeGenerated_AtBuildTime()
+    public void Document_ShouldCover_EveryFeatureRoute()
     {
         var routes = DocumentedRoutes();
 
         Assert.Equal(FeatureRoutes().Count, routes.Count);
         Assert.Contains("POST /api/v1/identity/login", routes);
+    }
+
+    /// <summary>
+    /// The rate limiter is shared configuration, so a route joining the `auth` policy inherits a
+    /// `429` that nobody remembers to declare. The route-level guards above compare paths and
+    /// methods, so a missing status is exactly what they cannot see.
+    /// </summary>
+    [Fact]
+    public void EveryRateLimitedRoute_ShouldDeclare_TooManyRequests()
+    {
+        var featuresRoot = Path.Combine(RepoRoot, "src", "Api", "Features");
+
+        var rateLimited = Directory
+            .EnumerateFiles(featuresRoot, "*.cs", SearchOption.AllDirectories)
+            .Select(File.ReadAllText)
+            .Where(text => text.Contains("AuthRateLimitPolicy", StringComparison.Ordinal))
+            .SelectMany(text => Regex
+                .Matches(text, @"Map(Get|Post|Put|Delete)\(""(/api/v1/[^""]+)""")
+                .Select(match => new
+                {
+                    Method = match.Groups[1].Value.ToLowerInvariant(),
+                    Route = Regex.Replace(match.Groups[2].Value, @":[a-z]+\}", "}")
+                }))
+            .ToList();
+
+        Assert.NotEmpty(rateLimited);
+
+        using var stream = File.OpenRead(DocumentPath);
+        using var document = JsonDocument.Parse(stream);
+        var paths = document.RootElement.GetProperty("paths");
+
+        var undeclared = rateLimited
+            .Where(endpoint =>
+                !paths.TryGetProperty(endpoint.Route, out var route)
+                || !route.TryGetProperty(endpoint.Method, out var operation)
+                || !operation.GetProperty("responses").TryGetProperty("429", out _))
+            .Select(endpoint => $"{endpoint.Method.ToUpperInvariant()} {endpoint.Route}")
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(
+            undeclared.Count == 0,
+            "Rate-limited routes not declaring 429 in openapi.json: " + string.Join(", ", undeclared));
     }
 }

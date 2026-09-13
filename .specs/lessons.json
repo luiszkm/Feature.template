@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "promote_threshold": 2,
+  "window_days": 45,
+  "quarantine_threshold": 2,
+  "next_id": 15,
+  "lessons": [
+    {
+      "id": "L-001",
+      "key": "surviving_mutant::assert a screen s literal copy and its action at the component level not only the route that renders it",
+      "text": "Assert a screen's literal copy and its action at the component level, not only the route that renders it",
+      "signal": "surviving_mutant",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/shared/screens.ts:33 (src/web)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-002",
+      "key": "ac_gap::give each user visible label empty state and action its own assertion instead of asserting only that its container exists",
+      "text": "Give each user-visible label, empty state and action its own assertion instead of asserting only that its container exists",
+      "signal": "ac_gap",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C19 (src/web)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-003",
+      "key": "ac_gap::split a check that names two behaviours into one check per behaviour so a single proof cannot cover half of it",
+      "text": "Split a check that names two behaviours into one check per behaviour so a single proof cannot cover half of it",
+      "signal": "ac_gap",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C15 (.specs)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-004",
+      "key": "ac_gap::give every route the client calls a surface row a coverage row and a check including logout",
+      "text": "Give every route the client calls a Surface row, a Coverage row and a check, including logout",
+      "signal": "ac_gap",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/shell/shell.ts:102 (.specs)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-005",
+      "key": "ac_gap::give every branch of a decision table its own asserted case including opt out context flags",
+      "text": "Give every branch of a decision table its own asserted case, including opt-out context flags",
+      "signal": "ac_gap",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/core/http/api.interceptor.ts:29 (src/web)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-006",
+      "key": "spec_deviation::re read the versioned openapi contract before asserting what the api does or does not expose including query parameters",
+      "text": "Re-read the versioned OpenAPI contract before asserting what the API does or does not expose, including query parameters",
+      "signal": "spec_deviation",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/Api/openapi.json (.specs)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-007",
+      "key": "spec_deviation::when a decision is superseded update every place the plan states it acceptance criteria flow and impact not only the door table",
+      "text": "When a decision is superseded, update every place the plan states it - acceptance criteria, flow and impact - not only the door table",
+      "signal": "spec_deviation",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/web-frontend/plan.md:53 (.specs)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-008",
+      "key": "spec_deviation::check each swept row against the behaviour its own check proves before writing it",
+      "text": "Check each Swept row against the behaviour its own check proves before writing it",
+      "signal": "spec_deviation",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/web-frontend/checks.md:305 (.specs)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-009",
+      "key": "gate_fail::write each proof command with the runner the project s test target actually invokes and run it once before recording it",
+      "text": "Write each proof command with the runner the project's test target actually invokes, and run it once before recording it",
+      "signal": "gate_fail",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/web-frontend/checks.md:19 (src/web)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-010",
+      "key": "gate_fail::confirm a test name filter selects a real test because the runner exits zero when it matches nothing",
+      "text": "Confirm a test-name filter selects a real test, because the runner exits zero when it matches nothing",
+      "signal": "gate_fail",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        ".specs/features/web-frontend/checks.md:48 (src/web)"
+      ],
+      "created": "2026-09-13T13:27:24Z",
+      "last_seen": "2026-09-13T13:27:24Z"
+    },
+    {
+      "id": "L-011",
+      "key": "spec_deviation::declare a shared policy s rejection status on every route that carries the policy not only the routes the feature touches",
+      "text": "Declare a shared policy's rejection status on every route that carries the policy, not only the routes the feature touches",
+      "signal": "spec_deviation",
+      "scope": "src/Api",
+      "status": "candidate",
+      "features": [
+        "auth-cookie-contract"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/Api/Features/Identity/RegisterUser.cs:69 (src/Api)"
+      ],
+      "created": "2026-09-13T13:45:28Z",
+      "last_seen": "2026-09-13T13:45:28Z"
+    },
+    {
+      "id": "L-012",
+      "key": "ac_gap::prove a status the contract declares with an assertion that names it not with a snapshot equality test that accepts its removal once the snapshot is regenerated",
+      "text": "Prove a status the contract declares with an assertion that names it, not with a snapshot-equality test that accepts its removal once the snapshot is regenerated",
+      "signal": "ac_gap",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "auth-cookie-contract"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C19 (tests)"
+      ],
+      "created": "2026-09-13T13:45:28Z",
+      "last_seen": "2026-09-13T13:45:28Z"
+    },
+    {
+      "id": "L-013",
+      "key": "spec_precision_gap::assert that the calls below a limit succeed as well as the one that trips it so an off by one in the limit cannot pass",
+      "text": "Assert that the calls below a limit succeed as well as the one that trips it, so an off-by-one in the limit cannot pass",
+      "signal": "spec_precision_gap",
+      "scope": "tests",
+      "status": "candidate",
+      "features": [
+        "auth-cookie-contract"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "tests/E2ETests/Identity/IdentityAuthE2ETests.cs:184 (tests)"
+      ],
+      "created": "2026-09-13T13:45:28Z",
+      "last_seen": "2026-09-13T13:45:28Z"
+    },
+    {
+      "id": "L-014",
+      "key": "spec_precision_gap::assert the order of two effects a claim sequences not only that both happened",
+      "text": "Assert the order of two effects a claim sequences, not only that both happened",
+      "signal": "spec_precision_gap",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "auth-cookie-contract"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/shell/shell.spec.ts:48 (src/web)"
+      ],
+      "created": "2026-09-13T13:45:28Z",
+      "last_seen": "2026-09-13T13:45:28Z"
+    }
+  ]
+}

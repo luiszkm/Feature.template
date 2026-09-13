@@ -69,6 +69,7 @@ public sealed class RegisterUserEndpoint : IEndpoint
         .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
         .Produces<UserOutput>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict);
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests);
     }
 }

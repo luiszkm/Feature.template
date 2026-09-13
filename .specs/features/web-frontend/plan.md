@@ -40,7 +40,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | Produção | imagem nginx separada a servir `dist/` e a fazer proxy de `/api` | espelha o `docker-compose.yml` atual, que já separa `api` de infra | n |
 | Tenant por omissão no campo de login | `dev` | é o tenant semeado e documentado em `getting-started.md` | y |
 | Idioma da UI | português de Portugal, igual aos docs do repo | os docs e o `AGENTS.md` estão em pt-PT | n |
-| Utilizador delegou o resto das escolhas visuais | densidade compacta nas tabelas; a ordem das listas é a que a API devolver, porque nenhum endpoint aceita sort | user delegated | y |
+| Utilizador delegou o resto das escolhas visuais | densidade compacta nas tabelas; a ordem é o default da API (`createdAt` desc). O front não envia `sortBy`/`sortDirection`, embora o contrato os declare | user delegated | y |
 
 **Open questions:** none - all resolved or logged above.
 
@@ -50,7 +50,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 
 **Acceptance Criteria**
 
-1. WHEN o utilizador submete o formulário de login com tenant, email e password válidos THEN o sistema SHALL guardar o `accessToken` em memória, `refreshToken` e `tenantKey` em `localStorage`, e navegar para `/users`
+1. WHEN o utilizador submete o formulário de login com tenant, email e password válidos THEN o sistema SHALL guardar o `accessToken` em memória, `tenantKey` e `user` em `localStorage`, e navegar para `/users` (forma original superseded por `auth-cookie-contract`: o refresh token passou ao cookie `pt_refresh`)
 2. IF `POST /api/v1/identity/login` devolver `401` THEN o sistema SHALL manter o utilizador em `/login`, mostrar o `detail` do ProblemDetails e preservar o valor do campo email
 3. IF a resposta for `400` com `ValidationProblemDetails` THEN o sistema SHALL mostrar cada mensagem de `errors[campo]` sob o campo correspondente do formulário
 4. The system SHALL enviar o header `X-Tenant: <tenantKey>` em todas as requisições para `/api/v1/**`
@@ -163,7 +163,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | screen `users-list` | estado de carregamento | AC 14 |
 | screen `users-list` | estado de erro | AC 16 |
 | screen `users-list` | estado não autorizado | AC 10, AC 21 |
-| screen `users-list` | densidade e ordenação | AC 13, AC 17 - densidade compacta; ordenação n/a - a API não expõe sort e o front não inventa uma |
+| screen `users-list` | densidade e ordenação | AC 13, AC 17 - densidade compacta; ordem `createdAt` desc, estabilizada por `Id`, imposta pelo default da API (`User.cs` `ApplySort`) |
 | screen `users-list` | ação destrutiva confirma | AC 19, AC 20 |
 | screen `user-form` | estado de erro | AC 3 - mesma regra de `ValidationProblemDetails` do login |
 | screen `user-form` | estado de carregamento | AC 22 - skeleton nos campos até `GET` responder |
@@ -172,16 +172,16 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | screen `roles-list` | estado de carregamento | AC 14 - mesmo padrão partilhado |
 | screen `roles-list` | estado de erro | AC 16 - mesmo padrão partilhado |
 | screen `roles-list` | ação destrutiva confirma | AC 30 |
-| screen `roles-list` | densidade e ordenação | AC 24 - densidade compacta; ordenação n/a - a API não expõe sort |
+| screen `roles-list` | densidade e ordenação | AC 24 - densidade compacta; ordem `createdAt` desc pelo default da API (`Role.cs` `ApplySort`), não por nome |
 | screen `role-detail` | estado vazio | AC 25 - "Sem permissões atribuídas" |
 | screen `role-detail` | ação destrutiva confirma | AC 27 - revogar permissão pede confirmação |
 | screen `permissions-list` | estado vazio | AC 32 - "Nenhuma permissão" |
 | screen `permissions-list` | ação destrutiva confirma | AC 32 - eliminar permissão pede confirmação |
-| screen `permissions-list` | densidade e ordenação | AC 32 - densidade compacta; ordenação n/a - a API não expõe sort |
+| screen `permissions-list` | densidade e ordenação | AC 32 - densidade compacta; ordem `createdAt` desc pelo default da API (`Permission.cs` `ApplySort`), não por nome |
 | screen `tenants-list` | estado vazio | AC 33 - "Nenhum tenant" |
 | screen `tenants-list` | estado de erro | AC 16 - mesmo padrão partilhado |
 | screen `tenants-list` | ação destrutiva confirma | AC 37 - desativar pede confirmação e diz que é reversível por edição |
-| screen `tenants-list` | densidade e ordenação | AC 33 - densidade compacta; ordenação n/a - a API não expõe sort |
+| screen `tenants-list` | densidade e ordenação | AC 33 - densidade compacta; ordem `createdAt` desc pelo default da API (`Tenant.cs` `ApplySort`), não por chave |
 | screen `tenant-form` | estado de erro | AC 35 |
 | screen `ai-chat` | estado vazio | AC 40 - "Faça uma pergunta" antes da primeira mensagem |
 | screen `ai-chat` | estado de carregamento | AC 41 |
@@ -202,8 +202,8 @@ Reutiliza o que a API já decide em vez de duplicar: autorização continua serv
 
 1. browser abre `/login` -> `web/features/identity/login` (new, no door - placement per conventions) - Signal Form com tenant, email, password
 2. `web/core/http` (new, door 2) - interceptor acrescenta `X-Tenant` e `Authorization`, e é onde a fila de refresh vive
-3. `POST /api/v1/identity/login` -> `Api.Features.Identity` (exists) - devolve `AuthTokenOutput` com `accessToken`, `refreshToken`, `expiresIn`, `user.roles`
-4. `web/core/session` (new, door 3) - guarda o refresh em `localStorage`, o access em memória, descodifica o payload para as claims `permission`
+3. `POST /api/v1/identity/login` -> `Api.Features.Identity` (exists) - devolve `AuthTokenResponse` com `accessToken`, `expiresIn`, `user.roles`, e emite o cookie `pt_refresh`
+4. `web/core/session` (new, door 3 - superseded) - guarda `tenantKey` e `user` em `localStorage`, o access em memória, e descodifica o payload para as claims `permission`; o refresh vive no cookie
 5. `web/core/guards` (new, no door - placement per conventions) - `authGuard` e `permissionGuard` leem os signals da sessão antes de cada navegação
 6. `web/features/{identity,authorization,tenants,ai}/*` (new, door 1) - um ficheiro por slice: cliente tipado + store de signals + componente
 7. out: ecrã renderizado; em `401` o passo 2 chama `POST /api/v1/identity/refresh` (exists) uma vez e repete o pedido original
@@ -270,7 +270,7 @@ URLs de aplicação expostos pelo front (sem statuses — são rotas do router, 
 | Front | What changes |
 | --- | --- |
 | domain | novo termo: `tenantKey` passa a ser visível ao utilizador final no ecrã de login — antes era só um detalhe de header lido pelo `SubdomainThenHeaderTenantResolver` |
-| domain | novo termo: `sessão` no front — access em memória + refresh em `localStorage`; não existe entidade equivalente server-side, `RefreshToken` continua a ser a autoridade |
+| domain | novo termo: `sessão` no front — access em memória + refresh no cookie `pt_refresh`; nada de token em `localStorage`. Não existe entidade equivalente server-side, `RefreshToken` continua a ser a autoridade |
 | domain | termo existente: `permission` deixa de ser só uma claim consumida pelas policies e passa a decidir o que é renderizado; quem passa a ramificar nele é `permissionGuard` e as diretivas de visibilidade das tabelas — nenhum consumidor server-side muda |
 | stored data | nada a migrar do lado do servidor; nenhuma migração EF Core é acrescentada ou alterada |
 | stored data | novas chaves no browser: `pt.auth`, `pt.tenant` — sem versão anterior, logo sem backfill; limpar em logout é o AC 11 |

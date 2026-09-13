@@ -24,6 +24,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/identity/user-form').then((m) => m.UserForm),
       },
       {
+        path: 'users/:userId/edit',
+        loadComponent: () => import('./features/identity/user-form').then((m) => m.UserForm),
+      },
+      {
         path: 'users/:userId',
         loadComponent: () => import('./features/identity/user-detail').then((m) => m.UserDetail),
       },

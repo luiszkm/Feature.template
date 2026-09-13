@@ -54,7 +54,7 @@ Proof: `cd src/web && npx playwright test e2e/auth.spec.ts -g "renova o token ex
 
 **C13** - O documento servido pelo host de testes é idêntico ao `src/Api/openapi.json` versionado, e cobre as 30 rotas de `features.json` (CONTRACT-01, AC 9)
 Proof: `dotnet test tests/E2ETests --filter "FullyQualifiedName~OpenApiDocumentTests.Document_ShouldMatch_TheCommittedContract"`
-Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~OpenApiContractTests.Document_ShouldBeGenerated_AtBuildTime"`
+Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~OpenApiContractTests.Document_ShouldCover_EveryFeatureRoute"`
 
 **C14** - Uma rota de `features.json` ausente de `openapi.json` falha os testes de arquitetura (CONTRACT-01, AC 10)
 Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~OpenApiContractTests.EveryFeatureRoute_ShouldExist_InTheDocument"`
@@ -73,8 +73,9 @@ Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~Solutio
 **C18** - Os GUIDs de projeto da solução são os que `.template.config/template.json` regenera (BUILD-01, AC 13)
 Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~SolutionFileTests.ProjectGuids_ShouldMatch_TemplateConfig"`
 
-**C19** - A 21ª chamada a `POST /api/v1/identity/logout` dentro da janela devolve `429`, e o contrato declara esse status nas três rotas com a política `auth` (AUTH-01, AC 4)
+**C19** - As 20 primeiras chamadas a `POST /api/v1/identity/logout` dentro da janela devolvem `204` e a 21ª devolve `429`; e toda a rota com a política `auth` declara `429` no contrato - são quatro, incluindo `register` (AUTH-01, AC 4)
 Proof: `dotnet test tests/E2ETests --filter "FullyQualifiedName~IdentityAuthE2ETests.Logout_ShouldReturn429_WhenTheAuthLimiterTrips"`
+Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~OpenApiContractTests.EveryRateLimitedRoute_ShouldDeclare_TooManyRequests"`
 
 ## Coverage
 
@@ -89,7 +90,7 @@ front já cobre (`401` fora do caminho de refresh, `429`) apoiam-se nos checks d
 | `POST /api/v1/identity/logout` statuses (2) | 204 C5, C6 · 429 C19 | - |
 | atributos do cookie (5) | `HttpOnly` C1 · `SameSite=Strict` C1 · `Path=/api/v1/identity` C1 · `Max-Age` C1 · `Secure` C7 | - |
 | one-way doors vivos do plano (5) | cookie de refresh C1 · corpo sem token C2 · rota de logout C5 · documento versionado C13 · solução na raiz C17, C18 | - |
-| statuses `429` declarados no contrato (3 rotas) | login C19 · refresh C19 · logout C19 - o teste trip a política `auth` partilhada pelas três | - |
+| statuses `429` declarados no contrato (4 rotas) | login C19 · refresh C19 · logout C19 · register C19 - a guarda varre os ficheiros que usam `AuthRateLimitPolicy` e exige `429` no documento | - |
 | direções de drift do contrato (2) | features.json -> documento C14 · documento -> features.json C15 | - |
 | superfícies do front tocadas (3) | interceptor C8 · sessão C9 · shell C11 | - |
 | bootstrap: providers HTTP (3 montagens) | `app.config.ts` C8 · setup do Vitest C8 · build servido ao Playwright C12 | - |

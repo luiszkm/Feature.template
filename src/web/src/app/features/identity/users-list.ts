@@ -103,7 +103,7 @@ export class UsersStore extends ListStore<UserOutput> {
               *appHasPermission="permissions.userManage"
               mat-button
               [attr.data-testid]="'edit-' + user.id"
-              [routerLink]="['/users', user.id]"
+              [routerLink]="['/users', user.id, 'edit']"
               >Editar</a
             >
             <button

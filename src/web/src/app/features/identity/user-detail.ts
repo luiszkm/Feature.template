@@ -7,6 +7,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE, LOCAL_403 } from '../../core/api';
+import { Permissions } from '../../core/permissions';
+import { SessionStore } from '../../core/session/session.store';
 import { NotFound } from '../../shared/screens';
 import { Problem, parseProblem, problemKind } from '../../shared/problem-details';
 import { UserOutput } from './identity.contracts';
@@ -30,6 +32,14 @@ export const NO_ROLE_ACCESS_MESSAGE = 'Sem acesso aos roles';
           <h1 data-testid="user-email">{{ detail.email }}</h1>
           <p data-testid="user-name">{{ detail.firstName }} {{ detail.lastName }}</p>
           <p data-testid="user-created">{{ detail.createdAt | date: 'short' }}</p>
+          @if (canEdit(detail)) {
+            <a
+              mat-stroked-button
+              data-testid="detail-edit"
+              [routerLink]="['/users', detail.id, 'edit']"
+              >Editar</a
+            >
+          }
           <a mat-stroked-button [routerLink]="['/users', detail.id, 'roles']">Gerir roles</a>
         </mat-card>
       }
@@ -52,6 +62,7 @@ export const NO_ROLE_ACCESS_MESSAGE = 'Sem acesso aos roles';
 export class UserDetail {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly session = inject(SessionStore);
 
   readonly noAccessMessage = NO_ROLE_ACCESS_MESSAGE;
   readonly user = signal<UserOutput | null>(null);
@@ -63,6 +74,13 @@ export class UserDetail {
   constructor() {
     const userId = this.route.snapshot.paramMap.get('userId') ?? '';
     void this.load(userId);
+  }
+
+  /** Mirrors the API's `UserManageOrSelf`: managers edit anyone, everyone edits themselves. */
+  canEdit(detail: UserOutput): boolean {
+    return (
+      this.session.hasPermission(Permissions.userManage) || this.session.user()?.id === detail.id
+    );
   }
 
   notFound(): boolean {

@@ -5,7 +5,7 @@ Plan: `.specs/features/web-frontend/plan.md`
 
 ## Intent
 
-65 checks in 6 slices · 7 one-way doors · 0 open
+66 checks in 6 slices · 7 one-way doors · 0 open
 
 ## Checks
 
@@ -219,6 +219,9 @@ Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~Templat
 **C64** - Os providers HTTP (interceptor de tenant e de autenticação) estão registados nos três sítios que montam a aplicação: `app.config.ts`, o setup do Vitest e o build servido ao Playwright (WEB-06, AC 43)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "providers http em todas as montagens"`
 
+**C66** - O botão Editar da lista de utilizadores abre `/users/{userId}/edit` com o formulário preenchido, e guardar mostra o valor novo na linha da lista (WEB-02, AC 23)
+Proof: `cd src/web && npx playwright test e2e/users.spec.ts -g "edita um utilizador a partir da lista"`
+
 **C65** - `npx playwright test e2e/auth.spec.ts` prova, contra a API real, que uma sessão sem access token em memória (o estado a seguir a recarregar a página, igual ao de um token expirado) é renovada a partir do refresh token sem devolver o utilizador ao login (WEB-01, AC 6)
 Proof: `cd src/web && npx playwright test e2e/auth.spec.ts -g "renova o token expirado"`
 
@@ -257,7 +260,7 @@ Uma set row por rota da secção `Surface` do plano; os membros são os statuses
 | `PUT /api/v1/tenants/{id}` statuses (5) | 200 C50 · 400 C51 · 401 C6 · 403 C10 · 404 C30 | - |
 | `DELETE /api/v1/tenants/{id}` statuses (4) | 204 C52 · 401 C6 · 403 C10 · 404 C30 | - |
 | `POST /api/v1/ai/chat` statuses (3) | 200 C55 · 401 C57 · 404 C54 | - |
-| ecrãs do plano (14) | login C1 · shell C12 · users-list C17 · user-form C22 · user-detail C26 · user-roles C41 · roles-list C32 · role-detail C33 · permissions-list C42 · tenants-list C47 · tenant-form C48 · ai-chat C55 · forbidden C10 · not-found C28 | - |
+| ecrãs do plano (14) | login C1 · shell C12 · users-list C17 · user-form C22, C66 · user-detail C26 · user-roles C41 · roles-list C32 · role-detail C33 · permissions-list C42 · tenants-list C47 · tenant-form C48 · ai-chat C55 · forbidden C10 · not-found C28 | - |
 | estados dos 4 ecrãs de lista (12) | C18, C19 e C20, cada um table-driven sobre os 4 ecrãs de lista - 12 combinações | - |
 | one-way doors do plano (7) | VSA no front C59 · interceptor único C4 · sessão no browser C11 · permissões do JWT C9 · cliente à mão C58 · tenant por chave C4 · exclude do template C63 | - |
 | permissões que escondem ações (5) | C25, table-driven sobre `identity.user.manage`, `authorization.role.manage`, `authorization.permission.manage`, `tenants.manage` e a role `Admin` | - |

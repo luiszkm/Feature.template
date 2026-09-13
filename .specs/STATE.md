@@ -12,7 +12,15 @@ agente precisa de saber antes de tocar nestas features.
 | AD-003 | `src/Api/openapi.json` versionado é a autoridade entre API, `features.json` e o front; regenerado por `UPDATE_OPENAPI=1 dotnet test tests/E2ETests` | active |
 | AD-004 | Clientes HTTP do front escritos à mão, sem codegen; a guarda de contrato cobre o risco | active |
 | AD-005 | Projeto renomeado `App` → `Api` (namespaces, assembly, testes, contrato, infra) | active |
-| AD-006 | As listas não têm ordenação: nenhum endpoint aceita sort, e o front não inventa uma | active |
+| AD-006 | As listas usam o default de ordenação da API (`createdAt` desc, estável por `Id`). O contrato **declara** `SortBy`/`SortDirection` e os quatro repositórios implementam-nos; o front não os envia. Ordenação por coluna fica por fazer | active |
+
+## Lacunas de implementação
+
+| Estado | Item |
+| --- | --- |
+| **fechado** | Edição de utilizador era inalcançável: `users/:userId` montava o ecrã de leitura e nenhuma rota montava o `UserForm` com um id. Rota `users/:userId/edit` acrescentada, botões da lista e do detalhe ligados, e um e2e percorre o caminho (C66). O detalhe só mostra Editar a quem tem `identity.user.manage` ou a si próprio, espelhando a policy `UserManageOrSelf` |
+| aberto | Pesquisa existe só em utilizadores; a API aceita `searchTerm` nas quatro listas e os stores já o passam. Faltam as caixas em roles, permissões e tenants |
+| aberto | Ordenação por coluna: a API declara e implementa `SortBy`/`SortDirection`, o front nunca os envia (ver `AD-006`) |
 
 ## Achados em aberto
 
@@ -34,7 +42,7 @@ corrigidos; estes ficam por decidir e **não** estão provados.
 
 | # | Achado | Porque ficou |
 | --- | --- | --- |
-| 7 | As guardas de contrato comparam caminhos e métodos, **não statuses** — um drift de status passa nas duas direções | alargar a guarda é trabalho a sério, não uma correção |
+| 7 | As guardas de contrato comparam caminhos e métodos, e **agora também o `429` das rotas com política `auth`** (`EveryRateLimitedRoute_ShouldDeclare_TooManyRequests`). Os restantes statuses continuam sem guarda | fechado só para o caso que falhou; o geral fica |
 | 8 | Precision gaps: C1 não assere o valor do `Max-Age`, C10 não assere que o refresh vai sem corpo, C11 não assere a ordem "revogar antes de limpar" | |
 | 9 | `docs/security/RBAC_MATRIX.md` é uma linha de `Observable` sem check (o documento está correto; ninguém o verifica) | |
 
