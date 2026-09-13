@@ -1,6 +1,6 @@
-using App.Host;
-using App.Host.Configurations;
-using App.Shared;
+using Api.Host;
+using Api.Host.Configurations;
+using Api.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 

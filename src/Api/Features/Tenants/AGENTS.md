@@ -42,7 +42,7 @@ Ver `features.json` com `"m": "Tenants"`: CreateTenant, ListTenants, GetTenant, 
 ## Testes
 
 ```
-tests/App.Tests/Tenants/
+tests/Api.Tests/Tenants/
   CreateTenantTests.cs
   TenantManagementTests.cs
 ```

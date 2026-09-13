@@ -1,9 +1,9 @@
-using App.Features.Tenants;
-using App.Shared;
+using Api.Features.Tenants;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Host.Seeders;
+namespace Api.Host.Seeders;
 
 internal static class TenantSeeder
 {

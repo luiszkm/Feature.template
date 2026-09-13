@@ -1,10 +1,10 @@
-using App.Features.Ai;
-using App.Shared;
-using App.Tests.Common;
+using Api.Features.Ai;
+using Api.Shared;
+using Api.Tests.Common;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Tests.Ai;
+namespace Api.Tests.Ai;
 
 public sealed class ChatAiHandlerTests
 {

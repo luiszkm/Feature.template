@@ -1,11 +1,11 @@
-using App.Host;
-using App.Host.Extensions;
-using App.Host.Security;
-using App.Shared;
+using Api.Host;
+using Api.Host.Extensions;
+using Api.Host.Security;
+using Api.Shared;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 public sealed record ChatAiCommand(string Message, IReadOnlyList<LlmMessage>? History = null)
     : ICommand<ChatAiOutput>;

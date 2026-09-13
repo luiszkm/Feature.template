@@ -1,10 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using App.Features.Identity;
-using App.Shared;
+using Api.Features.Identity;
+using Api.Shared;
 using MediatR;
 
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 public sealed class GetUsersSummaryTool(
     IMediator mediator,

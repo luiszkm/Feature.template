@@ -1,4 +1,4 @@
-namespace App.Features.Tenants;
+namespace Api.Features.Tenants;
 
 public static class TenantsPermissions
 {

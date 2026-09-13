@@ -1,10 +1,10 @@
-using App.Features.Authorization;
-using App.Host.Security;
-using App.Shared;
+using Api.Features.Authorization;
+using Api.Host.Security;
+using Api.Shared;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Authorization;
+namespace Api.Features.Authorization;
 
 public sealed record PermissionOutput(Guid Id, string Name, string Description);
 

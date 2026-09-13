@@ -1,4 +1,4 @@
-namespace App.Host.Security;
+namespace Api.Host.Security;
 
 public sealed class JwtSettings
 {

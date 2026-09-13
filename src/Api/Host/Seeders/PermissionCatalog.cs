@@ -1,8 +1,8 @@
-using App.Features.Authorization;
-using App.Features.Identity;
-using App.Features.Tenants;
+using Api.Features.Authorization;
+using Api.Features.Identity;
+using Api.Features.Tenants;
 
-namespace App.Host.Seeders;
+namespace Api.Host.Seeders;
 
 internal static class PermissionCatalog
 {

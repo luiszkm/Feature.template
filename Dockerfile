@@ -13,13 +13,13 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS restore
 WORKDIR /src
-COPY src/App/App.csproj src/App/
-RUN dotnet restore src/App/App.csproj
+COPY src/Api/Api.csproj src/Api/
+RUN dotnet restore src/Api/Api.csproj
 
 FROM restore AS publish
 ARG BUILD_CONFIGURATION=Release
-COPY src/App/ src/App/
-RUN dotnet publish src/App/App.csproj \
+COPY src/Api/ src/Api/
+RUN dotnet publish src/Api/Api.csproj \
     --no-restore \
     -c $BUILD_CONFIGURATION \
     -p:UseAppHost=false \
@@ -29,4 +29,4 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 USER app
-ENTRYPOINT ["dotnet", "App.dll"]
+ENTRYPOINT ["dotnet", "Api.dll"]

@@ -1,4 +1,4 @@
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 public sealed class ToolRegistry(IEnumerable<ITool> tools)
 {

@@ -1,8 +1,8 @@
-using App.Features.Identity;
-using App.Tests.Common;
+using Api.Features.Identity;
+using Api.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Tests.Identity;
+namespace Api.Tests.Identity;
 
 file static class SecurityStampTestDb
 {

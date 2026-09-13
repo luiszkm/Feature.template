@@ -1,4 +1,4 @@
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public static class IdentityPermissions
 {

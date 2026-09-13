@@ -1,9 +1,9 @@
-using App.Host.Security;
-using App.Shared;
+using Api.Host.Security;
+using Api.Shared;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Authorization;
+namespace Api.Features.Authorization;
 
 public sealed record ListPermissionsQuery(
     int PageNumber = 1,

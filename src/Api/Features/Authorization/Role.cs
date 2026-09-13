@@ -1,8 +1,8 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace App.Features.Authorization;
+namespace Api.Features.Authorization;
 
 public sealed class Role : AggregateRoot, IMultiTenantEntity
 {

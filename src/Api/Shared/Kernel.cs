@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public interface IAuditableEntity
 {

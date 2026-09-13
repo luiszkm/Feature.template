@@ -1,4 +1,4 @@
-namespace App.Features.Authorization;
+namespace Api.Features.Authorization;
 
 public static class AuthorizationPermissions
 {

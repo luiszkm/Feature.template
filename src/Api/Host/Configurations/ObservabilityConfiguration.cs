@@ -2,7 +2,7 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 
-namespace App.Host.Configurations;
+namespace Api.Host.Configurations;
 
 public static class ObservabilityConfiguration
 {

@@ -1,4 +1,4 @@
-namespace App.Shared;
+namespace Api.Shared;
 
 public enum TenantIsolationMode
 {

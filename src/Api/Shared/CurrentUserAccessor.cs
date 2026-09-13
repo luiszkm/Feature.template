@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public interface ICurrentUserAccessor
 {

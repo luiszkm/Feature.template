@@ -9,13 +9,13 @@ disable-model-invocation: true
 
 Arguments: `{Module} {Slice}` — e.g. `/new-slice Identity Login`
 
-Read `src/App/Features/{Module}/AGENTS.md` first. See also `docs/architecture/guidelines.md`.
+Read `src/Api/Features/{Module}/AGENTS.md` first. See also `docs/architecture/guidelines.md`.
 
 ## Creates (always both)
 
 ```
-src/App/Features/{Module}/{Slice}.cs
-tests/App.Tests/{Module}/{Slice}Tests.cs
+src/Api/Features/{Module}/{Slice}.cs
+tests/Api.Tests/{Module}/{Slice}Tests.cs
 ```
 
 Update `features.json`:
@@ -23,18 +23,28 @@ Update `features.json`:
 ```json
 "{Slice}": {
   "m": "{Module}",
-  "app": "src/App/Features/{Module}/{Slice}.cs",
-  "test": "tests/App.Tests/{Module}/{Slice}Tests.cs",
+  "app": "src/Api/Features/{Module}/{Slice}.cs",
+  "test": "tests/Api.Tests/{Module}/{Slice}Tests.cs",
   "route": "METHOD /api/v1/...",
   "featureFlag": null,
   "policy": "..."
 }
 ```
 
+Regenerate the contract and add the front client — both are enforced:
+
+```bash
+UPDATE_OPENAPI=1 dotnet test tests/E2ETests    # src/Api/openapi.json
+```
+
+```
+src/web/src/app/features/{module}/{slice}.ts   # npm test fails without a client
+```
+
 ## {Slice}.cs template
 
 ```csharp
-namespace App.Features.{Module};
+namespace Api.Features.{Module};
 
 public sealed record {Slice}Command(...) : ICommand<{Slice}Response>;
 public sealed record {Slice}Response(...);
@@ -62,6 +72,7 @@ public sealed class {Slice}Endpoint : IEndpoint
 
 ```bash
 dotnet build
-dotnet test tests/App.Tests --filter {Slice}
-dotnet test tests/ArchitectureTests
+dotnet test tests/Api.Tests --filter {Slice}
+dotnet test tests/ArchitectureTests          # features.json <-> openapi.json, both directions
+cd src/web && npm test                       # route coverage + layer folders
 ```

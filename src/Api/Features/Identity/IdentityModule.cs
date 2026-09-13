@@ -1,10 +1,10 @@
-using App.Host.Security;
-using App.Shared;
+using Api.Host.Security;
+using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public static class IdentityModule
 {

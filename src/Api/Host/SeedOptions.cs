@@ -1,4 +1,4 @@
-namespace App.Host;
+namespace Api.Host;
 
 public sealed class SeedOptions
 {

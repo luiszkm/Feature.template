@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
-using App.Shared;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed class RefreshToken : Entity, IMultiTenantEntity
 {

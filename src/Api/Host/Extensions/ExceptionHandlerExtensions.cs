@@ -1,8 +1,8 @@
-using App.Shared;
+using Api.Shared;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
-namespace App.Host.Extensions;
+namespace Api.Host.Extensions;
 
 public static class ExceptionHandlerExtensions
 {

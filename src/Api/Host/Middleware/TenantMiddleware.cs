@@ -1,7 +1,7 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.Extensions.Options;
 
-namespace App.Host.Middleware;
+namespace Api.Host.Middleware;
 
 public sealed class TenantMiddleware(
     RequestDelegate next,

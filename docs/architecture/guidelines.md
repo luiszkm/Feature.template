@@ -52,12 +52,14 @@ Queries usam `IQuery<T>` em vez de `ICommand<T>`.
 
 | Tipo | Local | Harness |
 |------|-------|---------|
-| Handler / validator | `tests/App.Tests/{Module}/{Slice}Tests.cs` | `TestServiceFactory` + InMemory |
+| Handler / validator | `tests/Api.Tests/{Module}/{Slice}Tests.cs` | `TestServiceFactory` + InMemory |
 | Arquitetura | `tests/ArchitectureTests/` | NetArchTest |
 | HTTP | `tests/E2ETests/` | `E2EWebApplicationFactory` |
+| Contrato | `tests/E2ETests/Common/OpenApiDocumentTests.cs` | host em memória vs `src/Api/openapi.json` versionado |
+| Front | `src/web/src/app/**/*.spec.ts` | Vitest + MSW (ver `src/web/AGENTS.md`) |
 
 - Definir tenant antes de resolver handlers: `TestServiceFactory.SetTenant(provider, tenantId)`
-- Nunca colocar testes em `src/App/`
+- Nunca colocar testes em `src/Api/`
 
 ## Limites
 
@@ -78,10 +80,12 @@ Queries usam `IQuery<T>` em vez de `ICommand<T>`.
 
 1. Ler `Features/{Module}/AGENTS.md`
 2. Criar `Features/{Module}/{Slice}.cs`
-3. Criar `tests/App.Tests/{Module}/{Slice}Tests.cs`
+3. Criar `tests/Api.Tests/{Module}/{Slice}Tests.cs`
 4. Atualizar `features.json` (app, test, route, policy, featureFlag)
-5. Atualizar `RBAC_MATRIX.md` se endpoint protegido novo
-6. Atualizar `Features/{Module}/AGENTS.md` se superfície pública mudou
-7. **Não** editar `Program.cs`
+5. Regenerar o contrato: `UPDATE_OPENAPI=1 dotnet test tests/E2ETests` — `tests/ArchitectureTests` falha se `features.json` e `src/Api/openapi.json` divergirem, nos dois sentidos
+6. Criar o cliente no front (`src/web/src/app/features/{module}/`) — `npm test` falha se uma rota de `features.json` não tiver cliente
+7. Atualizar `RBAC_MATRIX.md` se endpoint protegido novo
+8. Atualizar `Features/{Module}/AGENTS.md` se superfície pública mudou
+9. **Não** editar `Program.cs`
 
 Skills: `/new-slice {Module} {Slice}` · `/new-module {Module}` · `/vsa-review`

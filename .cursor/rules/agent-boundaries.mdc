@@ -13,6 +13,9 @@ alwaysApply: true
 
 ## Never auto-run
 - `git push --force`, hard reset, mass delete
+- `rm -rf` on a path that differs from an existing one only by case. macOS resolves `src/App` and
+  `src/app` to the **same** directory, so a backend path typed from inside `src/web/` deletes the
+  front end. Use absolute paths and `ls` the target first.
 - Commits / PRs unless the user explicitly asked
 - Prod/staging mutators (deploy, DB drop, secret rotate)
 

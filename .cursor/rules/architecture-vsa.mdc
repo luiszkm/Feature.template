@@ -1,18 +1,18 @@
 ---
 description: "VSA v2.1 layout for Product.Template. WHEN: editing Features/, Host/, Shared/, or tests. SKIP: unrelated docs/CI-only edits."
-globs: src/App/**, tests/App.Tests/**, tests/ArchitectureTests/**, tests/E2ETests/**
+globs: src/Api/**, tests/Api.Tests/**, tests/ArchitectureTests/**, tests/E2ETests/**
 alwaysApply: false
 ---
 
 # Architecture VSA v2.1
 
 Full docs: `docs/architecture/vsa.md` · `docs/architecture/guidelines.md`  
-Module context: `src/App/Features/{Module}/AGENTS.md` is source of truth for that Feature folder.
+Module context: `src/Api/Features/{Module}/AGENTS.md` is source of truth for that Feature folder.
 
 ## Layout
 
 ```
-src/App/
+src/Api/
 ├── Program.cs              # ≤40 lines — never edit per slice
 ├── Host/                   # HTTP cross-cutting only
 ├── Shared/                 # Kernel, Infrastructure, Platform
@@ -21,21 +21,21 @@ src/App/
     ├── {Entity}.cs         # noun = domain + repo + EF config
     └── {Slice}.cs          # verb = Command + Validator + Handler + IEndpoint
 
-tests/App.Tests/{Module}/{Slice}Tests.cs   # flat mirror (no Features/ prefix)
+tests/Api.Tests/{Module}/{Slice}Tests.cs   # flat mirror (no Features/ prefix)
 ```
 
 ## New slice checklist
 
-1. Read `src/App/Features/{Module}/AGENTS.md`
-2. Create `src/App/Features/{Module}/{Slice}.cs`
-3. Create `tests/App.Tests/{Module}/{Slice}Tests.cs`
+1. Read `src/Api/Features/{Module}/AGENTS.md`
+2. Create `src/Api/Features/{Module}/{Slice}.cs`
+3. Create `tests/Api.Tests/{Module}/{Slice}Tests.cs`
 4. Update `features.json` (app, test, route, featureFlag)
 5. Update module `AGENTS.md` if public surface changed
 6. Do NOT edit `Program.cs` — use `IEndpoint` auto-discovery
 
 ## Feature flags
 
-- Constants: `App.Host.FeatureFlags`
+- Constants: `Api.Host.FeatureFlags`
 - Gate endpoint: `.RequireFeature(FeatureFlags.X)`
 - Config: `appsettings.json` → `FeatureFlags` section
 
@@ -77,21 +77,21 @@ public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
 
 ## Tests
 
-- Unit/handler: `tests/App.Tests` + InMemory via `TestServiceFactory`; set tenant with `SetTenant` before resolve
+- Unit/handler: `tests/Api.Tests` + InMemory via `TestServiceFactory`; set tenant with `SetTenant` before resolve
 - Architecture: `tests/ArchitectureTests` enforces slice layout — keep green on every slice add
 - E2E: `tests/E2ETests` + `E2EWebApplicationFactory`; prefer HTTP contracts over internals
-- Never put tests under `src/App/`
+- Never put tests under `src/Api/`
 
 ## Anti-patterns (never)
 
 - Folders per layer (`Handlers/`, `Mappers/`, `Validators/`)
 - Subfolder per slice (`RegisterUser/RegisterUser.cs`) — use flat file
-- Tests inside `src/App/`
+- Tests inside `src/Api/`
 - Controllers monolithic per module
 - `[Authorize]` without policy name
 - Generic `IRepository<T>` or base repository class exposed outside `Shared/`
 
 ## Shared rules
 
-- `Kernel.cs` / `Platform.cs` must NOT reference `App.Features.*`
+- `Kernel.cs` / `Platform.cs` must NOT reference `Api.Features.*`
 - Slice file cap: ~150 lines — split endpoint if exceeded

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public sealed class MultiTenancyOptions
 {

@@ -1,9 +1,9 @@
-using App.Host.Configurations;
-using App.Shared;
+using Api.Host.Configurations;
+using Api.Shared;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed record RegisterUserCommand(
     string Email,

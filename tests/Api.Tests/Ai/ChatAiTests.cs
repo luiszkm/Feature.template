@@ -1,11 +1,11 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using App.Features.Identity;
-using App.Tests.Common;
+using Api.Features.Identity;
+using Api.Tests.Common;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace App.Tests.Ai;
+namespace Api.Tests.Ai;
 
 public sealed class ChatAiTests
 {

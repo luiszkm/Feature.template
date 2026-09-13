@@ -1,9 +1,9 @@
-using App.Host.Security;
-using App.Shared;
+using Api.Host.Security;
+using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Features.Tenants;
+namespace Api.Features.Tenants;
 
 public static class TenantsModule
 {

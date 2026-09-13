@@ -1,9 +1,9 @@
-using App.Host.Security;
-using App.Shared;
+using Api.Host.Security;
+using Api.Shared;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Tenants;
+namespace Api.Features.Tenants;
 
 public sealed record ListTenantsQuery(
     int PageNumber = 1,

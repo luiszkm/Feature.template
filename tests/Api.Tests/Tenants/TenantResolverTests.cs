@@ -1,8 +1,8 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace App.Tests.Tenants;
+namespace Api.Tests.Tenants;
 
 public sealed class TenantResolverTests
 {

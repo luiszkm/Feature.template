@@ -1,6 +1,6 @@
-using App.Host.Middleware;
+using Api.Host.Middleware;
 
-namespace App.Host.Extensions;
+namespace Api.Host.Extensions;
 
 public static class WebApplicationExtensions
 {

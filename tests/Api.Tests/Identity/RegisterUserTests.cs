@@ -1,10 +1,10 @@
-using App.Features.Identity;
-using App.Shared;
-using App.Tests.Common;
+using Api.Features.Identity;
+using Api.Shared;
+using Api.Tests.Common;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Tests.Identity;
+namespace Api.Tests.Identity;
 
 public sealed class RegisterUserTests
 {

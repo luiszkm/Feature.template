@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
-namespace App.Host.Security;
+namespace Api.Host.Security;
 
 public sealed class JwtTokenService(IOptions<JwtSettings> options) : IJwtTokenService
 {

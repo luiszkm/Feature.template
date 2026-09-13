@@ -1,7 +1,7 @@
 using System.Security.Claims;
-using App.Shared;
+using Api.Shared;
 
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 internal static class ToolAuthorization
 {

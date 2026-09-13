@@ -1,7 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public record ListQuery(
     int PageNumber = 1,

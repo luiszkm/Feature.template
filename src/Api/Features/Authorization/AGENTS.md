@@ -47,7 +47,7 @@ Detalhe: `docs/security/RBAC_MATRIX.md`.
 ## Testes
 
 ```
-tests/App.Tests/Authorization/
+tests/Api.Tests/Authorization/
   CreateRoleTests.cs
   AuthorizationManagementTests.cs
 ```

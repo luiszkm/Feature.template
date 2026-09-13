@@ -1,7 +1,7 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 public static class AiModule
 {

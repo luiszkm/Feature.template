@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 /// <summary>
 /// Development/test LLM that returns direct answers or simulated tool calls.

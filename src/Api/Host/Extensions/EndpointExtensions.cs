@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 
-namespace App.Host.Extensions;
+namespace Api.Host.Extensions;
 
 public sealed class FeatureGateFilter(string featureName) : IEndpointFilter
 {

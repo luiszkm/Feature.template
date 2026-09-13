@@ -1,10 +1,10 @@
-using App.Features.Tenants;
-using App.Shared;
-using App.Tests.Common;
+using Api.Features.Tenants;
+using Api.Shared;
+using Api.Tests.Common;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Tests.Tenants;
+namespace Api.Tests.Tenants;
 
 public sealed class CreateTenantTests
 {

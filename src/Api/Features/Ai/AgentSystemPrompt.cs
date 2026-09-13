@@ -1,4 +1,4 @@
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 internal static class AgentSystemPrompt
 {

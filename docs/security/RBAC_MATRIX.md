@@ -2,6 +2,8 @@
 
 Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthorization(Policy = "...")]` — nunca `[Authorize]` bare.
 
+> Refresh token: cookie `pt_refresh` (`HttpOnly`, `SameSite=Strict`, `Path=/api/v1/identity`). Nunca no corpo da resposta.
+
 > Validação JWT pré-policy: claims obrigatórias `security_stamp` e `tenant_id`; stamp validado contra DB (`ISecurityStampService`); tenant do token deve coincidir com tenant resolvido.
 
 ## Policies
@@ -25,7 +27,8 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | Método | Rota | Acesso | Policy |
 |--------|------|--------|--------|
 | POST | `/api/v1/identity/login` | Público | — |
-| POST | `/api/v1/identity/refresh` | Público | — |
+| POST | `/api/v1/identity/refresh` | Público (cookie `pt_refresh`) | — |
+| POST | `/api/v1/identity/logout` | Público (cookie `pt_refresh`) | — |
 | POST | `/api/v1/identity/register` | Público | — |
 | GET | `/api/v1/identity/users` | Protegido | `UsersRead` |
 | GET | `/api/v1/identity/users/{userId}` | Protegido | `UserReadOrSelf` |
@@ -58,10 +61,10 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | Método | Rota | Policy |
 |--------|------|--------|
 | GET | `/api/v1/tenants` | `TenantsRead` |
-| GET | `/api/v1/tenants/{id}` | `TenantsRead` |
+| GET | `/api/v1/tenants/{tenantId}` | `TenantsRead` |
 | POST | `/api/v1/tenants` | `TenantsManage` |
-| PUT | `/api/v1/tenants/{id}` | `TenantsManage` |
-| DELETE | `/api/v1/tenants/{id}` | `TenantsManage` |
+| PUT | `/api/v1/tenants/{tenantId}` | `TenantsManage` |
+| DELETE | `/api/v1/tenants/{tenantId}` | `TenantsManage` |
 
 ## AI
 

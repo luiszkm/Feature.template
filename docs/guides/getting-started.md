@@ -2,7 +2,7 @@
 
 Product.Template v2 é um **template novo** (greenfield). Não há caminho de migração a partir do v1 — use este repositório como ponto de partida para novos produtos.
 
-Arquitetura: **Vertical Slice Architecture (VSA) v2.1** — um projeto `App` + slices planos em `Features/{Module}/`.  
+Arquitetura: **Vertical Slice Architecture (VSA) v2.1** — um projeto `Api` + slices planos em `Features/{Module}/`.  
 Docs: [architecture/vsa.md](../architecture/vsa.md) · [guidelines.md](../architecture/guidelines.md)
 
 ## Instalar como dotnet new template
@@ -21,7 +21,7 @@ dotnet new install . --force
 dotnet new uninstall .
 ```
 
-`--ProductName` substitui a string `Product.Template` em JWT Issuer/Audience, título OpenAPI, `ServiceName` (observability) e `Directory.Build.props`. Namespace `App` **não muda** (convenção fixa do template). GUIDs de projeto no `.sln` são regenerados automaticamente a cada geração (`.template.config/template.json` → `guids`).
+`--ProductName` substitui a string `Product.Template` em JWT Issuer/Audience, título OpenAPI, `ServiceName` (observability) e `Directory.Build.props`. Namespace `Api` **não muda** (convenção fixa do template). GUIDs de projeto no `.sln` são regenerados automaticamente a cada geração (`.template.config/template.json` → `guids`).
 
 ## Pré-requisitos
 
@@ -36,7 +36,7 @@ copy compose.env.example compose.env
 docker compose up -d postgres
 
 # 2. Rodar API (aplica migrations + seed no startup)
-cd src/App
+cd src/Api
 dotnet run
 ```
 
@@ -62,13 +62,37 @@ Tenants seed: `public`, `dev`.
 
 ## Autenticação
 
-- JWT + refresh token rotation
+- JWT em memória no cliente + refresh token no cookie `pt_refresh` (`HttpOnly`, `SameSite=Strict`, `Path=/api/v1/identity`)
+- Rotação a cada refresh; `POST /api/v1/identity/logout` revoga e apaga o cookie
+- O corpo do login **não** devolve o refresh token — nenhum script no browser lhe chega
 - `security_stamp` no JWT — revogado em delete user / assign-revoke role
+
+## Front-end
+
+```bash
+cd src/web
+npm ci
+npm start        # :4200, proxy de /api para http://localhost:5080
+npm test         # Vitest + MSW
+npm run e2e      # Playwright contra a API real
+```
+
+Contexto e regras: [src/web/AGENTS.md](../../src/web/AGENTS.md).
+
+## Contrato
+
+`src/Api/openapi.json` é versionado e é a autoridade partilhada entre API, `features.json` e o
+front. Depois de mudar um endpoint:
+
+```bash
+UPDATE_OPENAPI=1 dotnet test tests/E2ETests    # regenera o documento
+dotnet test tests/ArchitectureTests            # falha se features.json divergir
+```
 
 ## Índice de features
 
 - `features.json` — slices, rotas, feature flags
-- `src/App/Features/{Module}/AGENTS.md` — contexto por módulo
+- `src/Api/Features/{Module}/AGENTS.md` — contexto por módulo
 - `docs/security/RBAC_MATRIX.md` — políticas e permissões
 
 ## Verificação
@@ -76,7 +100,7 @@ Tenants seed: `public`, `dev`.
 ```bash
 dotnet build
 dotnet test tests/ArchitectureTests
-dotnet test tests/App.Tests
+dotnet test tests/Api.Tests
 make verify
 ```
 
@@ -84,13 +108,13 @@ make verify
 
 | Conceito | Path v2 |
 |----------|---------|
-| Caso de uso (slice) | `src/App/Features/{Module}/{Slice}.cs` |
-| Entidade de domínio | `src/App/Features/{Module}/{Entity}.cs` |
+| Caso de uso (slice) | `src/Api/Features/{Module}/{Slice}.cs` |
+| Entidade de domínio | `src/Api/Features/{Module}/{Entity}.cs` |
 | Endpoint HTTP | `IEndpoint` no mesmo slice |
 | DI do módulo | `{Module}Module.cs` |
-| Seeders | `src/App/Host/Seeders/` |
-| Host / segurança | `src/App/Host/` |
-| Contexto do módulo | `src/App/Features/{Module}/AGENTS.md` |
+| Seeders | `src/Api/Host/Seeders/` |
+| Host / segurança | `src/Api/Host/` |
+| Contexto do módulo | `src/Api/Features/{Module}/AGENTS.md` |
 
 ## Notas
 

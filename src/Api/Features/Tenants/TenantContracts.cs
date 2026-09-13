@@ -1,6 +1,6 @@
-using App.Shared;
+using Api.Shared;
 
-namespace App.Features.Tenants;
+namespace Api.Features.Tenants;
 
 public sealed record TenantOutput(
     Guid TenantId,

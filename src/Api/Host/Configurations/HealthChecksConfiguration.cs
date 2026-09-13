@@ -1,7 +1,7 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace App.Host.Configurations;
+namespace Api.Host.Configurations;
 
 public static class HealthChecksConfiguration
 {

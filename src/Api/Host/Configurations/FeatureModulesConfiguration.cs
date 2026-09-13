@@ -1,10 +1,10 @@
-using App.Features.Authorization;
-using App.Features.Ai;
-using App.Features.Identity;
-using App.Features.Tenants;
+using Api.Features.Authorization;
+using Api.Features.Ai;
+using Api.Features.Identity;
+using Api.Features.Tenants;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Host.Configurations;
+namespace Api.Host.Configurations;
 
 public static class FeatureModulesConfiguration
 {

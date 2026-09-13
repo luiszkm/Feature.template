@@ -1,9 +1,13 @@
 {
   "$schema": "http://json.schemastore.org/template",
   "author": "Luis Soares",
-  "classifications": ["Web API", "ERP", "VSA"],
+  "classifications": [
+    "Web API",
+    "ERP",
+    "VSA"
+  ],
   "identity": "LuisSoares.ProductTemplate.Vsa",
-  "name": "Product Template — ERP VSA (.NET 10)",
+  "name": "Product Template \u2014 ERP VSA (.NET 10)",
   "shortName": "product-template",
   "tags": {
     "language": "C#",
@@ -16,7 +20,7 @@
       "datatype": "string",
       "defaultValue": "Product.Template",
       "replaces": "Product.Template",
-      "description": "Nome do produto: JWT Issuer/Audience, título OpenAPI, ServiceName (observability), Directory.Build.props <Product>."
+      "description": "Nome do produto: JWT Issuer/Audience, t\u00edtulo OpenAPI, ServiceName (observability), Directory.Build.props <Product>."
     }
   },
   "sources": [
@@ -29,7 +33,13 @@
             ".git/**",
             ".idea/**",
             "**/TestResults/**",
-            ".template.config/**"
+            ".template.config/**",
+            "**/node_modules/**",
+            "**/dist/**",
+            ".tools/**",
+            "**/playwright-report/**",
+            "**/test-results/**",
+            ".specs/**"
           ]
         }
       ]

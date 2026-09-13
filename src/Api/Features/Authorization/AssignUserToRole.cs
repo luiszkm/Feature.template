@@ -1,10 +1,10 @@
-using App.Features.Identity;
-using App.Host.Security;
-using App.Shared;
+using Api.Features.Identity;
+using Api.Host.Security;
+using Api.Shared;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Authorization;
+namespace Api.Features.Authorization;
 
 public sealed record AssignUserToRoleCommand(Guid UserId, Guid RoleId) : ICommand<bool>;
 

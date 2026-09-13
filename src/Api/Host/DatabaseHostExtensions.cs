@@ -1,9 +1,9 @@
-using App.Host.Seeders;
-using App.Shared;
+using Api.Host.Seeders;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Host;
+namespace Api.Host;
 
 public static class DatabaseHostExtensions
 {

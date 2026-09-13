@@ -1,8 +1,8 @@
-using App.Host.Security;
+using Api.Host.Security;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed record UpdateUserCommand(Guid UserId, string FirstName, string LastName) : ICommand<UserOutput>;
 

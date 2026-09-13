@@ -1,4 +1,4 @@
-namespace App.Features.Authorization;
+namespace Api.Features.Authorization;
 
 public sealed record RoleWithPermissionsOutput(
     Guid Id,

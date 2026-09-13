@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace App.Features.Ai;
+namespace Api.Features.Ai;
 
 public sealed record LlmRequest(
     string UserPrompt,

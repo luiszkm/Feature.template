@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using App.Host.Configurations;
-using App.Host.Security;
+using Api.Host.Configurations;
+using Api.Host.Security;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed record RefreshTokenCommand(string RefreshToken) : ICommand<AuthTokenOutput>;
 
@@ -100,19 +100,29 @@ public sealed class RefreshTokenEndpoint : IEndpoint
     public void Map(IEndpointRouteBuilder app)
     {
         app.MapPost("/api/v1/identity/refresh", async (
-            RefreshTokenCommand command,
             IMediator mediator,
+            HttpContext context,
             CancellationToken cancellationToken) =>
         {
-            var result = await mediator.Send(command, cancellationToken);
-            return Results.Ok(result);
+            // The cookie is the only accepted source. A token in the body would have to be
+            // readable by script, which is what the cookie exists to prevent.
+            var refreshToken = RefreshCookie.Read(context)
+                ?? throw new UnauthorizedAccessException("Refresh token is invalid or expired.");
+
+            var result = await mediator.Send(new RefreshTokenCommand(refreshToken), cancellationToken);
+            RefreshCookie.Write(context, result.RefreshToken);
+
+            return Results.Ok(new AuthTokenResponse(
+                result.AccessToken,
+                result.TokenType,
+                result.ExpiresIn,
+                result.User));
         })
         .WithName("RefreshToken")
         .WithTags("Identity")
         .AllowAnonymous()
         .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
-        .Produces<AuthTokenOutput>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .Produces<AuthTokenResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict);

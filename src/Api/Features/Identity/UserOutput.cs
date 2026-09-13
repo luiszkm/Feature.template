@@ -1,4 +1,4 @@
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed record UserOutput(
     Guid Id,

@@ -37,10 +37,92 @@ jobs:
         run: dotnet test tests/ArchitectureTests --no-build -c Release
 
       - name: Unit tests
-        run: dotnet test tests/App.Tests --no-build -c Release
+        run: dotnet test tests/Api.Tests --no-build -c Release
 
       - name: E2E tests
         run: dotnet test tests/E2ETests --no-build -c Release
+
+  web-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit and component tests
+        run: npm test
+
+      - name: Typecheck and build
+        run: npm run build
+
+  web-e2e:
+    runs-on: ubuntu-latest
+    needs: web-test
+    timeout-minutes: 25
+    env:
+      POSTGRES_PASSWORD: ci-postgres-password
+      JWT_SECRET: ci-only-secret-key-minimum-32-characters
+      SEED_ADMIN_PASSWORD: Admin@123
+      CORS_ORIGIN: http://localhost:4200
+      API_URL: http://localhost:5080
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Start API and database
+        run: docker compose up -d --build
+
+      - name: Wait for the API
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5080/health/ready && exit 0
+            sleep 5
+          done
+          docker compose logs api
+          exit 1
+
+      - name: Install
+        working-directory: src/web
+        run: npm ci
+
+      - name: Install browsers
+        working-directory: src/web
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        working-directory: src/web
+        run: npm run e2e
+
+      - name: Upload the Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: src/web/playwright-report
+          retention-days: 7
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose down -v
 
   docker-trivy:
     runs-on: ubuntu-latest

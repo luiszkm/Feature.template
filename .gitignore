@@ -59,3 +59,13 @@ Desktop.ini
 # Docker / tooling
 docker-compose.override.yml
 *.DotSettings.user
+
+# Front-end
+node_modules/
+src/web/dist/
+src/web/.angular/
+src/web/playwright-report/
+src/web/test-results/
+
+# Local toolchain
+.tools/

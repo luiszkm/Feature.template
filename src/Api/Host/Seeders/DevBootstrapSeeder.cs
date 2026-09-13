@@ -1,12 +1,12 @@
-using App.Features.Authorization;
-using App.Features.Identity;
-using App.Shared;
+using Api.Features.Authorization;
+using Api.Features.Identity;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace App.Host.Seeders;
+namespace Api.Host.Seeders;
 
 internal static class DevBootstrapSeeder
 {

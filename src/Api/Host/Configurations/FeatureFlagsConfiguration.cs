@@ -1,6 +1,6 @@
 using Microsoft.FeatureManagement;
 
-namespace App.Host.Configurations;
+namespace Api.Host.Configurations;
 
 public static class FeatureFlagsConfiguration
 {

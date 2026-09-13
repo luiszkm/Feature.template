@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
-using App.Features.Identity;
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Api.Features.Identity;
 using E2ETests.Common;
 
 namespace E2ETests.Identity;
@@ -34,7 +36,7 @@ public sealed class IdentityAuthE2ETests
         var loginResponse = await client.PostAsJsonAsync("/api/v1/identity/login", new { email, password });
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
 
-        var auth = await loginResponse.Content.ReadFromJsonAsync<AuthTokenOutput>();
+        var auth = await loginResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
         Assert.NotNull(auth);
         Assert.False(string.IsNullOrWhiteSpace(auth.AccessToken));
     }
@@ -53,8 +55,117 @@ public sealed class IdentityAuthE2ETests
         });
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-        var auth = await loginResponse.Content.ReadFromJsonAsync<AuthTokenOutput>();
+        var auth = await loginResponse.Content.ReadFromJsonAsync<AuthTokenResponse>();
         Assert.NotNull(auth);
         Assert.Contains("Admin", auth.User.Roles);
+    }
+
+    [Fact]
+    public async Task Login_ShouldSetHttpOnlyRefreshCookie()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var response = await LoginAsAdmin(client);
+
+        var cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"));
+        Assert.Contains("pt_refresh=", cookie, StringComparison.Ordinal);
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("path=/api/v1/identity", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("max-age=", cookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Login_ShouldNotReturnRefreshTokenInBody()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var response = await LoginAsAdmin(client);
+
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        Assert.False(body.RootElement.TryGetProperty("refreshToken", out _));
+        Assert.True(body.RootElement.TryGetProperty("accessToken", out _));
+    }
+
+    [Fact]
+    public async Task Refresh_ShouldRotateTheCookie()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var login = await LoginAsAdmin(client);
+        var firstCookie = RefreshCookieValue(login);
+
+        var refresh = await PostWithCookie(client, "/api/v1/identity/refresh", firstCookie);
+
+        Assert.Equal(HttpStatusCode.OK, refresh.StatusCode);
+        var secondCookie = RefreshCookieValue(refresh);
+        Assert.NotEqual(firstCookie, secondCookie);
+    }
+
+    [Fact]
+    public async Task Refresh_WithoutCookie_ShouldReturn401()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var response = await client.PostAsync("/api/v1/identity/refresh", content: null);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Logout_ShouldRevokeTheRefreshToken()
+    {
+        await using var factory = E2EWebApplicationFactory.Create();
+        using var client = CreateClient(factory);
+
+        var login = await LoginAsAdmin(client);
+        var cookie = RefreshCookieValue(login);
+
+        var logout = await PostWithCookie(client, "/api/v1/identity/logout", cookie);
+
+        Assert.Equal(HttpStatusCode.NoContent, logout.StatusCode);
+        Assert.Contains(
+            logout.Headers.GetValues("Set-Cookie"),
+            header => header.StartsWith("pt_refresh=;", StringComparison.Ordinal));
+
+        var refresh = await PostWithCookie(client, "/api/v1/identity/refresh", cookie);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, refresh.StatusCode);
+    }
+
+    private static HttpClient CreateClient(WebApplicationFactory<Program> factory)
+    {
+        // Cookies are set by hand so each test states exactly which credential it presents.
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = false });
+        client.DefaultRequestHeaders.Add("X-Tenant", "dev");
+        return client;
+    }
+
+    private static Task<HttpResponseMessage> LoginAsAdmin(HttpClient client) =>
+        client.PostAsJsonAsync("/api/v1/identity/login", new
+        {
+            email = "admin@producttemplate.com",
+            password = TestPassword
+        });
+
+    private static Task<HttpResponseMessage> PostWithCookie(HttpClient client, string route, string cookie)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, route);
+        request.Headers.Add("Cookie", $"pt_refresh={cookie}");
+        return client.SendAsync(request);
+    }
+
+    private static string RefreshCookieValue(HttpResponseMessage response)
+    {
+        var header = Assert.Single(
+            response.Headers.GetValues("Set-Cookie"),
+            value => value.StartsWith("pt_refresh=", StringComparison.Ordinal));
+
+        return header.Split(';')[0]["pt_refresh=".Length..];
     }
 }

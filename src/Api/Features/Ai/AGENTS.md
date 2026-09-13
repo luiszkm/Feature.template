@@ -43,6 +43,6 @@ Ver `features.json` com `"m": "Ai"`.
 ## Testes
 
 ```
-tests/App.Tests/Ai/
+tests/Api.Tests/Ai/
   ChatAiHandlerTests.cs
 ```

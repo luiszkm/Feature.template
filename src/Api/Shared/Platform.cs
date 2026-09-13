@@ -2,7 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using MediatR;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public interface ICommand<out TResponse> : IRequest<TResponse>;
 

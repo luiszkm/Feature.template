@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public sealed class Pbkdf2PasswordHasher : IPasswordHasher
 {

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 internal static class EfRepositoryHelpers
 {

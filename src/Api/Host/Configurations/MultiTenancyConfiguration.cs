@@ -1,8 +1,8 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Host.Configurations;
+namespace Api.Host.Configurations;
 
 public static class MultiTenancyConfiguration
 {

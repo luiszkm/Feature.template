@@ -1,15 +1,15 @@
-using App.Features.Ai;
-using App.Features.Authorization;
-using App.Features.Identity;
-using App.Features.Tenants;
-using App.Host.Security;
-using App.Shared;
+using Api.Features.Ai;
+using Api.Features.Authorization;
+using Api.Features.Identity;
+using Api.Features.Tenants;
+using Api.Host.Security;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
-namespace App.Tests.Common;
+namespace Api.Tests.Common;
 
 public static class TestServiceFactory
 {
@@ -38,7 +38,7 @@ public static class TestServiceFactory
     private sealed class TestHostEnvironment : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = Environments.Development;
-        public string ApplicationName { get; set; } = "App.Tests";
+        public string ApplicationName { get; set; } = "Api.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
@@ -102,6 +102,7 @@ public static class TestServiceFactory
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<LoginHandler>();
         services.AddScoped<RefreshTokenHandler>();
+        services.AddScoped<LogoutHandler>();
         return BuildProvider(services);
     }
 

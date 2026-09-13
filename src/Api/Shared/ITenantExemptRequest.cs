@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 /// <summary>
 /// Host-level requests that do not require a resolved tenant context.

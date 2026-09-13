@@ -1,4 +1,4 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("App.Tests")]
+[assembly: InternalsVisibleTo("Api.Tests")]
 [assembly: InternalsVisibleTo("ArchitectureTests")]

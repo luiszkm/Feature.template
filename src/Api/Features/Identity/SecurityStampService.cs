@@ -1,7 +1,7 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.Extensions.Caching.Memory;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public interface ISecurityStampService
 {

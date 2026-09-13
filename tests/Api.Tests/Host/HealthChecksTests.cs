@@ -1,8 +1,8 @@
 using System.Net;
-using App.Tests.Common;
+using Api.Tests.Common;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace App.Tests.Host;
+namespace Api.Tests.Host;
 
 public sealed class HealthChecksTests
 {

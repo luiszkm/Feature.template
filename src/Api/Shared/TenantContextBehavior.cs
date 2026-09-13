@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace App.Shared;
+namespace Api.Shared;
 
 public sealed class TenantContextBehavior<TRequest, TResponse>(ITenantContext tenantContext)
     : IPipelineBehavior<TRequest, TResponse>

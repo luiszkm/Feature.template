@@ -1,9 +1,9 @@
-using App.Host.Configurations;
-using App.Host.Extensions;
-using App.Host.Middleware;
+using Api.Host.Configurations;
+using Api.Host.Extensions;
+using Api.Host.Middleware;
 using Serilog;
 
-namespace App.Host;
+namespace Api.Host;
 
 public static class HostApplicationExtensions
 {

@@ -1,11 +1,11 @@
-using App.Host.Configurations;
-using App.Shared;
+using Api.Host.Configurations;
+using Api.Shared;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
-namespace App.Tests.Host;
+namespace Api.Tests.Host;
 
 public sealed class FailFastConfigurationTests
 {
@@ -84,7 +84,7 @@ public sealed class FailFastConfigurationTests
     private sealed class StubHostEnvironment(string environmentName) : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = environmentName;
-        public string ApplicationName { get; set; } = "App.Tests";
+        public string ApplicationName { get; set; } = "Api.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }

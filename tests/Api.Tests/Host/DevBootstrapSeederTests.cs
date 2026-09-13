@@ -1,15 +1,15 @@
-using App.Features.Authorization;
-using App.Features.Identity;
-using App.Features.Tenants;
-using App.Host.Seeders;
-using App.Shared;
+using Api.Features.Authorization;
+using Api.Features.Identity;
+using Api.Features.Tenants;
+using Api.Host.Seeders;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 
-namespace App.Tests.Host;
+namespace Api.Tests.Host;
 
 public sealed class DevBootstrapSeederTests
 {
@@ -129,7 +129,7 @@ public sealed class DevBootstrapSeederTests
     private sealed class SeedTestHostEnvironment : IHostEnvironment
     {
         public string EnvironmentName { get; set; } = Environments.Development;
-        public string ApplicationName { get; set; } = "App.Tests";
+        public string ApplicationName { get; set; } = "Api.Tests";
         public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }

@@ -1,11 +1,11 @@
-using App.Features.Authorization;
-using App.Features.Identity;
-using App.Shared;
-using App.Tests.Common;
+using Api.Features.Authorization;
+using Api.Features.Identity;
+using Api.Shared;
+using Api.Tests.Common;
 using FluentValidation.TestHelper;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Tests.Authorization;
+namespace Api.Tests.Authorization;
 
 file static class AuthorizationTestDb
 {

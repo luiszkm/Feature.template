@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using App.Host.Configurations;
-using App.Host.Security;
+using Api.Host.Configurations;
+using Api.Host.Security;
 using FluentValidation;
 using MediatR;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed record LoginCommand(string Email, string Password) : ICommand<AuthTokenOutput>;
 
@@ -91,16 +91,23 @@ public sealed class LoginEndpoint : IEndpoint
         app.MapPost("/api/v1/identity/login", async (
             LoginCommand command,
             IMediator mediator,
+            HttpContext context,
             CancellationToken cancellationToken) =>
         {
             var result = await mediator.Send(command, cancellationToken);
-            return Results.Ok(result);
+            RefreshCookie.Write(context, result.RefreshToken);
+
+            return Results.Ok(new AuthTokenResponse(
+                result.AccessToken,
+                result.TokenType,
+                result.ExpiresIn,
+                result.User));
         })
         .WithName("Login")
         .WithTags("Identity")
         .AllowAnonymous()
         .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
-        .Produces<AuthTokenOutput>(StatusCodes.Status200OK)
+        .Produces<AuthTokenResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status409Conflict);

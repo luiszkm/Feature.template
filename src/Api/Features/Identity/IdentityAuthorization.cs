@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using App.Host.Security;
-using App.Shared;
+using Api.Host.Security;
+using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
 
-namespace App.Features.Identity;
+namespace Api.Features.Identity;
 
 public sealed class SelfOrPermissionRequirement(string permission) : IAuthorizationRequirement
 {

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace App.Host.Seeders;
+namespace Api.Host.Seeders;
 
 public static class AppSeeder
 {

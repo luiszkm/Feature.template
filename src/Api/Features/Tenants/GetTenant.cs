@@ -1,8 +1,8 @@
-using App.Host.Security;
-using App.Shared;
+using Api.Host.Security;
+using Api.Shared;
 using MediatR;
 
-namespace App.Features.Tenants;
+namespace Api.Features.Tenants;
 
 public sealed record GetTenantQuery(Guid TenantId) : IQuery<TenantOutput>, ITenantExemptRequest;
 

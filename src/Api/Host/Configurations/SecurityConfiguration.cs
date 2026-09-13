@@ -1,11 +1,11 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
-using App.Features.Authorization;
-using App.Features.Identity;
-using App.Features.Tenants;
-using App.Host.Security;
-using App.Shared;
+using Api.Features.Authorization;
+using Api.Features.Identity;
+using Api.Features.Tenants;
+using Api.Host.Security;
+using Api.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 
-namespace App.Host.Configurations;
+namespace Api.Host.Configurations;
 
 public static class SecurityConfiguration
 {

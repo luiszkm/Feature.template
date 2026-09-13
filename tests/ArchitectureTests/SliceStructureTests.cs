@@ -6,7 +6,7 @@ namespace ArchitectureTests;
 
 public sealed class SliceStructureTests
 {
-    private static readonly Assembly AppAssembly = typeof(App.Features.Identity.RegisterUserHandler).Assembly;
+    private static readonly Assembly AppAssembly = typeof(Api.Features.Identity.RegisterUserHandler).Assembly;
 
     private static string RepoRoot
     {
@@ -16,7 +16,7 @@ public sealed class SliceStructureTests
             while (dir is not null)
             {
                 if (File.Exists(Path.Combine(dir.FullName, "features.json"))
-                    && Directory.Exists(Path.Combine(dir.FullName, "src", "App")))
+                    && Directory.Exists(Path.Combine(dir.FullName, "src", "Api")))
                     return dir.FullName;
 
                 dir = dir.Parent;
@@ -31,11 +31,11 @@ public sealed class SliceStructureTests
     {
         var result = Types.InAssembly(AppAssembly)
             .That()
-            .ResideInNamespaceStartingWith("App.Shared")
+            .ResideInNamespaceStartingWith("Api.Shared")
             .And()
-            .DoNotResideInNamespaceStartingWith("App.Shared.Migrations")
+            .DoNotResideInNamespaceStartingWith("Api.Shared.Migrations")
             .ShouldNot()
-            .HaveDependencyOn("App.Features")
+            .HaveDependencyOn("Api.Features")
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
@@ -44,7 +44,7 @@ public sealed class SliceStructureTests
     [Fact]
     public void Features_ShouldNotContain_LayerFolders()
     {
-        var featuresRoot = Path.Combine(RepoRoot, "src", "App", "Features");
+        var featuresRoot = Path.Combine(RepoRoot, "src", "Api", "Features");
         Assert.True(Directory.Exists(featuresRoot), $"Missing Features root: {featuresRoot}");
 
         string[] forbidden =
@@ -77,7 +77,7 @@ public sealed class SliceStructureTests
     [Fact]
     public void Program_Cs_ShouldStay_UnderLineBudget()
     {
-        var programPath = Path.Combine(RepoRoot, "src", "App", "Program.cs");
+        var programPath = Path.Combine(RepoRoot, "src", "Api", "Program.cs");
         var lines = File.ReadAllLines(programPath);
         var nonEmpty = lines.Count(l => !string.IsNullOrWhiteSpace(l));
 
@@ -89,7 +89,7 @@ public sealed class SliceStructureTests
     {
         var endpointTypes = AppAssembly.GetTypes()
             .Where(t => t is { IsAbstract: false, IsInterface: false }
-                && typeof(App.Shared.IEndpoint).IsAssignableFrom(t))
+                && typeof(Api.Shared.IEndpoint).IsAssignableFrom(t))
             .OrderBy(t => t.FullName, StringComparer.Ordinal)
             .ToList();
 
@@ -97,7 +97,7 @@ public sealed class SliceStructureTests
 
         // Same discovery rule as EndpointRegistration.AddEndpoints — every concrete IEndpoint is registered.
         var discoverable = AppAssembly.GetTypes()
-            .Where(t => t is { IsAbstract: false, IsInterface: false } && typeof(App.Shared.IEndpoint).IsAssignableFrom(t))
+            .Where(t => t is { IsAbstract: false, IsInterface: false } && typeof(Api.Shared.IEndpoint).IsAssignableFrom(t))
             .ToHashSet();
 
         Assert.Equal(endpointTypes.Count, discoverable.Count);

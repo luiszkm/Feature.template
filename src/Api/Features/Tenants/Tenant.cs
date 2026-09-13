@@ -1,8 +1,8 @@
-using App.Shared;
+using Api.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace App.Features.Tenants;
+namespace Api.Features.Tenants;
 
 public sealed class Tenant : AggregateRoot
 {
