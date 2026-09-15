@@ -26,7 +26,7 @@ public static class SecurityConfiguration
         IHostEnvironment environment)
     {
         AddCors(services, configuration, environment);
-        AddAuthRateLimiting(services);
+        AddAuthRateLimiting(services, environment);
 
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
@@ -129,14 +129,17 @@ public static class SecurityConfiguration
         return services;
     }
 
-    private static void AddAuthRateLimiting(IServiceCollection services)
+    private static void AddAuthRateLimiting(IServiceCollection services, IHostEnvironment environment)
     {
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.AddFixedWindowLimiter(RateLimitPolicies.AuthRateLimitPolicy, limiter =>
             {
-                limiter.PermitLimit = 20;
+                // Browser e2e issues one login per spec; Production stays at 20/min.
+                limiter.PermitLimit = environment.IsDevelopment() || environment.IsEnvironment("Testing")
+                    ? 200
+                    : 20;
                 limiter.Window = TimeSpan.FromMinutes(1);
                 limiter.QueueLimit = 0;
             });

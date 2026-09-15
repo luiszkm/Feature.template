@@ -22,6 +22,21 @@ docker-up:
 web-verify:
 	cd src/web && npm ci && npm test && npm run build
 
+# Browser e2e hits the compose API. Development + EnableAI keeps StubLlmService
+# (Production + EnableAI without a key fails fast). compose.env is interpolation
+# input when present; CI passes the same vars in the job env instead.
+COMPOSE_ENV_FILE := $(wildcard compose.env)
+COMPOSE_ENV_ARGS := $(if $(COMPOSE_ENV_FILE),--env-file compose.env,)
+
 web-e2e:
-	docker compose up -d --build
+	ASPNETCORE_ENVIRONMENT=Development \
+	FEATURE_FLAGS_ENABLE_AI=true \
+	CORS_ORIGIN=http://localhost:4200 \
+	docker compose $(COMPOSE_ENV_ARGS) up -d --build
+	@ok=0; \
+	for i in $$(seq 1 60); do \
+	  if curl -sf http://localhost:5080/health/ready >/dev/null; then ok=1; break; fi; \
+	  sleep 5; \
+	done; \
+	if [ "$$ok" != "1" ]; then docker compose logs api; exit 1; fi
 	cd src/web && npm ci && npx playwright install --with-deps chromium && npm run e2e

@@ -77,6 +77,8 @@ jobs:
       SEED_ADMIN_PASSWORD: Admin@123
       CORS_ORIGIN: http://localhost:4200
       API_URL: http://localhost:5080
+      ASPNETCORE_ENVIRONMENT: Development
+      FEATURE_FLAGS_ENABLE_AI: "true"
       CI: "true"
     steps:
       - uses: actions/checkout@v4
@@ -135,7 +137,7 @@ jobs:
         run: docker build -t product-template-v2:ci .
 
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.32.0
         with:
           image-ref: product-template-v2:ci
           format: table
