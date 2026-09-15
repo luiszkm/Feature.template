@@ -21,6 +21,8 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | `AuthorizationPermissionsManage` | Role `Admin` **ou** `permission=authorization.permission.manage` |
 | `TenantsRead` | Role `Admin` **ou** `permission=tenants.read` |
 | `TenantsManage` | Role `Admin` **ou** `permission=tenants.manage` |
+| `AiAgentsRead` | Role `Admin` **ou** `permission=ai.agent.read` |
+| `AiAgentsManage` | Role `Admin` **ou** `permission=ai.agent.manage` |
 
 ## Identity
 
@@ -71,6 +73,15 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | Método | Rota | Policy | Feature flag |
 |--------|------|--------|--------------|
 | POST | `/api/v1/ai/chat` | `Authenticated` | `EnableAI` |
+| GET | `/api/v1/ai/agents` | `AiAgentsRead` | `EnableAI` |
+| GET | `/api/v1/ai/agents/{agentId}` | `AiAgentsRead` | `EnableAI` |
+| POST | `/api/v1/ai/agents` | `AiAgentsManage` | `EnableAI` |
+| PUT | `/api/v1/ai/agents/{agentId}` | `AiAgentsManage` | `EnableAI` |
+| DELETE | `/api/v1/ai/agents/{agentId}` | `AiAgentsManage` | `EnableAI` |
+| GET | `/api/v1/ai/agents/{agentId}/files` | `AiAgentsRead` | `EnableAI` |
+| GET | `/api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsRead` | `EnableAI` |
+| POST | `/api/v1/ai/agents/{agentId}/files` | `AiAgentsManage` | `EnableAI` |
+| DELETE | `/api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsManage` | `EnableAI` |
 
 ## Regras de revisão
 

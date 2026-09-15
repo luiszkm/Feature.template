@@ -17,6 +17,7 @@ import { PermissionsList } from '../features/authorization/permissions-list';
 import { RolesList } from '../features/authorization/roles-list';
 import { UsersList } from '../features/identity/users-list';
 import { TenantsList } from '../features/tenants/tenants-list';
+import { AgentsList } from '../features/ai/agents-list';
 
 interface ListScreen {
   readonly name: string;
@@ -51,6 +52,12 @@ const LIST_SCREENS: ListScreen[] = [
     path: `${API_ORIGIN}/api/v1/tenants`,
     firstSortable: 'tenantKey',
   },
+  {
+    name: 'agents',
+    component: AgentsList,
+    path: `${API_ORIGIN}/api/v1/ai/agents`,
+    firstSortable: 'name',
+  },
 ];
 
 /** One row covering every screen's columns: an empty page renders the empty state, not a table. */
@@ -68,6 +75,10 @@ const ROW = {
   isolationMode: 0,
   createdAt: '2026-01-02T10:00:00Z',
   lastLoginAt: null,
+  agentId: 'row-1',
+  instructions: 'hi',
+  toolNames: [],
+  isDefault: false,
 };
 
 const PAGE = { pageNumber: 1, pageSize: 20, totalCount: 1, data: [ROW] };

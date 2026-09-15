@@ -122,6 +122,6 @@ Itens opcionais / evolução futura:
 
 | Item | Notas |
 |------|--------|
-| AI produção | `StubLlmService`; Azure OpenAI opcional |
+| AI produção | `Ai:Llm:Provider` = `OpenRouter` (default) ou `MicrosoftAgentFramework`; chave `Ai:Llm:ApiKey` / `AI_LLM_API_KEY` (placeholder em `compose.env.example`; valor em `compose.env` ou user-secrets). Testing e Development sem chave usam `StubLlmService`. Production + `EnableAI=true` sem chave falha no arranque. |
 | E2E coverage | Menos testes HTTP que v1 |
 | Middleware avançado | IP whitelist, deduplication, audit |

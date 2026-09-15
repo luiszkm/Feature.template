@@ -11,10 +11,11 @@ public sealed class AgentLoop(
         string userMessage,
         string systemPrompt,
         IReadOnlyList<LlmMessage>? history,
-        CancellationToken cancellationToken)
+        IReadOnlyList<string>? allowedToolNames = null,
+        CancellationToken cancellationToken = default)
     {
         var conversationHistory = history?.ToList() ?? [];
-        var toolDefinitions = toolRegistry.GetDefinitions();
+        var toolDefinitions = toolRegistry.GetDefinitions(allowedToolNames);
         var iterations = 0;
         var totalTokens = 0;
 
@@ -34,12 +35,12 @@ public sealed class AgentLoop(
             if (response.ToolCalls is not { Count: > 0 })
                 return new AgentResult(response.Text, iterations, totalTokens);
 
-            conversationHistory.Add(new LlmMessage("assistant", response.Text));
+            conversationHistory.Add(new LlmMessage("assistant", response.Text, ToolCalls: response.ToolCalls));
 
             foreach (var toolCall in response.ToolCalls)
             {
                 logger.LogInformation("Executing tool {ToolName}", toolCall.Name);
-                var output = await toolRegistry.ExecuteAsync(toolCall, cancellationToken);
+                var output = await toolRegistry.ExecuteAsync(toolCall, allowedToolNames, cancellationToken);
                 conversationHistory.Add(new LlmMessage("tool", output, toolCall.Id));
             }
 

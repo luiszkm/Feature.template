@@ -4,7 +4,7 @@ namespace Api.Features.Ai;
 
 /// <summary>
 /// Development/test LLM that returns direct answers or simulated tool calls.
-/// Replace with Azure OpenAI / OpenAI when Ai:LlmProvider is configured.
+/// Replaced at runtime by Microsoft Agent Framework or OpenRouter when Ai:Llm:ApiKey is set.
 /// </summary>
 internal sealed class StubLlmService : ILlmService
 {

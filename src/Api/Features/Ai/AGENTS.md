@@ -1,12 +1,28 @@
 # AGENTS — Ai
 
-Chat agent com tools; gated por feature flag.
+Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do tenant.
+
+## Agregados (substantivo)
+
+| Ficheiro | Conteúdo |
+|----------|----------|
+| `Agent.cs` | Agent + `IAgentRepository` + EF config (`AiAgents`) |
+| `AgentFile.cs` | AgentFile + `IAgentFileRepository` + EF config (`AiAgentFiles`) |
 
 ## Slices (verbo)
 
-| Slice | Rota | Flag |
-|-------|------|------|
-| ChatAi | `POST /api/v1/ai/chat` | `EnableAI` |
+| Slice | Rota | Policy | Flag |
+|-------|------|--------|------|
+| ChatAi | `POST /api/v1/ai/chat` | `Authenticated` | `EnableAI` |
+| CreateAgent | `POST /api/v1/ai/agents` | `AiAgentsManage` | `EnableAI` |
+| ListAgents | `GET /api/v1/ai/agents` | `AiAgentsRead` | `EnableAI` |
+| GetAgent | `GET /api/v1/ai/agents/{agentId}` | `AiAgentsRead` | `EnableAI` |
+| UpdateAgent | `PUT /api/v1/ai/agents/{agentId}` | `AiAgentsManage` | `EnableAI` |
+| DeactivateAgent | `DELETE /api/v1/ai/agents/{agentId}` | `AiAgentsManage` | `EnableAI` |
+| CreateAgentFile | `POST /api/v1/ai/agents/{agentId}/files` | `AiAgentsManage` | `EnableAI` |
+| ListAgentFiles | `GET /api/v1/ai/agents/{agentId}/files` | `AiAgentsRead` | `EnableAI` |
+| GetAgentFile | `GET /api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsRead` | `EnableAI` |
+| DeleteAgentFile | `DELETE /api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsManage` | `EnableAI` |
 
 Ver `features.json` com `"m": "Ai"`.
 
@@ -14,12 +30,15 @@ Ver `features.json` com `"m": "Ai"`.
 
 | Ficheiro | Papel |
 |----------|-------|
-| `AiModule.cs` | DI: AgentLoop, ToolRegistry, StubLlmService |
-| `AiContracts.cs` | Request/response DTOs |
-| `AgentLoop.cs` | Orquestração LLM + tools |
-| `ToolRegistry.cs` | Registo de tools |
-| `ToolAuthorization.cs` | Autorização por tool |
-| `AgentSystemPrompt.cs` | System prompt |
+| `AiModule.cs` | DI, policies, query filters, `ILlmService` switch |
+| `AiContracts.cs` | `ILlmService`, tools, usage |
+| `AgentContracts.cs` | DTOs + `LlmOptions` + `LlmProviders` |
+| `AgentLoop.cs` | Orquestração LLM + tools da allowlist |
+| `ToolRegistry.cs` | Registo de tools + allowlist |
+| `StubLlmService.cs` | Testing / Development sem chave |
+| `OpenRouterLlmService.cs` | Provider `OpenRouter` |
+| `MicrosoftAgentFrameworkLlmService.cs` | Provider `MicrosoftAgentFramework` |
+| `AgentSystemPrompt.cs` | Texto do seed default |
 
 ## Tools
 
@@ -27,23 +46,34 @@ Ver `features.json` com `"m": "Ai"`.
 |------|-----|
 | `GetUsersSummaryTool` | `IUserDirectory` (Shared; Identity implementa) |
 | `GetTenantInfoTool` | `ITenantDirectory` (Shared; Tenants implementa) |
+| `ListAgentFilesTool` / `ReadAgentFileTool` | `IAgentFileRepository` + `IAgentRuntimeContext` |
 
 ## Feature flag
 
 - Config: `FeatureFlags:EnableAI` em `appsettings.json`
 - Gate: `.RequireFeature(FeatureFlags.EnableAI)` no endpoint (`Api.Shared`)
-- Policy: `Authenticated`
+
+## LLM
+
+- `Ai:Llm:Provider` = `OpenRouter` (default) ou `MicrosoftAgentFramework`
+- Chave: `Ai:Llm:ApiKey` / env `AI_LLM_API_KEY` — placeholder em `compose.env.example`, valor em `compose.env` (gitignored) ou user-secrets
+- Testing, ou Development sem chave → `StubLlmService`
+- Production + `EnableAI=true` sem chave → fail-fast (`InvalidOperationException` nomeia `Ai:Llm:ApiKey`)
 
 ## Gotchas
 
-- Produção: `StubLlmService` — substituir por implementação real (Azure OpenAI, etc.)
-- Sem agregado EF próprio neste módulo
-- Tools acedem a outros módulos via contratos de leitura em Shared (`IUserDirectory`, `ITenantDirectory`), não via MediatR nem tipos de Identity/Tenants
-- Permissões das tools: `DirectoryPermissions.UsersRead` / `TenantsRead` (Shared) — não importar `IdentityPermissions` / `TenantsPermissions`
+- Features ↛ Features/Host: seed em `CreateTenant` via `IDefaultAgentProvisioner` (Shared)
+- Soft-delete: `DeactivateAgent`; o último activo do tenant recusa com 409
+- Chat sem `agentId` usa o seed (`IsDefault`); id desconhecido/inactivo → 404, sem fallback
+- Tools acedem a outros módulos via contratos Shared, não via MediatR
 
 ## Testes
 
 ```
 tests/Api.Tests/Ai/
+  CreateAgentTests.cs
   ChatAiHandlerTests.cs
+  ChatAiTests.cs
+  CreateAgentFileTests.cs
+  LlmServiceTests.cs
 ```

@@ -5,6 +5,7 @@ using Api.Features.Tenants;
 using Api.Host.Security;
 using Api.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,17 @@ public static class TestServiceFactory
         services.AddIdentityModule();
         services.AddAuthorizationModule();
         services.AddTenantsModule();
+        services.AddAiModule();
+        services.AddLogging();
+        services.AddSingleton<IConfiguration>(_ => new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Ai:Llm:Provider"] = LlmProviders.OpenRouter,
+                ["Ai:Llm:ApiKey"] = "",
+                ["Ai:Llm:Model"] = "stub",
+                ["FeatureFlags:EnableAI"] = "true"
+            })
+            .Build());
         services.AddScoped<ITenantContext, TenantContext>();
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IHostEnvironment>(_ => new TestHostEnvironment());
@@ -66,6 +78,9 @@ public static class TestServiceFactory
             "dev",
             "Development Tenant");
 
+        EnsureDefaultAgent(db, WellKnownTenants.Public);
+        EnsureDefaultAgent(db, WellKnownTenants.Development);
+
         db.SaveChanges();
     }
 
@@ -76,6 +91,15 @@ public static class TestServiceFactory
 
         db.Set<Tenant>().Add(
             Tenant.CreateWithId(id, key, displayName, null, TenantIsolationMode.SharedDb));
+    }
+
+    private static void EnsureDefaultAgent(AppDbContext db, Guid tenantId)
+    {
+        if (db.Set<Agent>().IgnoreQueryFilters().Any(agent => agent.TenantId == tenantId && agent.IsDefault))
+            return;
+
+        db.Set<Agent>().Add(
+            Agent.Create(tenantId, "Default", AgentSystemPrompt.Text, AgentToolNames.DefaultSeed, isDefault: true));
     }
 
     public static IServiceProvider Create(string databaseName)
@@ -158,14 +182,24 @@ public static class TestServiceFactory
         return BuildProvider(services);
     }
 
-    public static IServiceProvider CreateWithAi(string databaseName)
+    public static IServiceProvider CreateWithAi(string databaseName, Action<IServiceCollection>? configure = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
         AddCoreServices(services, databaseName);
         services.AddPlatform();
-        services.AddAiModule();
         services.AddScoped<ChatAiHandler>();
+        services.AddScoped<CreateAgentHandler>();
+        services.AddScoped<ListAgentsHandler>();
+        services.AddScoped<GetAgentHandler>();
+        services.AddScoped<UpdateAgentHandler>();
+        services.AddScoped<DeactivateAgentHandler>();
+        services.AddScoped<CreateAgentFileHandler>();
+        services.AddScoped<ListAgentFilesHandler>();
+        services.AddScoped<GetAgentFileHandler>();
+        services.AddScoped<DeleteAgentFileHandler>();
+        services.AddScoped<CreateTenantHandler>();
+        configure?.Invoke(services);
         return BuildProvider(services);
     }
 

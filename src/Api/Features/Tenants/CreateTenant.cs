@@ -27,7 +27,8 @@ public sealed class CreateTenantValidator : AbstractValidator<CreateTenantComman
 
 public sealed class CreateTenantHandler(
     ITenantRepository tenantRepository,
-    IUnitOfWork unitOfWork) : IRequestHandler<CreateTenantCommand, TenantOutput>
+    IUnitOfWork unitOfWork,
+    IEnumerable<IDefaultAgentProvisioner> agentProvisioners) : IRequestHandler<CreateTenantCommand, TenantOutput>
 {
     public async Task<TenantOutput> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
@@ -50,6 +51,9 @@ public sealed class CreateTenantHandler(
 
         await tenantRepository.AddAsync(tenant, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        foreach (var provisioner in agentProvisioners)
+            await provisioner.EnsureDefaultAgentAsync(tenant.Id, cancellationToken);
 
         return TenantMapper.ToOutput(tenant);
     }

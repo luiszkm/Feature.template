@@ -2,6 +2,7 @@ import {
   api,
   authToken,
   el,
+  maybeEl,
   recorder,
   settle,
   stubConfirm,
@@ -15,6 +16,7 @@ import { HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { server } from '../../test-setup';
 import { AUTH_STORAGE_KEY, SessionStore } from '../core/session/session.store';
+import { AiAvailability } from '../features/ai/ai-availability';
 import { Shell } from './shell';
 
 describe('Shell', () => {
@@ -69,5 +71,18 @@ describe('Shell', () => {
     expect(requests).toHaveLength(0);
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).not.toBeNull();
     expect(session.user()).not.toBeNull();
+  });
+
+  it('esconde AI e Agentes quando a flag esta off', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: ['Admin'] }), accessToken: tokenWith([]) });
+    TestBed.inject(AiAvailability).disable();
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(maybeEl(fixture, 'nav-ai')).toBeNull();
+    expect(maybeEl(fixture, 'nav-agents')).toBeNull();
   });
 });

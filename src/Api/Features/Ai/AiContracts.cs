@@ -9,7 +9,11 @@ public sealed record LlmRequest(
     IReadOnlyList<LlmMessage>? History = null,
     IReadOnlyList<ToolDefinition>? Tools = null);
 
-public sealed record LlmMessage(string Role, string Content, string? ToolCallId = null);
+public sealed record LlmMessage(
+    string Role,
+    string Content,
+    string? ToolCallId = null,
+    IReadOnlyList<ToolCall>? ToolCalls = null);
 
 public sealed record LlmResponse(
     string Text,

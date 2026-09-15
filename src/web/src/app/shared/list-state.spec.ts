@@ -22,6 +22,7 @@ import { PermissionsList } from '../features/authorization/permissions-list';
 import { RolesList } from '../features/authorization/roles-list';
 import { UsersList } from '../features/identity/users-list';
 import { TenantsList } from '../features/tenants/tenants-list';
+import { AgentsList } from '../features/ai/agents-list';
 
 interface ListScreen {
   readonly name: string;
@@ -39,6 +40,7 @@ const LIST_SCREENS: ListScreen[] = [
     path: `${API_ORIGIN}/api/v1/authorization/permissions`,
   },
   { name: 'tenants', component: TenantsList, path: `${API_ORIGIN}/api/v1/tenants` },
+  { name: 'agents', component: AgentsList, path: `${API_ORIGIN}/api/v1/ai/agents` },
 ];
 
 function authenticate(): void {

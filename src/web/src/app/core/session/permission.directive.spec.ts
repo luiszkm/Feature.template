@@ -19,6 +19,7 @@ const MANAGE_PERMISSIONS = [
   Permissions.roleManage,
   Permissions.permissionManage,
   Permissions.tenantsManage,
+  Permissions.agentManage,
 ];
 
 describe('HasPermissionDirective', () => {

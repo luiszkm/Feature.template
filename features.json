@@ -231,12 +231,84 @@
     "featureFlag": null,
     "policy": "TenantsManage"
   },
-  "ChatAi": {
+    "ChatAi": {
     "m": "Ai",
     "app": "src/Api/Features/Ai/ChatAi.cs",
     "test": "tests/Api.Tests/Ai/ChatAiHandlerTests.cs",
     "route": "POST /api/v1/ai/chat",
     "featureFlag": "EnableAI",
     "policy": "Authenticated"
+  },
+  "CreateAgent": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/CreateAgent.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentTests.cs",
+    "route": "POST /api/v1/ai/agents",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "ListAgents": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListAgents.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentTests.cs",
+    "route": "GET /api/v1/ai/agents",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "GetAgent": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetAgent.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentTests.cs",
+    "route": "GET /api/v1/ai/agents/{agentId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "UpdateAgent": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/UpdateAgent.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentTests.cs",
+    "route": "PUT /api/v1/ai/agents/{agentId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "DeactivateAgent": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/DeactivateAgent.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentTests.cs",
+    "route": "DELETE /api/v1/ai/agents/{agentId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "CreateAgentFile": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/CreateAgentFile.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentFileTests.cs",
+    "route": "POST /api/v1/ai/agents/{agentId}/files",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "ListAgentFiles": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListAgentFiles.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentFileTests.cs",
+    "route": "GET /api/v1/ai/agents/{agentId}/files",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "GetAgentFile": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetAgentFile.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentFileTests.cs",
+    "route": "GET /api/v1/ai/agents/{agentId}/files/{fileId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "DeleteAgentFile": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/DeleteAgentFile.cs",
+    "test": "tests/Api.Tests/Ai/CreateAgentFileTests.cs",
+    "route": "DELETE /api/v1/ai/agents/{agentId}/files/{fileId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
   }
 }
