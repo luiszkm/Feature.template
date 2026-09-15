@@ -1,5 +1,27 @@
 import { expect, test } from '@playwright/test';
-import { login } from './fixtures';
+import { login, logout } from './fixtures';
+
+test('credenciais inválidas mostram o detalhe e ficam no login', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByTestId('tenant').fill('dev');
+  await page.getByTestId('email').fill('admin@producttemplate.com');
+  await page.getByTestId('password').fill('wrong-password');
+  await page.getByTestId('submit').click();
+
+  await expect(page.getByTestId('login-message')).toHaveText('Invalid email or password.');
+  await expect(page).toHaveURL(/\/login/);
+});
+
+test('tenant desconhecido mostra tenant inválido', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByTestId('tenant').fill('no-such-tenant');
+  await page.getByTestId('email').fill('admin@producttemplate.com');
+  await page.getByTestId('password').fill('Admin@123');
+  await page.getByTestId('submit').click();
+
+  await expect(page.getByTestId('tenant-error')).toHaveText('Tenant inválido');
+  await expect(page).toHaveURL(/\/login/);
+});
 
 test('renova o token expirado', async ({ page }) => {
   await login(page);
@@ -30,4 +52,12 @@ test('renova o token expirado', async ({ page }) => {
   expect(storage.local.toLowerCase()).not.toContain('token');
   expect(storage.session).toBe('{}');
   expect(storage.cookies).not.toContain('pt_refresh');
+});
+
+test('sair revoga a sessão e volta ao login', async ({ page }) => {
+  await login(page);
+  await expect(page.getByTestId('session-user')).toBeVisible();
+  await logout(page);
+  await page.goto('/users');
+  await expect(page).toHaveURL(/\/login/);
 });

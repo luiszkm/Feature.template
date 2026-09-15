@@ -1,19 +1,12 @@
 import { expect, test } from '@playwright/test';
-import { login } from './fixtures';
+import { createUserFromUi, delayApi, login, searchUntilEmpty, unique } from './fixtures';
 
 test('cria e elimina um utilizador', async ({ page }) => {
   const email = `e2e-${Date.now()}@example.com`;
 
   await login(page);
 
-  await page.getByTestId('create-user').click();
-  await page.getByTestId('email').fill(email);
-  await page.getByTestId('password').fill('Str0ng@Pass1');
-  await page.getByTestId('firstName').fill('E2E');
-  await page.getByTestId('lastName').fill('Tester');
-  await page.getByTestId('submit').click();
-
-  await expect(page).toHaveURL(/\/users$/);
+  await createUserFromUi(page, { email });
 
   await page.getByTestId('search').fill(email);
   const row = page.locator('tr', { hasText: email });
@@ -30,13 +23,7 @@ test('edita um utilizador a partir da lista', async ({ page }) => {
 
   await login(page);
 
-  await page.getByTestId('create-user').click();
-  await page.getByTestId('email').fill(email);
-  await page.getByTestId('password').fill('Str0ng@Pass1');
-  await page.getByTestId('firstName').fill('Antes');
-  await page.getByTestId('lastName').fill('Edicao');
-  await page.getByTestId('submit').click();
-  await expect(page).toHaveURL(/\/users$/);
+  await createUserFromUi(page, { email, firstName: 'Antes', lastName: 'Edicao' });
 
   await page.getByTestId('search').fill(email);
   const row = page.locator('tr', { hasText: email });
@@ -60,4 +47,20 @@ test('edita um utilizador a partir da lista', async ({ page }) => {
   await updated.getByRole('button', { name: 'Eliminar' }).click();
   await page.getByTestId('confirm-accept').click();
   await expect(page.locator('tr', { hasText: email })).toHaveCount(0);
+});
+
+test('pesquisa sem resultados mostra o estado vazio', async ({ page }) => {
+  await login(page);
+  await expect(page.getByTestId('users-table')).toBeVisible();
+  await searchUntilEmpty(page, 'Nenhum utilizador');
+  await expect(page.getByRole('link', { name: 'Criar utilizador' })).toBeVisible();
+});
+
+test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
+  await login(page);
+  await delayApi(page, '**/api/v1/identity/users?*');
+  await page.goto(`/users?searchTerm=${unique('load')}`);
+  await expect(page.getByTestId('list-loading')).toBeVisible();
+  await expect(page.getByTestId('paginator')).toBeDisabled();
+  await expect(page.getByTestId('list-loading')).toHaveCount(0, { timeout: 20_000 });
 });
