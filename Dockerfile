@@ -13,6 +13,8 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS restore
 WORKDIR /src
+# ImplicitUsings/Nullable live here; without it, publish fails CS0246 (Guid, Task, …).
+COPY Directory.Build.props ./
 COPY src/Api/Api.csproj src/Api/
 RUN dotnet restore src/Api/Api.csproj
 

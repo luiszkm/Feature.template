@@ -14,17 +14,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ProductTemplateV2"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 20s
 
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: product-template-v2-api
+    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,6 +45,7 @@ services:
       Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost:5080}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in compose.env}
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-admin@producttemplate.com}
+      FeatureFlags__EnableAI: ${FEATURE_FLAGS_ENABLE_AI:-false}
       Ai__Llm__Provider: ${AI_LLM_PROVIDER:-OpenRouter}
       Ai__Llm__ApiKey: ${AI_LLM_API_KEY:-}
       Ai__Llm__Model: ${AI_LLM_MODEL:-openai/gpt-4o-mini}
