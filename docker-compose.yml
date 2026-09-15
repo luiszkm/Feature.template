@@ -14,17 +14,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ProductTemplateV2"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 10
+      start_period: 20s
 
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: product-template-v2-api
+    restart: on-failure
     depends_on:
       postgres:
         condition: service_healthy
