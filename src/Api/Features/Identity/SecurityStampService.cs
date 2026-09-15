@@ -3,12 +3,6 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Api.Features.Identity;
 
-public interface ISecurityStampService
-{
-    Task RegenerateAsync(Guid tenantId, Guid userId, CancellationToken cancellationToken = default);
-    Task<bool> ValidateAsync(Guid tenantId, Guid userId, string stamp, CancellationToken cancellationToken = default);
-}
-
 internal sealed class SecurityStampService(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,

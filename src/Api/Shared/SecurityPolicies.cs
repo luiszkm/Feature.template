@@ -1,4 +1,4 @@
-namespace Api.Host.Security;
+namespace Api.Shared;
 
 public static class SecurityPolicies
 {

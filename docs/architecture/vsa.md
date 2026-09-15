@@ -28,13 +28,15 @@ features.json               # índice app + test + route + policy + featureFlag
 3. **Auto-discovery** — endpoints via `IEndpoint` + `MapEndpointsFromAssembly()`; **não** editar `Program.cs` por slice.
 4. **Testes separados** — padrão .NET; espelho plano em `tests/Api.Tests/{Module}/`.
 5. **Shared não referencia Features** — regra enforced em ArchitectureTests.
+6. **Features.{A} não referencia Features.{B}** — contratos cross-module em Shared (`IUserRolesProvider`, `IUserLookup`, `ISecurityStampService`, `IUserDirectory`, `ITenantDirectory`). Allowlist de ArchitectureTests deve permanecer vazia.
 
 ## Host
 
 | Área | Path |
 |------|------|
 | Registo de módulos | `Host/Configurations/FeatureModulesConfiguration.cs` |
-| Segurança JWT / policies | `Host/Configurations/SecurityConfiguration.cs` |
+| Nomes de policies | `Shared/SecurityPolicies.cs` |
+| Segurança JWT | `Host/Configurations/SecurityConfiguration.cs` + `Host/Security/` |
 | Feature flags | `Host/FeatureFlags.cs` + `appsettings.json` |
 | Seed dev | `Host/Seeders/` |
 

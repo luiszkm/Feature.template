@@ -17,10 +17,10 @@ Ver `features.json` com `"m": "Identity"`: RegisterUser, Login, RefreshAccessTok
 
 | Ficheiro | Papel |
 |----------|-------|
-| `IdentityModule.cs` | DI, tenant filters, policies |
+| `IdentityModule.cs` | DI, tenant filters, policies; `IUserLookup` + `IUserDirectory` |
 | `IdentityAuthorization.cs` | SelfOrPermission handler |
 | `IdentityPermissions.cs` | `identity.user.read`, `identity.user.manage` |
-| `SecurityStampService.cs` | Regenerate + validate stamp (cache) |
+| `SecurityStampService.cs` | Implementação de `ISecurityStampService` (contrato em Shared) |
 | `AuthContracts.cs` | `AuthTokenResponse` (o que vai na rede), `AuthTokenOutput` (saída do handler, com o token cru), `UserAuthOutput` |
 | `RefreshCookie.cs` | Escreve, lê e apaga o cookie `pt_refresh` — único sítio que decide os atributos |
 | `UserOutput.cs` | UserOutput + `UserMapper.ToOutput` |
@@ -39,8 +39,8 @@ Detalhe: `docs/security/RBAC_MATRIX.md`.
 
 ## Dependências cross-module
 
-- **Authorization:** `IUserRolesProvider` (roles/permissions no JWT)
-- **Authorization → Identity:** `ISecurityStampService` em assign/revoke role
+- **Authorization:** `IUserRolesProvider` (roles/permissions no JWT) — contrato em Shared
+- **Authorization / Host / Ai:** `IUserLookup`, `ISecurityStampService` e `IUserDirectory` em Shared; Identity implementa. Assign/revoke regenera stamp sem importar este módulo
 
 ## Gotchas
 

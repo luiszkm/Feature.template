@@ -25,8 +25,8 @@ Ver `features.json` com `"m": "Ai"`.
 
 | Tool | Dep |
 |------|-----|
-| `GetUsersSummaryTool` | Identity (`IUserRepository`) |
-| `GetTenantInfoTool` | Tenants |
+| `GetUsersSummaryTool` | `IUserDirectory` (Shared; Identity implementa) |
+| `GetTenantInfoTool` | `ITenantDirectory` (Shared; Tenants implementa) |
 
 ## Feature flag
 
@@ -38,7 +38,8 @@ Ver `features.json` com `"m": "Ai"`.
 
 - Produção: `StubLlmService` — substituir por implementação real (Azure OpenAI, etc.)
 - Sem agregado EF próprio neste módulo
-- Tools acedem a outros módulos via interfaces públicas apenas
+- Tools acedem a outros módulos via contratos de leitura em Shared (`IUserDirectory`, `ITenantDirectory`), não via MediatR nem tipos de Identity/Tenants
+- Códigos de permissão nas tools (`identity.user.read`, `tenants.read`) são strings canónicas — não importar `IdentityPermissions` / `TenantsPermissions`
 
 ## Testes
 

@@ -1,4 +1,5 @@
 using Api.Features.Identity;
+using Api.Shared;
 using Api.Tests.Common;
 using Microsoft.Extensions.DependencyInjection;
 

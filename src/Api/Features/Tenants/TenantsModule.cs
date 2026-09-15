@@ -1,4 +1,3 @@
-using Api.Host.Security;
 using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +9,7 @@ public static class TenantsModule
     public static IServiceCollection AddTenantsModule(this IServiceCollection services)
     {
         services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<ITenantDirectory, TenantDirectory>();
         services.AddScoped<ITenantStore, TenantStore>();
         return services;
     }
@@ -31,5 +31,24 @@ public static class TenantsModule
                     TenantsPermissions.Manage)));
 
         return options;
+    }
+}
+
+internal sealed class TenantDirectory(ITenantRepository tenants) : ITenantDirectory
+{
+    public async Task<PaginatedListOutput<TenantDirectoryEntry>> ListAsync(
+        ListQuery query,
+        CancellationToken cancellationToken = default)
+    {
+        var page = await tenants.ListAllAsync(query, cancellationToken);
+        return new PaginatedListOutput<TenantDirectoryEntry>(
+            page.PageNumber,
+            page.PageSize,
+            page.TotalCount,
+            page.Data.Select(tenant => new TenantDirectoryEntry(
+                tenant.Id,
+                tenant.TenantKey,
+                tenant.IsolationMode,
+                tenant.IsActive)).ToList());
     }
 }

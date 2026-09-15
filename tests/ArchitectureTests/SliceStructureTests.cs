@@ -128,4 +128,72 @@ public sealed class SliceStructureTests
 
         Assert.True(missing.Count == 0, "features.json app paths missing: " + string.Join("; ", missing));
     }
+
+    [Fact]
+    public void Features_ShouldNotDependOn_OtherFeatureModules()
+    {
+        var featuresRoot = Path.Combine(RepoRoot, "src", "Api", "Features");
+        Assert.True(Directory.Exists(featuresRoot), $"Missing Features root: {featuresRoot}");
+
+        var modules = Directory.GetDirectories(featuresRoot)
+            .Select(path => new DirectoryInfo(path).Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.Contains("Identity", modules);
+        Assert.Contains("Authorization", modules);
+
+        // Cross-module type coupling must go through Shared contracts.
+        // Keep this empty; a new pair is a documented leftover, not a silent exception.
+        var allowed = new HashSet<(string From, string To)>();
+
+        var failures = new List<string>();
+        foreach (var from in modules)
+        {
+            foreach (var to in modules)
+            {
+                if (from == to || allowed.Contains((from, to)))
+                    continue;
+
+                var result = Types.InAssembly(AppAssembly)
+                    .That()
+                    .ResideInNamespaceStartingWith($"Api.Features.{from}")
+                    .ShouldNot()
+                    .HaveDependencyOn($"Api.Features.{to}")
+                    .GetResult();
+
+                if (result.IsSuccessful)
+                    continue;
+
+                var types = string.Join(", ", result.FailingTypeNames ?? []);
+                failures.Add($"{from} → {to}: {types}");
+            }
+        }
+
+        Assert.True(failures.Count == 0,
+            "Feature modules must not reference each other. Add a Shared contract or a documented allowlist entry. "
+            + string.Join("; ", failures));
+    }
+
+    [Fact]
+    public void Features_ShouldNotDependOn_HostSecurity()
+    {
+        var result = Types.InAssembly(AppAssembly)
+            .That()
+            .ResideInNamespaceStartingWith("Api.Features")
+            .ShouldNot()
+            .HaveDependencyOn("Api.Host.Security")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void GlobalUsings_ShouldNotImport_FeatureModules()
+    {
+        var path = Path.Combine(RepoRoot, "src", "Api", "GlobalUsings.cs");
+        var text = File.ReadAllText(path);
+
+        Assert.DoesNotContain("global using Api.Features", text, StringComparison.Ordinal);
+    }
 }

@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Api.Host.Configurations;
-using Api.Host.Security;
 using FluentValidation;
 using MediatR;
 

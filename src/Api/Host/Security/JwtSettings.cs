@@ -9,11 +9,3 @@ public sealed class JwtSettings
     public int ExpirationMinutes { get; set; } = 60;
     public int RefreshTokenExpirationDays { get; set; } = 30;
 }
-
-public interface IJwtTokenService
-{
-    int GetExpiresInSeconds();
-    string CreateAccessToken(Guid userId, string email, IEnumerable<string> roles, IEnumerable<System.Security.Claims.Claim>? extraClaims = null);
-    string GenerateRefreshToken();
-    int GetRefreshTokenExpirationDays();
-}

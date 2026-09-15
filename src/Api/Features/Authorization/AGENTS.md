@@ -35,8 +35,8 @@ Detalhe: `docs/security/RBAC_MATRIX.md`.
 
 ## Dependências cross-module
 
-- **Identity:** `IUserRepository`, `ISecurityStampService` — assign/revoke role regenera stamp
-- **Identity consome:** `IUserRolesProvider`
+- **Identity:** `IUserLookup` e `ISecurityStampService` em Shared — assign/revoke role regenera stamp
+- **Identity consome:** `IUserRolesProvider` (Shared; este módulo implementa)
 
 ## Gotchas
 

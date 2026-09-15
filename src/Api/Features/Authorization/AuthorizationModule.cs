@@ -1,4 +1,3 @@
-using Api.Host.Security;
 using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
