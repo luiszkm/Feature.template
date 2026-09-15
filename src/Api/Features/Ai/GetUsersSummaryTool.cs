@@ -1,13 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Api.Features.Identity;
 using Api.Shared;
-using MediatR;
 
 namespace Api.Features.Ai;
 
 public sealed class GetUsersSummaryTool(
-    IMediator mediator,
+    IUserDirectory userDirectory,
     ICurrentUserAccessor currentUser) : ITool
 {
     public ToolDefinition Definition { get; } = new(
@@ -29,12 +27,14 @@ public sealed class GetUsersSummaryTool(
 
     public async Task<string> ExecuteAsync(ToolCall toolCall, CancellationToken cancellationToken = default)
     {
-        ToolAuthorization.EnsurePermission(currentUser, IdentityPermissions.UserRead);
+        ToolAuthorization.EnsurePermission(currentUser, DirectoryPermissions.UsersRead);
 
         var pageSize = toolCall.Parameters["page_size"]?.GetValue<int>() ?? 10;
         pageSize = Math.Clamp(pageSize, 1, 50);
 
-        var result = await mediator.Send(new ListUsersQuery(PageNumber: 1, PageSize: pageSize), cancellationToken);
+        var result = await userDirectory.ListAsync(
+            new ListQuery(PageNumber: 1, PageSize: pageSize),
+            cancellationToken);
 
         var summary = new
         {

@@ -16,8 +16,8 @@ Ver `features.json` com `"m": "Tenants"`: CreateTenant, ListTenants, GetTenant, 
 
 | Ficheiro | Papel |
 |----------|-------|
-| `TenantsModule.cs` | DI + policies; `ITenantStore` |
-| `TenantsPermissions.cs` | `tenants.read`, `tenants.manage` |
+| `TenantsModule.cs` | DI + policies; `ITenantStore`; `ITenantDirectory` (Shared) |
+| `TenantsPermissions.cs` | `tenants.read` (= `DirectoryPermissions.TenantsRead`), `tenants.manage` |
 | `TenantContracts.cs` | DTOs de tenant |
 
 ## Policies

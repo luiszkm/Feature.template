@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Api.Host.Security;
 using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
 

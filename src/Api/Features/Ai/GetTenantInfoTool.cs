@@ -1,13 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Api.Features.Tenants;
 using Api.Shared;
-using MediatR;
 
 namespace Api.Features.Ai;
 
 public sealed class GetTenantInfoTool(
-    IMediator mediator,
+    ITenantDirectory tenantDirectory,
     ICurrentUserAccessor currentUser) : ITool
 {
     public ToolDefinition Definition { get; } = new(
@@ -29,12 +27,14 @@ public sealed class GetTenantInfoTool(
 
     public async Task<string> ExecuteAsync(ToolCall toolCall, CancellationToken cancellationToken = default)
     {
-        ToolAuthorization.EnsurePermission(currentUser, TenantsPermissions.Read);
+        ToolAuthorization.EnsurePermission(currentUser, DirectoryPermissions.TenantsRead);
 
         var pageSize = toolCall.Parameters["page_size"]?.GetValue<int>() ?? 20;
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var result = await mediator.Send(new ListTenantsQuery(PageNumber: 1, PageSize: pageSize), cancellationToken);
+        var result = await tenantDirectory.ListAsync(
+            new ListQuery(PageNumber: 1, PageSize: pageSize),
+            cancellationToken);
 
         var summary = new
         {

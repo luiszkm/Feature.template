@@ -1,4 +1,4 @@
-namespace Api.Host;
+namespace Api.Shared;
 
 public static class FeatureFlags
 {

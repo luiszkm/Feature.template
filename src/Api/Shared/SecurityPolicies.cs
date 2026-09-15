@@ -1,4 +1,4 @@
-namespace Api.Host.Security;
+namespace Api.Shared;
 
 public static class SecurityPolicies
 {
@@ -13,4 +13,9 @@ public static class SecurityPolicies
     public const string UserReadOrSelf = "UserReadOrSelf";
     public const string UserManageOrSelf = "UserManageOrSelf";
     public const string Authenticated = "Authenticated";
+}
+
+public static class RateLimitPolicies
+{
+    public const string AuthRateLimitPolicy = "auth";
 }

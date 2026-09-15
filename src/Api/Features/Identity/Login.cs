@@ -1,6 +1,4 @@
 using System.Security.Claims;
-using Api.Host.Configurations;
-using Api.Host.Security;
 using FluentValidation;
 using MediatR;
 
@@ -106,7 +104,7 @@ public sealed class LoginEndpoint : IEndpoint
         .WithName("Login")
         .WithTags("Identity")
         .AllowAnonymous()
-        .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
+        .RequireRateLimiting(RateLimitPolicies.AuthRateLimitPolicy)
         .Produces<AuthTokenResponse>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)

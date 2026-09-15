@@ -19,8 +19,8 @@ Ao editar ficheiros em `Features/{Module}/`, **ler primeiro** `src/Api/Features/
 ```
 src/Api/
 ├── Program.cs          # ≤40 lines — não editar por slice
-├── Host/               # configs, middleware, RequireFeature()
-├── Shared/             # Kernel | Infrastructure | Platform
+├── Host/               # configs, middleware, seeders
+├── Shared/             # Kernel | Infrastructure | Platform (policies, flags, RequireFeature)
 └── Features/{Module}/
     ├── AGENTS.md       # contexto do módulo
     ├── {Entity}.cs     # domínio (substantivo)

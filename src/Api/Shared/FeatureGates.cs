@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.FeatureManagement;
 
-namespace Api.Host.Extensions;
+namespace Api.Shared;
 
 public sealed class FeatureGateFilter(string featureName) : IEndpointFilter
 {
@@ -26,7 +26,7 @@ public sealed class FeatureGateFilter(string featureName) : IEndpointFilter
     }
 }
 
-public static class EndpointExtensions
+public static class FeatureGateExtensions
 {
     public static RouteHandlerBuilder RequireFeature(this RouteHandlerBuilder builder, string featureName) =>
         builder.AddEndpointFilter(new FeatureGateFilter(featureName));

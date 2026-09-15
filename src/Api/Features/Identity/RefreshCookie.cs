@@ -1,6 +1,3 @@
-using Api.Host.Security;
-using Microsoft.Extensions.Options;
-
 namespace Api.Features.Identity;
 
 /// <summary>
@@ -29,8 +26,8 @@ public static class RefreshCookie
     public static void Write(HttpContext context, string rawToken)
     {
         var days = context.RequestServices
-            .GetRequiredService<IOptions<JwtSettings>>()
-            .Value.RefreshTokenExpirationDays;
+            .GetRequiredService<IJwtTokenService>()
+            .GetRefreshTokenExpirationDays();
 
         context.Response.Cookies.Append(Name, rawToken, OptionsFor(context, days));
     }

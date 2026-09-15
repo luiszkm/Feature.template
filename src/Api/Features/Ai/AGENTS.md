@@ -25,20 +25,21 @@ Ver `features.json` com `"m": "Ai"`.
 
 | Tool | Dep |
 |------|-----|
-| `GetUsersSummaryTool` | Identity (`IUserRepository`) |
-| `GetTenantInfoTool` | Tenants |
+| `GetUsersSummaryTool` | `IUserDirectory` (Shared; Identity implementa) |
+| `GetTenantInfoTool` | `ITenantDirectory` (Shared; Tenants implementa) |
 
 ## Feature flag
 
 - Config: `FeatureFlags:EnableAI` em `appsettings.json`
-- Gate: `.RequireFeature(FeatureFlags.EnableAI)` no endpoint
+- Gate: `.RequireFeature(FeatureFlags.EnableAI)` no endpoint (`Api.Shared`)
 - Policy: `Authenticated`
 
 ## Gotchas
 
 - Produção: `StubLlmService` — substituir por implementação real (Azure OpenAI, etc.)
 - Sem agregado EF próprio neste módulo
-- Tools acedem a outros módulos via interfaces públicas apenas
+- Tools acedem a outros módulos via contratos de leitura em Shared (`IUserDirectory`, `ITenantDirectory`), não via MediatR nem tipos de Identity/Tenants
+- Permissões das tools: `DirectoryPermissions.UsersRead` / `TenantsRead` (Shared) — não importar `IdentityPermissions` / `TenantsPermissions`
 
 ## Testes
 

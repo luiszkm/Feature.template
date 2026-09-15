@@ -1,5 +1,3 @@
-using Api.Features.Identity;
-using Api.Host.Security;
 using Api.Shared;
 using FluentValidation;
 using MediatR;
@@ -20,7 +18,7 @@ public sealed class AssignUserToRoleValidator : AbstractValidator<AssignUserToRo
 public sealed class AssignUserToRoleHandler(
     IUserAssignmentRepository assignmentRepository,
     IRoleRepository roleRepository,
-    IUserRepository userRepository,
+    IUserLookup userLookup,
     ISecurityStampService securityStampService,
     ITenantContext tenantContext) : IRequestHandler<AssignUserToRoleCommand, bool>
 {
@@ -29,11 +27,11 @@ public sealed class AssignUserToRoleHandler(
         var tenantId = tenantContext.TenantId
             ?? throw new BusinessRuleException("Tenant must be resolved before assigning roles.");
 
-        var role = await roleRepository.GetByIdAsync(request.RoleId, cancellationToken)
-            ?? throw new NotFoundException($"Role '{request.RoleId}' was not found.");
+        if (await roleRepository.GetByIdAsync(request.RoleId, cancellationToken) is null)
+            throw new NotFoundException($"Role '{request.RoleId}' was not found.");
 
-        var user = await userRepository.GetByIdAsync(request.UserId, cancellationToken)
-            ?? throw new NotFoundException($"User '{request.UserId}' was not found.");
+        if (!await userLookup.ExistsAsync(request.UserId, cancellationToken))
+            throw new NotFoundException($"User '{request.UserId}' was not found.");
 
         var existing = await assignmentRepository.GetByUserAndRoleAsync(
             request.UserId,

@@ -1,5 +1,3 @@
-using Api.Features.Identity;
-using Api.Host.Security;
 using Api.Shared;
 using FluentValidation;
 using MediatR;

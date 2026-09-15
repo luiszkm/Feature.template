@@ -18,7 +18,6 @@ namespace Api.Host.Configurations;
 public static class SecurityConfiguration
 {
     public const string DefaultCorsPolicyName = "DefaultCorsPolicy";
-    public const string AuthRateLimitPolicy = "auth";
 
     public static IServiceCollection AddSecurity(
         this IServiceCollection services,
@@ -133,7 +132,7 @@ public static class SecurityConfiguration
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            options.AddFixedWindowLimiter(AuthRateLimitPolicy, limiter =>
+            options.AddFixedWindowLimiter(RateLimitPolicies.AuthRateLimitPolicy, limiter =>
             {
                 limiter.PermitLimit = 20;
                 limiter.Window = TimeSpan.FromMinutes(1);

@@ -43,7 +43,8 @@ Queries usam `IQuery<T>` em vez de `ICommand<T>`.
 
 ## Auth e RBAC
 
-- Endpoints protegidos: `.RequireAuthorization(SecurityPolicies.X)` — nunca `[Authorize]` bare
+- Endpoints protegidos: `.RequireAuthorization(SecurityPolicies.X)` (`Api.Shared`) — nunca `[Authorize]` bare
+- Rate limit de auth: `.RequireRateLimiting(RateLimitPolicies.AuthRateLimitPolicy)` (`Api.Shared`)
 - Permissões canônicas: `{module}.{resource}.{action}` (lowercase, dot-separated)
 - Matriz de rotas: `docs/security/RBAC_MATRIX.md`
 - JWT: claims `security_stamp` e `tenant_id` validados no pipeline
