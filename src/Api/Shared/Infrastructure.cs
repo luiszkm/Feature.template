@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -37,6 +38,23 @@ public sealed class AppDbContext(
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         base.SaveChangesAsync(cancellationToken);
+}
+
+/// <summary>
+/// Design-time factory so `dotnet ef` can build the model without booting the web host
+/// (JWT fail-fast, seed, or a live PostgreSQL). Query filters stay runtime-only via
+/// <see cref="ITenantQueryFilterConfigurator"/>, matching the existing snapshot.
+/// </summary>
+internal sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+{
+    public AppDbContext CreateDbContext(string[] args)
+    {
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql("Host=127.0.0.1;Database=product_template;Username=postgres;Password=postgres")
+            .Options;
+
+        return new AppDbContext(options, new TenantContext(), []);
+    }
 }
 
 public static class InfrastructureExtensions

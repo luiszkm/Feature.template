@@ -1,11 +1,14 @@
 using Api.Shared;
 using FluentValidation;
 using MediatR;
+using Microsoft.Extensions.Options;
 
 namespace Api.Features.Ai;
 
-public sealed record ChatAiCommand(string Message, IReadOnlyList<LlmMessage>? History = null)
-    : ICommand<ChatAiOutput>;
+public sealed record ChatAiCommand(
+    string Message,
+    IReadOnlyList<LlmMessage>? History = null,
+    Guid? AgentId = null) : ICommand<ChatAiOutput>;
 
 public sealed class ChatAiValidator : AbstractValidator<ChatAiCommand>
 {
@@ -17,8 +20,12 @@ public sealed class ChatAiValidator : AbstractValidator<ChatAiCommand>
 
 public sealed class ChatAiHandler(
     AgentLoop agentLoop,
+    IAgentRepository agents,
+    IAgentRuntimeContext runtime,
     IAiUsageTracker usageTracker,
     ITenantContext tenantContext,
+    IHostEnvironment environment,
+    IOptions<LlmOptions> llmOptions,
     ILogger<ChatAiHandler> logger) : IRequestHandler<ChatAiCommand, ChatAiOutput>
 {
     public async Task<ChatAiOutput> Handle(ChatAiCommand request, CancellationToken cancellationToken)
@@ -28,6 +35,9 @@ public sealed class ChatAiHandler(
 
         logger.LogInformation("AI chat request for tenant {TenantId}", tenantId);
 
+        var agent = await ResolveAgentAsync(request.AgentId, cancellationToken);
+        runtime.Set(agent.Id);
+
         var started = DateTime.UtcNow;
         AgentResult? result = null;
         string? errorCode = null;
@@ -36,8 +46,9 @@ public sealed class ChatAiHandler(
         {
             result = await agentLoop.RunAsync(
                 request.Message,
-                AgentSystemPrompt.Text,
+                agent.Instructions,
                 request.History,
+                agent.ToolNames,
                 cancellationToken);
 
             return new ChatAiOutput(result.Reply, result.IterationsUsed);
@@ -50,11 +61,12 @@ public sealed class ChatAiHandler(
         }
         finally
         {
+            var (provider, model) = LlmServiceResolver.UsageLabels(environment, llmOptions.Value);
             await usageTracker.TrackAsync(
                 new AiUsageRecord(
                     Service: "llm",
-                    Provider: "stub",
-                    Model: "stub",
+                    Provider: provider,
+                    Model: model,
                     Module: "ai",
                     Operation: "chat",
                     TenantId: tenantId,
@@ -64,6 +76,24 @@ public sealed class ChatAiHandler(
                     ErrorCode: errorCode),
                 cancellationToken);
         }
+    }
+
+    private async Task<Agent> ResolveAgentAsync(Guid? agentId, CancellationToken cancellationToken)
+    {
+        if (agentId is { } id)
+        {
+            var agent = await agents.GetByIdAsync(id, cancellationToken);
+            if (agent is null || !agent.IsActive)
+                throw new NotFoundException($"Agent '{id}' was not found.");
+
+            return agent;
+        }
+
+        var seed = await agents.GetDefaultAsync(cancellationToken);
+        if (seed is null)
+            throw new NotFoundException("Default agent was not found.");
+
+        return seed;
     }
 }
 
@@ -76,7 +106,9 @@ public sealed class ChatAiEndpoint : IEndpoint
             IMediator mediator,
             CancellationToken cancellationToken) =>
         {
-            var result = await mediator.Send(new ChatAiCommand(body.Message, body.History), cancellationToken);
+            var result = await mediator.Send(
+                new ChatAiCommand(body.Message, body.History, body.AgentId),
+                cancellationToken);
             return Results.Ok(new ChatAiResponse(result.Reply, result.IterationsUsed));
         })
         .RequireFeature(FeatureFlags.EnableAI)
@@ -89,6 +121,9 @@ public sealed class ChatAiEndpoint : IEndpoint
     }
 }
 
-public sealed record ChatAiRequest(string Message, IReadOnlyList<LlmMessage>? History = null);
+public sealed record ChatAiRequest(
+    string Message,
+    IReadOnlyList<LlmMessage>? History = null,
+    Guid? AgentId = null);
 
 public sealed record ChatAiResponse(string Reply, int IterationsUsed);

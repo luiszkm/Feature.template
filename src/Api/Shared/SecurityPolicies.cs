@@ -13,6 +13,8 @@ public static class SecurityPolicies
     public const string UserReadOrSelf = "UserReadOrSelf";
     public const string UserManageOrSelf = "UserManageOrSelf";
     public const string Authenticated = "Authenticated";
+    public const string AiAgentsRead = "AiAgentsRead";
+    public const string AiAgentsManage = "AiAgentsManage";
 }
 
 public static class RateLimitPolicies

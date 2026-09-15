@@ -1,3 +1,4 @@
+using Api.Features.Ai;
 using Api.Features.Authorization;
 using Api.Features.Identity;
 using Api.Features.Tenants;
@@ -15,6 +16,8 @@ internal static class PermissionCatalog
         (AuthorizationPermissions.PermissionRead, "Read permissions catalog"),
         (AuthorizationPermissions.PermissionManage, "Create, update, delete permissions"),
         (TenantsPermissions.Read, "Read tenants and their details"),
-        (TenantsPermissions.Manage, "Create, update, and deactivate tenants")
+        (TenantsPermissions.Manage, "Create, update, and deactivate tenants"),
+        (AiPermissions.AgentRead, "Read AI agents and their files"),
+        (AiPermissions.AgentManage, "Create, update, and deactivate AI agents and their files")
     ];
 }

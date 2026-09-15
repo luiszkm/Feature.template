@@ -1,9 +1,13 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Api.Features.Ai;
 using Api.Features.Identity;
 using Api.Tests.Common;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.Tests.Ai;
 
@@ -27,6 +31,8 @@ public sealed class ChatAiTests
             new { message = "hello" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("Feature disabled", problem?.Title);
     }
 
     [Fact]
@@ -62,6 +68,29 @@ public sealed class ChatAiTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ChatAi_ShouldReturn500_WhenLlmHttpFails()
+    {
+        await using var factory = TestWebApplicationFactory.Create(settings =>
+        {
+            settings["FeatureFlags:EnableAI"] = "true";
+            settings["Seed:AdminPassword"] = TestPassword;
+        }).WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddSingleton<ILlmService, ThrowingLlmService>();
+            });
+        });
+
+        using var client = await CreateAuthenticatedClientAsync(factory);
+        var response = await client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "hello" });
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("Unexpected error", problem?.Title);
+    }
+
     private static async Task<HttpClient> CreateAuthenticatedClientAsync(WebApplicationFactory<Program> factory)
     {
         var client = factory.CreateClient();
@@ -80,4 +109,10 @@ public sealed class ChatAiTests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
         return client;
     }
+}
+
+internal sealed class ThrowingLlmService : ILlmService
+{
+    public Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken = default) =>
+        throw new HttpRequestException("LLM upstream failed.");
 }

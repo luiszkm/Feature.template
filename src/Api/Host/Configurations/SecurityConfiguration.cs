@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
+using Api.Features.Ai;
 using Api.Features.Authorization;
 using Api.Features.Identity;
 using Api.Features.Tenants;
@@ -39,6 +40,7 @@ public static class SecurityConfiguration
             options.AddAuthorizationModulePolicies();
             options.AddIdentityModulePolicies();
             options.AddTenantsModulePolicies();
+            options.AddAiModulePolicies();
         });
 
         if (!configuration.GetValue("Jwt:Enabled", true))

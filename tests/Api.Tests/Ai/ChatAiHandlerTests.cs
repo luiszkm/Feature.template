@@ -44,4 +44,152 @@ public sealed class ChatAiHandlerTests
         await Assert.ThrowsAsync<BusinessRuleException>(() =>
             handler.Handle(new ChatAiCommand("hello"), CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Handle_ShouldUseAgentAllowlist_WhenAgentIdIsProvided()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldUseAgentAllowlist_WhenAgentIdIsProvided));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var create = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+
+        var agent = await create.Handle(
+            new CreateAgentCommand("Tenant only", "Use tenant tool.", [AgentToolNames.GetTenantInfo]),
+            CancellationToken.None);
+
+        var result = await chat.Handle(
+            new ChatAiCommand("tell me about the tenant", AgentId: agent.AgentId),
+            CancellationToken.None);
+
+        Assert.False(string.IsNullOrWhiteSpace(result.Reply));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrow_WhenAgentIdIsUnknown()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldThrow_WhenAgentIdIsUnknown));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var handler = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            handler.Handle(new ChatAiCommand("hello", AgentId: Guid.NewGuid()), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrow_WhenAgentIsInactive()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldThrow_WhenAgentIsInactive));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var create = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var deactivate = scope.ServiceProvider.GetRequiredService<DeactivateAgentHandler>();
+        var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+
+        var extra = await create.Handle(
+            new CreateAgentCommand("Parked", "x", [AgentToolNames.GetTenantInfo]),
+            CancellationToken.None);
+        await deactivate.Handle(new DeactivateAgentCommand(extra.AgentId), CancellationToken.None);
+
+        await Assert.ThrowsAsync<NotFoundException>(() =>
+            chat.Handle(new ChatAiCommand("hello", AgentId: extra.AgentId), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldNotExecuteTool_OutsideAllowlist()
+    {
+        var provider = TestServiceFactory.CreateWithAi(
+            nameof(Handle_ShouldNotExecuteTool_OutsideAllowlist),
+            services => services.AddScoped<IUserDirectory, ThrowingUserDirectory>());
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var create = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+
+        var agent = await create.Handle(
+            new CreateAgentCommand("No users", "x", [AgentToolNames.GetTenantInfo]),
+            CancellationToken.None);
+
+        var result = await chat.Handle(
+            new ChatAiCommand("summarize users please", AgentId: agent.AgentId),
+            CancellationToken.None);
+
+        Assert.False(string.IsNullOrWhiteSpace(result.Reply));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldAcceptHistory_WithoutPersistingThreads()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldAcceptHistory_WithoutPersistingThreads));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var handler = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var history = new LlmMessage[] { new("user", "earlier") };
+        await handler.Handle(new ChatAiCommand("hello", history), CancellationToken.None);
+
+        Assert.Equal(0, db.Set<AgentFile>().Count());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldTrackConfiguredProviderAndModel()
+    {
+        var provider = TestServiceFactory.CreateWithAi(
+            nameof(Handle_ShouldTrackConfiguredProviderAndModel),
+            services =>
+            {
+                services.AddSingleton<ILlmService, ImmediateLlmService>();
+                services.AddSingleton<RecordingUsageTracker>();
+                services.AddSingleton<IAiUsageTracker>(sp => sp.GetRequiredService<RecordingUsageTracker>());
+            });
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+
+        var options = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<LlmOptions>>();
+        options.Value.ApiKey = "test-key";
+        options.Value.Provider = LlmProviders.OpenRouter;
+        options.Value.Model = "openai/gpt-4o-mini";
+
+        var tracker = scope.ServiceProvider.GetRequiredService<RecordingUsageTracker>();
+        var handler = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+
+        await handler.Handle(new ChatAiCommand("hello"), CancellationToken.None);
+
+        var record = Assert.Single(tracker.Records);
+        Assert.Equal(LlmProviders.OpenRouter, record.Provider);
+        Assert.Equal("openai/gpt-4o-mini", record.Model);
+    }
+}
+
+internal sealed class ThrowingUserDirectory : IUserDirectory
+{
+    public Task<PaginatedListOutput<UserDirectoryEntry>> ListAsync(
+        ListQuery query,
+        CancellationToken cancellationToken = default) =>
+        throw new InvalidOperationException("get_users_summary should not run.");
+}
+
+internal sealed class ImmediateLlmService : ILlmService
+{
+    public Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new LlmResponse("ok", 1));
+}
+
+internal sealed class RecordingUsageTracker : IAiUsageTracker
+{
+    public List<AiUsageRecord> Records { get; } = [];
+
+    public Task TrackAsync(AiUsageRecord record, CancellationToken cancellationToken = default)
+    {
+        Records.Add(record);
+        return Task.CompletedTask;
+    }
 }

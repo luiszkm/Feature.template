@@ -44,6 +44,10 @@ services:
       Cors__AllowedOrigins__0: ${CORS_ORIGIN:-http://localhost:5080}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:?Set SEED_ADMIN_PASSWORD in compose.env}
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-admin@producttemplate.com}
+      Ai__Llm__Provider: ${AI_LLM_PROVIDER:-OpenRouter}
+      Ai__Llm__ApiKey: ${AI_LLM_API_KEY:-}
+      Ai__Llm__Model: ${AI_LLM_MODEL:-openai/gpt-4o-mini}
+      Ai__Llm__BaseUrl: ${AI_LLM_BASE_URL:-}
     ports:
       - "5080:8080"
     healthcheck:

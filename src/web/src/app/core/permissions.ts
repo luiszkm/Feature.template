@@ -8,4 +8,6 @@ export const Permissions = {
   permissionManage: 'authorization.permission.manage',
   tenantsRead: 'tenants.read',
   tenantsManage: 'tenants.manage',
+  agentRead: 'ai.agent.read',
+  agentManage: 'ai.agent.manage',
 } as const;

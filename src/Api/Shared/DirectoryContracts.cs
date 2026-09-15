@@ -27,3 +27,11 @@ public static class DirectoryPermissions
     public const string UsersRead = "identity.user.read";
     public const string TenantsRead = "tenants.read";
 }
+
+/// <summary>
+/// Seeds the tenant-default prompt agent. Implemented by Ai; consumed by Tenants/Host.
+/// </summary>
+public interface IDefaultAgentProvisioner
+{
+    Task EnsureDefaultAgentAsync(Guid tenantId, CancellationToken cancellationToken = default);
+}

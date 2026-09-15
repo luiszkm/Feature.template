@@ -14,6 +14,7 @@ public static class AppSeeder
         try
         {
             await TenantSeeder.SeedAsync(services, cancellationToken);
+            await AgentSeeder.SeedAsync(services, cancellationToken);
             await DevBootstrapSeeder.SeedAsync(services, cancellationToken);
         }
         finally

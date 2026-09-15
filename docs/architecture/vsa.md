@@ -48,7 +48,7 @@ features.json               # índice app + test + route + policy + featureFlag
 | Identity | `IdentityModule.cs` | UsersRead, UsersManage, UserReadOrSelf, UserManageOrSelf |
 | Authorization | `AuthorizationModule.cs` | AuthorizationRoles*, AuthorizationPermissions* |
 | Tenants | `TenantsModule.cs` | TenantsRead, TenantsManage |
-| Ai | `AiModule.cs` | Authenticated + `EnableAI` feature flag |
+| Ai | `AiModule.cs` | Chat: `Authenticated` + `EnableAI`. Catálogo: `AiAgentsRead` / `AiAgentsManage` + `EnableAI` |
 
 ## Feature flags
 

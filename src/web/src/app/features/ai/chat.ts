@@ -4,9 +4,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
-import { API_BASE } from '../../core/api';
+import { API_BASE, PaginatedList } from '../../core/api';
 import { parseProblem } from '../../shared/problem-details';
+import { AgentOutput } from './ai.contracts';
 import { AiAvailability } from './ai-availability';
 
 export interface LlmMessage {
@@ -24,7 +26,7 @@ export const AI_UNAVAILABLE_MESSAGE = 'O chat AI não está ativo neste ambiente
 
 @Component({
   selector: 'app-chat',
-  imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule],
+  imports: [MatButtonModule, MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <mat-card>
@@ -33,6 +35,19 @@ export const AI_UNAVAILABLE_MESSAGE = 'O chat AI não está ativo neste ambiente
       @if (!ai.available()) {
         <p data-testid="chat-unavailable">{{ unavailableMessage }}</p>
       } @else {
+        <mat-form-field class="agent-picker">
+          <mat-label>Agente</mat-label>
+          <mat-select
+            data-testid="agent-picker"
+            [value]="agentId()"
+            (selectionChange)="agentId.set($event.value)"
+          >
+            @for (agent of agents(); track agent.agentId) {
+              <mat-option [value]="agent.agentId">{{ agent.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
         @if (history().length === 0) {
           <p data-testid="chat-empty">Faça uma pergunta</p>
         }
@@ -72,6 +87,11 @@ export const AI_UNAVAILABLE_MESSAGE = 'O chat AI não está ativo neste ambiente
       }
     </mat-card>
   `,
+  styles: `
+    .agent-picker {
+      width: 100%;
+    }
+  `,
 })
 export class Chat {
   readonly ai = inject(AiAvailability);
@@ -81,8 +101,14 @@ export class Chat {
   readonly draft = signal('');
   readonly pending = signal(false);
   readonly error = signal<string | null>(null);
+  readonly agents = signal<AgentOutput[]>([]);
+  readonly agentId = signal<string | null>(null);
 
   private readonly http = inject(HttpClient);
+
+  constructor() {
+    void this.loadAgents();
+  }
 
   async send(): Promise<void> {
     const message = this.draft().trim();
@@ -98,7 +124,11 @@ export class Chat {
 
     try {
       const response = await firstValueFrom(
-        this.http.post<ChatAiResponse>(`${API_BASE}/ai/chat`, { message, history }),
+        this.http.post<ChatAiResponse>(`${API_BASE}/ai/chat`, {
+          message,
+          history,
+          agentId: this.agentId(),
+        }),
       );
       this.history.update((current) => [
         ...current,
@@ -113,6 +143,25 @@ export class Chat {
       this.error.set(problem.detail || problem.title);
     } finally {
       this.pending.set(false);
+    }
+  }
+
+  private async loadAgents(): Promise<void> {
+    try {
+      const page = await firstValueFrom(
+        this.http.get<PaginatedList<AgentOutput>>(`${API_BASE}/ai/agents`, {
+          params: { pageNumber: 1, pageSize: 100 },
+        }),
+      );
+      const active = page.data.filter((agent) => agent.isActive);
+      this.agents.set(active);
+      const seed = active.find((agent) => agent.isDefault) ?? active[0];
+      this.agentId.set(seed?.agentId ?? null);
+    } catch (error: unknown) {
+      const problem = parseProblem(error);
+      if (problem.status === 404 && problem.title === AI_DISABLED_TITLE) {
+        this.ai.disable();
+      }
     }
   }
 }
