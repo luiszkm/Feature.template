@@ -32,6 +32,8 @@ web-e2e:
 	ASPNETCORE_ENVIRONMENT=Development \
 	FEATURE_FLAGS_ENABLE_AI=true \
 	CORS_ORIGIN=http://localhost:4200 \
+	SEED_ADMIN_EMAIL=$${SEED_ADMIN_EMAIL:-admin@producttemplate.com} \
+	SEED_ADMIN_PASSWORD=$${SEED_ADMIN_PASSWORD:-Admin@123} \
 	docker compose $(COMPOSE_ENV_ARGS) up -d --build
 	@ok=0; \
 	for i in $$(seq 1 60); do \
