@@ -21,7 +21,6 @@ const MANAGE = { id: 'perm-2', name: 'identity.user.manage', description: 'Gerir
 
 function serveRole(assigned = [READ]) {
   server.use(
-    api.get('/api/v1/authorization/roles/role-1', () => HttpResponse.json(ROLE)),
     api.get('/api/v1/authorization/roles/role-1/permissions', () =>
       HttpResponse.json({ ...ROLE, permissions: assigned }),
     ),

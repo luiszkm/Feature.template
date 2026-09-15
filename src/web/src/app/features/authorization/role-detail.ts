@@ -125,17 +125,12 @@ export class RoleDetail {
 
   private async load(): Promise<void> {
     try {
-      this.role.set(
-        await firstValueFrom(
-          this.http.get<RoleOutput>(`${API_BASE}/authorization/roles/${this.roleId}`),
-        ),
-      );
-
       const withPermissions = await firstValueFrom(
         this.http.get<RoleWithPermissionsOutput>(
           `${API_BASE}/authorization/roles/${this.roleId}/permissions`,
         ),
       );
+      this.role.set(withPermissions);
       this.permissions.set(withPermissions.permissions);
 
       const catalog = await firstValueFrom(
