@@ -237,9 +237,10 @@ public sealed class CreateAgentTests
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-Tenant", "dev");
 
+        var email = $"plain-{Guid.NewGuid():N}@example.com";
         var register = await client.PostAsJsonAsync("/api/v1/identity/register", new
         {
-            email = "plain@example.com",
+            email,
             password = TestPassword,
             firstName = "Plain",
             lastName = "User"
@@ -248,7 +249,7 @@ public sealed class CreateAgentTests
 
         var loginResponse = await client.PostAsJsonAsync("/api/v1/identity/login", new
         {
-            email = "plain@example.com",
+            email,
             password = TestPassword
         });
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);

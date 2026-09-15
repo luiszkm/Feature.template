@@ -80,11 +80,11 @@ describe('Chat', () => {
   });
 
   it('envia agentId do picker', async () => {
-    let received: { agentId?: string } | null = null;
+    let received: unknown = null;
     stubAgents();
     server.use(
       api.post(CHAT, async ({ request }) => {
-        received = (await request.json()) as { agentId?: string };
+        received = await request.json();
         return HttpResponse.json({ reply: 'ok', iterationsUsed: 1 });
       }),
     );
@@ -101,7 +101,7 @@ describe('Chat', () => {
     await type(fixture, 'chat-input', 'olá');
     await click(fixture, 'chat-send');
 
-    expect(received?.agentId).toBe(SEED_ID);
+    expect(received).toEqual({ message: 'olá', history: [], agentId: SEED_ID });
   });
 
   it('picker acima do historico', async () => {

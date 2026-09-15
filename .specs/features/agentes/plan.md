@@ -210,11 +210,11 @@ Ecrãs (profile ui). Arranjo: igual a Tenants — header com h1 + acção primá
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| AGENT-01 | S1 | 1–11 | Implemented |
-| AGENT-02 | S2 | 12–18 | Implemented |
-| AGENT-03 | S3 | 19–29 | Implemented |
-| AGENT-04 | S4 | 30–34 | Implemented |
-| AGENT-05 | S5 | 35–40 | Implemented |
+| AGENT-01 | S1 | 1–11 | Done |
+| AGENT-02 | S2 | 12–18 | Done |
+| AGENT-03 | S3 | 19–29 | Done |
+| AGENT-04 | S4 | 30–34 | Done |
+| AGENT-05 | S5 | 35–40 | Done |
 
 ## Observable
 

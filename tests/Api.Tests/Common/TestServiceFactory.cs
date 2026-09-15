@@ -21,6 +21,7 @@ public static class TestServiceFactory
         services.AddIdentityModule();
         services.AddAuthorizationModule();
         services.AddTenantsModule();
+        services.AddAiModule();
         services.AddLogging();
         services.AddSingleton<IConfiguration>(_ => new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -187,7 +188,6 @@ public static class TestServiceFactory
         services.AddLogging();
         AddCoreServices(services, databaseName);
         services.AddPlatform();
-        services.AddAiModule();
         services.AddScoped<ChatAiHandler>();
         services.AddScoped<CreateAgentHandler>();
         services.AddScoped<ListAgentsHandler>();

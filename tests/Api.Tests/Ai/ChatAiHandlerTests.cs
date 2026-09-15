@@ -48,7 +48,10 @@ public sealed class ChatAiHandlerTests
     [Fact]
     public async Task Handle_ShouldUseAgentAllowlist_WhenAgentIdIsProvided()
     {
-        var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldUseAgentAllowlist_WhenAgentIdIsProvided));
+        var llm = new RecordingLlmService();
+        var provider = TestServiceFactory.CreateWithAi(
+            nameof(Handle_ShouldUseAgentAllowlist_WhenAgentIdIsProvided),
+            services => services.AddSingleton<ILlmService>(llm));
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
@@ -64,6 +67,11 @@ public sealed class ChatAiHandlerTests
             CancellationToken.None);
 
         Assert.False(string.IsNullOrWhiteSpace(result.Reply));
+        Assert.NotNull(llm.Last);
+        Assert.Equal(agent.Instructions, llm.Last.SystemPrompt);
+        Assert.Equal(
+            new[] { AgentToolNames.GetTenantInfo },
+            llm.Last.Tools?.Select(tool => tool.Name).ToArray());
     }
 
     [Fact]
@@ -181,6 +189,17 @@ internal sealed class ImmediateLlmService : ILlmService
 {
     public Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken = default) =>
         Task.FromResult(new LlmResponse("ok", 1));
+}
+
+internal sealed class RecordingLlmService : ILlmService
+{
+    public LlmRequest? Last { get; private set; }
+
+    public Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken = default)
+    {
+        Last = request;
+        return Task.FromResult(new LlmResponse("ok", 1));
+    }
 }
 
 internal sealed class RecordingUsageTracker : IAiUsageTracker
