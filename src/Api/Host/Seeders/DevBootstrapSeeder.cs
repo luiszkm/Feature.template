@@ -116,7 +116,7 @@ internal static class DevBootstrapSeeder
     {
         var adminEmail = Email.Create(seedOptions.AdminEmail);
         if (await db.Set<User>().IgnoreQueryFilters()
-                .AnyAsync(u => u.Email.Value == adminEmail.Value, cancellationToken))
+                .AnyAsync(u => u.Email == adminEmail, cancellationToken))
             return;
 
         var password = seedOptions.AdminPassword
@@ -142,13 +142,13 @@ internal static class DevBootstrapSeeder
         SeedOptions seedOptions,
         CancellationToken cancellationToken)
     {
-        var adminEmail = Email.Create(seedOptions.AdminEmail).Value;
+        var adminEmail = Email.Create(seedOptions.AdminEmail);
         var admin = await db.Set<User>().IgnoreQueryFilters()
-            .FirstOrDefaultAsync(u => u.Email.Value == adminEmail, cancellationToken);
+            .FirstOrDefaultAsync(u => u.Email == adminEmail, cancellationToken);
 
         if (admin is null)
             throw new InvalidOperationException(
-                $"Seed admin user '{adminEmail}' was not found after SeedAdminUserAsync.");
+                $"Seed admin user '{adminEmail.Value}' was not found after SeedAdminUserAsync.");
 
         var exists = await db.Set<UserAssignment>()
             .IgnoreQueryFilters()

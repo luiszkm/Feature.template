@@ -74,8 +74,8 @@ internal sealed class UserRepository(AppDbContext db) : IUserRepository
 
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        var normalized = email.Trim().ToLowerInvariant();
-        return db.Set<User>().FirstOrDefaultAsync(u => u.Email.Value == normalized, cancellationToken);
+        var normalized = Email.Create(email);
+        return db.Set<User>().FirstOrDefaultAsync(u => u.Email == normalized, cancellationToken);
     }
 
     public async Task<PaginatedListOutput<User>> ListAllAsync(
@@ -90,7 +90,7 @@ internal sealed class UserRepository(AppDbContext db) : IUserRepository
             query = query.Where(u =>
                 u.FirstName.Contains(term) ||
                 u.LastName.Contains(term) ||
-                u.Email.Value.Contains(term));
+                EF.Property<string>(u, nameof(User.Email)).Contains(term));
         }
 
         query = ApplySort(query, listQuery.SortBy, listQuery.SortDirection);
@@ -108,8 +108,8 @@ internal sealed class UserRepository(AppDbContext db) : IUserRepository
         return sortBy.Trim().ToLowerInvariant() switch
         {
             "email" => descending
-                ? query.OrderByDescending(u => u.Email.Value).ThenBy(u => u.Id)
-                : query.OrderBy(u => u.Email.Value).ThenBy(u => u.Id),
+                ? query.OrderByDescending(u => EF.Property<string>(u, nameof(User.Email))).ThenBy(u => u.Id)
+                : query.OrderBy(u => EF.Property<string>(u, nameof(User.Email))).ThenBy(u => u.Id),
             "firstname" => descending
                 ? query.OrderByDescending(u => u.FirstName).ThenBy(u => u.Id)
                 : query.OrderBy(u => u.FirstName).ThenBy(u => u.Id),
