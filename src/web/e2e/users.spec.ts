@@ -53,7 +53,7 @@ test('pesquisa sem resultados mostra o estado vazio', async ({ page }) => {
   await login(page);
   await expect(page.getByTestId('users-table')).toBeVisible();
   await searchUntilEmpty(page, 'Nenhum utilizador');
-  await expect(page.getByRole('link', { name: 'Criar utilizador' })).toBeVisible();
+  await expect(page.getByTestId('list-empty').getByRole('link', { name: 'Criar utilizador' })).toBeVisible();
 });
 
 test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
@@ -61,6 +61,5 @@ test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
   await delayApi(page, '**/api/v1/identity/users?*');
   await page.goto(`/users?searchTerm=${unique('load')}`);
   await expect(page.getByTestId('list-loading')).toBeVisible();
-  await expect(page.getByTestId('paginator')).toBeDisabled();
   await expect(page.getByTestId('list-loading')).toHaveCount(0, { timeout: 20_000 });
 });

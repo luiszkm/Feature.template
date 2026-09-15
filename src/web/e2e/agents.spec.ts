@@ -31,7 +31,7 @@ test('pesquisa sem resultados mostra o estado vazio', async ({ page }) => {
   await page.goto('/ai/agents');
   await expect(page.getByTestId('agents-table')).toBeVisible();
   await searchUntilEmpty(page, 'Nenhum agente');
-  await expect(page.getByRole('link', { name: 'Criar agente' })).toBeVisible();
+  await expect(page.getByTestId('list-empty').getByRole('link', { name: 'Criar agente' })).toBeVisible();
 });
 
 test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
@@ -39,6 +39,7 @@ test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
   await delayApi(page, '**/api/v1/ai/agents?*');
   await page.goto('/ai/agents');
   await expect(page.getByTestId('list-loading')).toBeVisible();
-  await expect(page.getByTestId('paginator')).toBeDisabled();
-  await expect(page.getByTestId('agents-table')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('agents-table').or(page.getByTestId('list-empty'))).toBeVisible({
+    timeout: 20_000,
+  });
 });

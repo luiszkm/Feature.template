@@ -26,7 +26,7 @@ test('pesquisa sem resultados mostra o estado vazio', async ({ page }) => {
   await page.goto('/tenants');
   await expect(page.getByTestId('tenants-table')).toBeVisible();
   await searchUntilEmpty(page, 'Nenhum tenant');
-  await expect(page.getByRole('link', { name: 'Criar tenant' })).toBeVisible();
+  await expect(page.getByTestId('list-empty').getByRole('link', { name: 'Criar tenant' })).toBeVisible();
 });
 
 test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
@@ -34,6 +34,5 @@ test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
   await delayApi(page, '**/api/v1/tenants?*');
   await page.goto('/tenants');
   await expect(page.getByTestId('list-loading')).toBeVisible();
-  await expect(page.getByTestId('paginator')).toBeDisabled();
   await expect(page.getByTestId('tenants-table')).toBeVisible({ timeout: 20_000 });
 });

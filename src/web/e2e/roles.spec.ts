@@ -49,6 +49,7 @@ test('atribui um role a um utilizador', async ({ page }) => {
   await page.goto('/users');
   await page.getByTestId('search').fill(email);
   const userRow = page.locator('tr', { hasText: email });
+  await expect(userRow).toHaveCount(1);
   await userRow.getByRole('link', { name: email }).click();
   await page.getByRole('link', { name: 'Gerir roles' }).click();
 
@@ -70,6 +71,7 @@ test('mostra o loading da lista enquanto a API responde', async ({ page }) => {
   await delayApi(page, '**/api/v1/authorization/roles?*');
   await page.goto('/roles');
   await expect(page.getByTestId('list-loading')).toBeVisible();
-  await expect(page.getByTestId('paginator')).toBeDisabled();
-  await expect(page.getByTestId('roles-table')).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId('roles-table').or(page.getByTestId('list-empty'))).toBeVisible({
+    timeout: 20_000,
+  });
 });

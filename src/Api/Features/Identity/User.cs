@@ -87,10 +87,22 @@ internal sealed class UserRepository(AppDbContext db) : IUserRepository
         if (!string.IsNullOrWhiteSpace(listQuery.SearchTerm))
         {
             var term = listQuery.SearchTerm.Trim();
-            query = query.Where(u =>
-                u.FirstName.Contains(term) ||
-                u.LastName.Contains(term) ||
-                EF.Property<string>(u, nameof(User.Email)).Contains(term));
+            query = query.Where(u => u.FirstName.Contains(term) || u.LastName.Contains(term));
+
+            // Npgsql cannot query through Email.Value or EF.Property<string> on the conversion.
+            if (term.Contains('@', StringComparison.Ordinal))
+            {
+                try
+                {
+                    var email = Email.Create(term);
+                    query = db.Set<User>().Where(u =>
+                        u.Email == email || u.FirstName.Contains(term) || u.LastName.Contains(term));
+                }
+                catch (ArgumentException)
+                {
+                    // Partial search strings that contain '@' but are not an email.
+                }
+            }
         }
 
         query = ApplySort(query, listQuery.SortBy, listQuery.SortDirection);
@@ -108,8 +120,8 @@ internal sealed class UserRepository(AppDbContext db) : IUserRepository
         return sortBy.Trim().ToLowerInvariant() switch
         {
             "email" => descending
-                ? query.OrderByDescending(u => EF.Property<string>(u, nameof(User.Email))).ThenBy(u => u.Id)
-                : query.OrderBy(u => EF.Property<string>(u, nameof(User.Email))).ThenBy(u => u.Id),
+                ? query.OrderByDescending(u => u.Email).ThenBy(u => u.Id)
+                : query.OrderBy(u => u.Email).ThenBy(u => u.Id),
             "firstname" => descending
                 ? query.OrderByDescending(u => u.FirstName).ThenBy(u => u.Id)
                 : query.OrderBy(u => u.FirstName).ThenBy(u => u.Id),
