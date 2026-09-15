@@ -1,4 +1,3 @@
-using Api.Host.Configurations;
 using Api.Shared;
 using FluentValidation;
 using MediatR;
@@ -66,7 +65,7 @@ public sealed class RegisterUserEndpoint : IEndpoint
         .WithName("RegisterUser")
         .WithTags("Identity")
         .AllowAnonymous()
-        .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
+        .RequireRateLimiting(RateLimitPolicies.AuthRateLimitPolicy)
         .Produces<UserOutput>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status409Conflict)

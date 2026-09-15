@@ -29,6 +29,7 @@ features.json               # índice app + test + route + policy + featureFlag
 4. **Testes separados** — padrão .NET; espelho plano em `tests/Api.Tests/{Module}/`.
 5. **Shared não referencia Features** — regra enforced em ArchitectureTests.
 6. **Features.{A} não referencia Features.{B}** — contratos cross-module em Shared (`IUserRolesProvider`, `IUserLookup`, `ISecurityStampService`, `IUserDirectory`, `ITenantDirectory`). Allowlist de ArchitectureTests deve permanecer vazia.
+7. **Features não referencia Host** — rate limit, policies, flags e `RequireFeature` vivem em Shared; Host só compõe.
 
 ## Host
 
@@ -37,7 +38,7 @@ features.json               # índice app + test + route + policy + featureFlag
 | Registo de módulos | `Host/Configurations/FeatureModulesConfiguration.cs` |
 | Nomes de policies | `Shared/SecurityPolicies.cs` |
 | Segurança JWT | `Host/Configurations/SecurityConfiguration.cs` + `Host/Security/` |
-| Feature flags | `Host/FeatureFlags.cs` + `appsettings.json` |
+| Feature flags | `Shared/FeatureFlags.cs` + `appsettings.json` (`Host` regista FeatureManagement) |
 | Seed dev | `Host/Seeders/` |
 
 ## Módulos atuais
@@ -52,7 +53,7 @@ features.json               # índice app + test + route + policy + featureFlag
 ## Feature flags
 
 - Config: `appsettings.json` → `FeatureFlags`
-- Constantes: `Api.Host.FeatureFlags`
+- Constantes: `Api.Shared.FeatureFlags`
 - Gate no endpoint: `.RequireFeature(FeatureFlags.EnableAI)`
 
 ## Harness AGENTS (hierarquia)

@@ -27,7 +27,7 @@ public sealed class GetTenantInfoTool(
 
     public async Task<string> ExecuteAsync(ToolCall toolCall, CancellationToken cancellationToken = default)
     {
-        ToolAuthorization.EnsurePermission(currentUser, "tenants.read");
+        ToolAuthorization.EnsurePermission(currentUser, DirectoryPermissions.TenantsRead);
 
         var pageSize = toolCall.Parameters["page_size"]?.GetValue<int>() ?? 20;
         pageSize = Math.Clamp(pageSize, 1, 100);

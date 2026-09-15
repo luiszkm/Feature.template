@@ -176,13 +176,13 @@ public sealed class SliceStructureTests
     }
 
     [Fact]
-    public void Features_ShouldNotDependOn_HostSecurity()
+    public void Features_ShouldNotDependOn_Host()
     {
         var result = Types.InAssembly(AppAssembly)
             .That()
             .ResideInNamespaceStartingWith("Api.Features")
             .ShouldNot()
-            .HaveDependencyOn("Api.Host.Security")
+            .HaveDependencyOn("Api.Host")
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));

@@ -14,3 +14,8 @@ public static class SecurityPolicies
     public const string UserManageOrSelf = "UserManageOrSelf";
     public const string Authenticated = "Authenticated";
 }
+
+public static class RateLimitPolicies
+{
+    public const string AuthRateLimitPolicy = "auth";
+}

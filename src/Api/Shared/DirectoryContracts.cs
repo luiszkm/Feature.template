@@ -21,3 +21,9 @@ public interface ITenantDirectory
         ListQuery query,
         CancellationToken cancellationToken = default);
 }
+
+public static class DirectoryPermissions
+{
+    public const string UsersRead = "identity.user.read";
+    public const string TenantsRead = "tenants.read";
+}

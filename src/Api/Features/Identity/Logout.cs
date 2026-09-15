@@ -1,4 +1,3 @@
-using Api.Host.Configurations;
 using Api.Shared;
 using MediatR;
 
@@ -52,7 +51,7 @@ public sealed class LogoutEndpoint : IEndpoint
         // Anonymous on purpose: an expired access token must not stop someone from revoking the
         // refresh token they already hold.
         .AllowAnonymous()
-        .RequireRateLimiting(SecurityConfiguration.AuthRateLimitPolicy)
+        .RequireRateLimiting(RateLimitPolicies.AuthRateLimitPolicy)
         .Produces(StatusCodes.Status204NoContent)
         .ProducesProblem(StatusCodes.Status429TooManyRequests);
     }

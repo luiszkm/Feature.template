@@ -1,5 +1,3 @@
-using Api.Host;
-using Api.Host.Extensions;
 using Api.Shared;
 using FluentValidation;
 using MediatR;

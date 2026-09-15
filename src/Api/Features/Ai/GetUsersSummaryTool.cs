@@ -27,7 +27,7 @@ public sealed class GetUsersSummaryTool(
 
     public async Task<string> ExecuteAsync(ToolCall toolCall, CancellationToken cancellationToken = default)
     {
-        ToolAuthorization.EnsurePermission(currentUser, "identity.user.read");
+        ToolAuthorization.EnsurePermission(currentUser, DirectoryPermissions.UsersRead);
 
         var pageSize = toolCall.Parameters["page_size"]?.GetValue<int>() ?? 10;
         pageSize = Math.Clamp(pageSize, 1, 50);
