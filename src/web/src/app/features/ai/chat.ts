@@ -9,7 +9,9 @@ import { firstValueFrom } from 'rxjs';
 import { API_BASE, PaginatedList } from '../../core/api';
 import { parseProblem } from '../../shared/problem-details';
 import { AgentOutput } from './ai.contracts';
-import { AiAvailability } from './ai-availability';
+import { AI_DISABLED_TITLE, AiAvailability } from './ai-availability';
+
+export { AI_DISABLED_TITLE } from './ai-availability';
 
 export interface LlmMessage {
   role: string;
@@ -21,7 +23,6 @@ export interface ChatAiResponse {
   iterationsUsed: number;
 }
 
-export const AI_DISABLED_TITLE = 'Feature disabled';
 export const AI_UNAVAILABLE_MESSAGE = 'O chat AI não está ativo neste ambiente';
 
 @Component({
@@ -136,8 +137,8 @@ export class Chat {
       ]);
     } catch (error: unknown) {
       const problem = parseProblem(error);
+      this.ai.learnFrom(problem);
       if (problem.status === 404 && problem.title === AI_DISABLED_TITLE) {
-        this.ai.disable();
         return;
       }
       this.error.set(problem.detail || problem.title);
@@ -158,10 +159,7 @@ export class Chat {
       const seed = active.find((agent) => agent.isDefault) ?? active[0];
       this.agentId.set(seed?.agentId ?? null);
     } catch (error: unknown) {
-      const problem = parseProblem(error);
-      if (problem.status === 404 && problem.title === AI_DISABLED_TITLE) {
-        this.ai.disable();
-      }
+      this.ai.learnFrom(parseProblem(error));
     }
   }
 }

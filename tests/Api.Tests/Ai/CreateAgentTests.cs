@@ -335,6 +335,66 @@ public sealed class UpdateAgentTests
     }
 
     [Fact]
+    public async Task Handle_ShouldThrow_WhenNameAlreadyExists()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldThrow_WhenNameAlreadyExists));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantTestDefaults.DevelopmentTenantId);
+        var create = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var update = scope.ServiceProvider.GetRequiredService<UpdateAgentHandler>();
+
+        await create.Handle(
+            new CreateAgentCommand("Taken", "x", [AgentToolNames.GetTenantInfo]),
+            CancellationToken.None);
+        var other = await create.Handle(
+            new CreateAgentCommand("Other", "y", [AgentToolNames.GetTenantInfo]),
+            CancellationToken.None);
+
+        await Assert.ThrowsAsync<BusinessRuleException>(() =>
+            update.Handle(
+                new UpdateAgentCommand(other.AgentId, "Taken", "y", [AgentToolNames.GetTenantInfo]),
+                CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Put_ShouldReturn409_WhenNameIsDuplicate()
+    {
+        await using var factory = TestWebApplicationFactory.Create(settings =>
+            settings["FeatureFlags:EnableAI"] = "true");
+        using var client = await CreateAgentTests.CreateAuthenticatedClientAsync(factory);
+
+        var first = await client.PostAsJsonAsync("/api/v1/ai/agents", new
+        {
+            name = "Taken",
+            instructions = "x",
+            toolNames = new[] { AgentToolNames.GetTenantInfo }
+        });
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+
+        var second = await client.PostAsJsonAsync("/api/v1/ai/agents", new
+        {
+            name = "Other",
+            instructions = "y",
+            toolNames = new[] { AgentToolNames.GetTenantInfo }
+        });
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
+        var created = await second.Content.ReadFromJsonAsync<AgentOutput>();
+        Assert.NotNull(created);
+
+        var response = await client.PutAsJsonAsync($"/api/v1/ai/agents/{created.AgentId}", new
+        {
+            name = "Taken",
+            instructions = "y",
+            toolNames = new[] { AgentToolNames.GetTenantInfo }
+        });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("Business rule violation", problem?.Title);
+    }
+
+    [Fact]
     public async Task Handle_ShouldThrow_WhenAgentDoesNotExist()
     {
         var provider = TestServiceFactory.CreateWithAi(nameof(Handle_ShouldThrow_WhenAgentDoesNotExist));
