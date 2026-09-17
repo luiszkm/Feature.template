@@ -179,17 +179,18 @@ public sealed class IdentityAuthE2ETests
         await using var factory = E2EWebApplicationFactory.Create();
         using var client = CreateClient(factory);
 
-        // The `auth` policy permits 20 per minute with no queue. Asserting only that some call
-        // is rejected would pass under a limit of 1, so the 20 below the bound are asserted too.
+        // Testing/Development permit 200/min (Production stays at 20) so browser e2e can log in
+        // once per spec. Asserting only that some call is rejected would pass under a limit of 1,
+        // so the 200 below the bound are asserted too.
         var statuses = new List<HttpStatusCode>();
-        for (var attempt = 0; attempt < 21; attempt++)
+        for (var attempt = 0; attempt < 201; attempt++)
         {
             var response = await client.PostAsync("/api/v1/identity/logout", content: null);
             statuses.Add(response.StatusCode);
         }
 
-        Assert.All(statuses.Take(20), status => Assert.Equal(HttpStatusCode.NoContent, status));
-        Assert.Equal(HttpStatusCode.TooManyRequests, statuses[20]);
+        Assert.All(statuses.Take(200), status => Assert.Equal(HttpStatusCode.NoContent, status));
+        Assert.Equal(HttpStatusCode.TooManyRequests, statuses[200]);
     }
 
     private static HttpClient CreateClient(WebApplicationFactory<Program> factory)
