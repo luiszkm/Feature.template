@@ -8,8 +8,10 @@ import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE } from '../../core/api';
+import { ConfirmService } from '../../shared/confirm';
 import { NotFound } from '../../shared/screens';
 import { Problem, fieldError, parseProblem, problemKind } from '../../shared/problem-details';
+import { AiAvailability } from './ai-availability';
 import {
   AgentFileOutput,
   AgentOutput,
@@ -76,10 +78,39 @@ import {
       @if (agentId) {
         <section data-testid="agent-files">
           <h2>Ficheiros</h2>
+          @if (files().length === 0) {
+            <p data-testid="file-empty">Nenhum ficheiro</p>
+          } @else {
+            <ul>
+              @for (file of files(); track file.fileId) {
+                <li [attr.data-testid]="'file-' + file.fileId">
+                  <button
+                    type="button"
+                    mat-button
+                    [attr.data-testid]="'file-view-' + file.fileId"
+                    (click)="viewFile(file.fileId)"
+                  >
+                    {{ file.name }}
+                  </button>
+                  <button
+                    type="button"
+                    mat-button
+                    [attr.data-testid]="'file-delete-' + file.fileId"
+                    (click)="removeFile(file)"
+                  >
+                    Apagar
+                  </button>
+                </li>
+              }
+            </ul>
+          }
           <mat-form-field>
             <mat-label>Nome do ficheiro</mat-label>
             <input matInput data-testid="file-name" [value]="fileName()" (input)="fileName.set($any($event.target).value)" />
           </mat-form-field>
+          @if (fileMessage('name'); as text) {
+            <p class="field-error" data-testid="file-name-error">{{ text }}</p>
+          }
           <mat-form-field>
             <mat-label>Conteúdo</mat-label>
             <textarea
@@ -90,24 +121,15 @@ import {
               (input)="fileContent.set($any($event.target).value)"
             ></textarea>
           </mat-form-field>
-          <button mat-stroked-button type="button" data-testid="file-add" (click)="addFile()">
+          <button
+            mat-stroked-button
+            type="button"
+            data-testid="file-add"
+            [disabled]="filePending() || !fileName().trim()"
+            (click)="addFile()"
+          >
             Adicionar ficheiro
           </button>
-          <ul>
-            @for (file of files(); track file.fileId) {
-              <li [attr.data-testid]="'file-' + file.fileId">
-                <button type="button" mat-button (click)="viewFile(file.fileId)">{{ file.name }}</button>
-                <button
-                  type="button"
-                  mat-button
-                  [attr.data-testid]="'file-delete-' + file.fileId"
-                  (click)="removeFile(file.fileId)"
-                >
-                  Apagar
-                </button>
-              </li>
-            }
-          </ul>
           @if (filePreview(); as preview) {
             <pre data-testid="file-preview">{{ preview }}</pre>
           }
@@ -134,6 +156,8 @@ export class AgentForm {
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly confirm = inject(ConfirmService);
+  private readonly ai = inject(AiAvailability);
 
   readonly agentId = this.route.snapshot.paramMap.get('agentId');
   readonly pending = signal(false);
@@ -143,6 +167,8 @@ export class AgentForm {
   readonly fileName = signal('');
   readonly fileContent = signal('');
   readonly filePreview = signal<string | null>(null);
+  readonly fileProblem = signal<Problem | null>(null);
+  readonly filePending = signal(false);
   readonly tools = KNOWN_AGENT_TOOLS;
 
   readonly model = signal({ name: '', instructions: '' });
@@ -164,6 +190,17 @@ export class AgentForm {
 
   message(field: string): string | null {
     const problem = this.problem();
+    if (!problem) {
+      return null;
+    }
+    if (problem.status === 409 && field === 'name') {
+      return problem.detail;
+    }
+    return fieldError(problem, field);
+  }
+
+  fileMessage(field: string): string | null {
+    const problem = this.fileProblem();
     if (!problem) {
       return null;
     }
@@ -198,7 +235,9 @@ export class AgentForm {
         await firstValueFrom(this.http.get<AgentFileOutput[]>(`${API_BASE}/ai/agents/${agentId}/files`)),
       );
     } catch (error: unknown) {
-      this.problem.set(parseProblem(error));
+      const problem = parseProblem(error);
+      this.ai.learnFrom(problem);
+      this.problem.set(problem);
     }
   }
 
@@ -232,15 +271,23 @@ export class AgentForm {
     if (!this.agentId || !this.fileName().trim()) {
       return;
     }
-    const created = await firstValueFrom(
-      this.http.post<AgentFileOutput>(`${API_BASE}/ai/agents/${this.agentId}/files`, {
-        name: this.fileName().trim(),
-        content: this.fileContent(),
-      }),
-    );
-    this.files.update((current) => [...current, created]);
-    this.fileName.set('');
-    this.fileContent.set('');
+    this.filePending.set(true);
+    this.fileProblem.set(null);
+    try {
+      const created = await firstValueFrom(
+        this.http.post<AgentFileOutput>(`${API_BASE}/ai/agents/${this.agentId}/files`, {
+          name: this.fileName().trim(),
+          content: this.fileContent(),
+        }),
+      );
+      this.files.update((current) => [...current, created]);
+      this.fileName.set('');
+      this.fileContent.set('');
+    } catch (error: unknown) {
+      this.fileProblem.set(parseProblem(error));
+    } finally {
+      this.filePending.set(false);
+    }
   }
 
   async viewFile(fileId: string): Promise<void> {
@@ -253,13 +300,24 @@ export class AgentForm {
     this.filePreview.set(file.content ?? '');
   }
 
-  async removeFile(fileId: string): Promise<void> {
+  async removeFile(file: AgentFileOutput): Promise<void> {
     if (!this.agentId) {
       return;
     }
+    const confirmed = await this.confirm.ask({
+      title: 'Apagar ficheiro',
+      message: `Apagar ${file.name}?`,
+      confirmLabel: 'Apagar',
+    });
+    if (!confirmed) {
+      return;
+    }
     await firstValueFrom(
-      this.http.delete<void>(`${API_BASE}/ai/agents/${this.agentId}/files/${fileId}`),
+      this.http.delete<void>(`${API_BASE}/ai/agents/${this.agentId}/files/${file.fileId}`),
     );
-    this.files.update((current) => current.filter((file) => file.fileId !== fileId));
+    this.files.update((current) => current.filter((item) => item.fileId !== file.fileId));
+    if (this.filePreview() !== null) {
+      this.filePreview.set(null);
+    }
   }
 }

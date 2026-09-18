@@ -14,16 +14,23 @@ import { ConfirmService } from '../../shared/confirm';
 import { ListState } from '../../shared/list-state';
 import { ListStore } from '../../shared/list-store';
 import { handleMutationError } from '../../shared/problem-details';
+import { AiAvailability } from './ai-availability';
 import { AgentOutput } from './ai.contracts';
 
 @Injectable()
 export class AgentsStore extends ListStore<AgentOutput> {
   private readonly http = inject(HttpClient);
+  private readonly ai = inject(AiAvailability);
 
   protected fetch(query: ListQuery): Observable<PaginatedList<AgentOutput>> {
     return this.http.get<PaginatedList<AgentOutput>>(`${API_BASE}/ai/agents`, {
       params: listParams(query),
     });
+  }
+
+  override async load(patch: Partial<ListQuery> = {}): Promise<void> {
+    await super.load(patch);
+    this.ai.learnFrom(this.problem());
   }
 
   async deactivate(agentId: string): Promise<void> {

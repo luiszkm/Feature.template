@@ -3,6 +3,7 @@ import {
   authenticate,
   el,
   maybeEl,
+  problem,
   provideRouteStub,
   recorder,
   settle,
@@ -17,6 +18,7 @@ import { server } from '../../../test-setup';
 import { SessionStore } from '../../core/session/session.store';
 import { authToken, tokenWith } from '../../../testing';
 import { AgentsList } from './agents-list';
+import { AiAvailability } from './ai-availability';
 import { Forbidden } from '../../shared/screens';
 
 const AGENTS = '/api/v1/ai/agents';
@@ -120,5 +122,15 @@ describe('AgentsList', () => {
     const fixture = TestBed.createComponent(Forbidden);
     await settle(fixture, 2);
     expect(text(fixture, 'forbidden')).toContain('Sem permissão para esta operação');
+  });
+
+  it('404 Feature disabled desliga a disponibilidade', async () => {
+    server.use(
+      api.get(AGENTS, () => problem(404, { title: 'Feature disabled', status: 404 })),
+    );
+    const fixture = await renderList();
+
+    expect(text(fixture, 'list-error-title')).toBe('Feature disabled');
+    expect(TestBed.inject(AiAvailability).available()).toBe(false);
   });
 });

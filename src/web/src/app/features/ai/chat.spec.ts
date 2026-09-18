@@ -27,7 +27,7 @@ const OTHER_ID = 'other-agent-2';
 const AGENTS_PAGE = {
   pageNumber: 1,
   pageSize: 100,
-  totalCount: 2,
+  totalCount: 3,
   data: [
     {
       agentId: SEED_ID,
@@ -46,6 +46,15 @@ const AGENTS_PAGE = {
       isActive: true,
       isDefault: false,
       createdAt: '2026-01-02T10:00:00Z',
+    },
+    {
+      agentId: 'inactive-3',
+      name: 'Parked',
+      instructions: 'idle',
+      toolNames: ['get_tenant_info'],
+      isActive: false,
+      isDefault: false,
+      createdAt: '2026-01-03T10:00:00Z',
     },
   ],
 };
@@ -102,6 +111,20 @@ describe('Chat', () => {
     await click(fixture, 'chat-send');
 
     expect(received).toEqual({ message: 'olá', history: [], agentId: SEED_ID });
+  });
+
+  it('picker omite agentes inactivos', async () => {
+    stubAgents();
+    authenticate();
+
+    const fixture = TestBed.createComponent(Chat);
+    await settle(fixture, 2);
+
+    expect(fixture.componentInstance.agents().map((agent) => agent.agentId)).toEqual([
+      SEED_ID,
+      OTHER_ID,
+    ]);
+    expect(fixture.nativeElement.textContent).not.toContain('Parked');
   });
 
   it('picker acima do historico', async () => {
