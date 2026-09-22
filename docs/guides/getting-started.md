@@ -123,5 +123,7 @@ Itens opcionais / evolução futura:
 | Item | Notas |
 |------|--------|
 | AI produção | `Ai:Llm:Provider` = `OpenRouter` (default) ou `MicrosoftAgentFramework`; chave `Ai:Llm:ApiKey` / `AI_LLM_API_KEY` (placeholder em `compose.env.example`; valor em `compose.env` ou user-secrets). Testing e Development sem chave usam `StubLlmService`. Production + `EnableAI=true` sem chave falha no arranque. |
+| AI guardrails | Cada saída de tool chega ao modelo entre `<tool_output>` e `</tool_output>`, truncada a `Ai:Guardrails:MaxToolOutputChars` (default `16000`). O filtro de conteúdo é `IContentGuard`; o default `AllowAllContentGuard` não bloqueia nada — registe outra implementação (ex.: Azure AI Content Safety) para bloquear mensagem, saída de tool ou resposta. |
+| AI limites | `POST /ai/chat` e `POST /ai/comparisons` partilham um balde por tenant: `Ai:RateLimit:PermitLimit` (default `30`) por `Ai:RateLimit:WindowSeconds` (`60`) → `429`. Quota diária opcional `Ai:Quota:DailyTokensPerTenant` (default `0` = desligada), tokens in+out desde 00:00 UTC. **Os defaults são escolhas do template: reveja-os antes de servir utilizadores reais.** |
 | E2E coverage | Menos testes HTTP que v1 |
 | Middleware avançado | IP whitelist, deduplication, audit |
