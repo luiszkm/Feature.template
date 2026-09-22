@@ -179,4 +179,40 @@ public sealed class AgentModelTests
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.Equal("Service unavailable", problem!.Title);
     }
+
+    [Fact]
+    public async Task Validator_ShouldRejectModelOver200Chars_EvenWhenInCatalog()
+    {
+        var longId = new string('m', 201);
+        var validator = new CreateAgentValidator(new ToolRegistry([]), new FakeModelCatalog(longId));
+
+        var result = await validator.ValidateAsync(new CreateAgentCommand("n", "i", [], Model: longId));
+
+        var error = Assert.Single(result.Errors, e => e.PropertyName == "Model");
+        Assert.Equal("MaximumLengthValidator", error.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Put_ShouldReturn503_WhenCatalogUnavailable()
+    {
+        await using var seedFactory = AiHttp.Factory();
+        using var seedClient = await AiHttp.AdminClientAsync(seedFactory);
+        var agent = await AiHttp.CreateAgentAsync(seedClient);
+
+        await using var factory = AiHttp.Factory().WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services => services.AddSingleton<IModelCatalog, UnavailableModelCatalog>()));
+        using var client = await AiHttp.AdminClientAsync(factory);
+
+        var response = await client.PutAsJsonAsync($"/api/v1/ai/agents/{agent.AgentId}", new
+        {
+            name = agent.Name,
+            instructions = agent.Instructions,
+            toolNames = agent.ToolNames,
+            model = StubModelCatalog.ModelA
+        });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("Service unavailable", problem!.Title);
+    }
 }

@@ -59,6 +59,7 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentModelTests.
 
 **C5** — `model` com 201 caracteres → `400` (task 4)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentModelTests.Post_ShouldReturn400_WhenModelExceeds200Chars`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentModelTests.Validator_ShouldRejectModelOver200Chars_EvenWhenInCatalog` (round 2 — isola a regra de tamanho da do catálogo)
 
 **C6** — `PUT` sem `model` num agente com `model` limpa para `null` (task 5)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentModelTests.Put_ShouldClearModel_WhenModelOmitted`
@@ -108,8 +109,9 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListModelsTests.
 **C20** — `{BaseUrl}/models` falha → `GET /api/v1/ai/models` `503` `Service unavailable` (task 18)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListModelsTests.Get_ShouldReturn503_WhenProviderCatalogFails`
 
-**C21** — catálogo inacessível → `POST /agents` com `model` não nulo `503` (task 18)
+**C21** — catálogo inacessível → `POST` e `PUT /agents` com `model` não nulo `503` (task 18)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentModelTests.Post_ShouldReturn503_WhenCatalogUnavailable`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentModelTests.Put_ShouldReturn503_WhenCatalogUnavailable` (round 2 — o task 18 nomeia também o PUT)
 
 **C22** — sucesso fica em cache 1h: segunda chamada não faz novo pedido a `/models` (task 19)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListModelsTests.OpenRouter_ShouldCacheSuccess`
@@ -269,5 +271,8 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec
 - Claims com status, rota ou shape: C1–C6, C12, C16–C24, C39, C40, C46, C50–C59 — cada um tem proof HTTP via `TestWebApplicationFactory`, excepto C41–C45, C47–C49, que são sobre o handler e provam lá.
 
 ## Handoff
+
+- Round 1 do Verifier (FAIL em C60): o `openapi.json` de `b563ded` foi gerado do working tree sujo, que tem uma alteração pendente e fora do âmbito em `GetRole.cs`, e perdeu `GET /authorization/roles/{roleId}`. Correcção: regenerado numa worktree limpa em HEAD e posto no índice sem tocar no ficheiro do working tree. Lição: gerar o contrato sempre a partir de uma árvore limpa quando há alterações alheias pendentes.
+
 
 S1–S4 lêem os mesmos ~65 KB de `Features/Ai` + ~64 KB de testes + ~39 KB do front ai + 64 KB de `openapi.json` (regenerado, não lido) ≈ 45k tokens de leitura; soma dos slices ~59k < 150k → **um batch**, sem handoff. O orquestrador constrói e depois despacha o Verifier sobre `7148c0c..HEAD`.

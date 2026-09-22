@@ -219,6 +219,7 @@ public sealed class ChatAiHandlerTests
 
         await chat.Handle(new ChatAiCommand("go", AgentId: agent.AgentId), CancellationToken.None);
 
+        Assert.NotEmpty(llm.Requests);
         Assert.All(llm.Requests, request => Assert.Null(request.Model));
     }
 

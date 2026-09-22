@@ -70,7 +70,7 @@ public sealed class ListModelsTests
         {
             Provider = LlmProviders.MicrosoftAgentFramework,
             Model = "gpt-4o-mini",
-            AllowedModels = ["gpt-4o", "gpt-4o-mini"]
+            AllowedModels = ["gpt-4o"]
         }));
 
         var models = await catalog.ListAsync();
