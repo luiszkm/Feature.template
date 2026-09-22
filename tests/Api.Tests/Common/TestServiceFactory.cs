@@ -16,7 +16,15 @@ public static class TestServiceFactory
 {
     private static void AddCoreServices(IServiceCollection services, string databaseName)
     {
-        services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(databaseName));
+        // EF Core's InMemory provider shares one store per database *name*, process-wide - so two
+        // unrelated test classes that both pass `nameof(SomeSharedMethodName)` (xUnit runs classes
+        // in parallel by default) race to seed the same store. The caller's name stays in the
+        // failure output; the suffix is what actually keeps instances apart. Generated once per
+        // provider, outside the options callback: `AddDbContext` re-invokes that callback for
+        // every `AppDbContext` it builds, so a `Guid.NewGuid()` inside it would give each new
+        // scope in the same test its own empty database instead of one shared store.
+        var uniqueDatabaseName = $"{databaseName}-{Guid.NewGuid()}";
+        services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(uniqueDatabaseName));
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddIdentityModule();
         services.AddAuthorizationModule();

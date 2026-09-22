@@ -89,10 +89,10 @@ Binding screens: `agents-list` (Tenants analogue: header h1 + primary action rig
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/agents-list.spec.ts --filter "estado vazio"`
 
 **C20** - While the agents list is `loading`, the screen shows `mat-progress-bar` (`data-testid="list-loading"`) and the paginator is disabled (AGENT-03, AC 20)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento: agents"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento: 'agents'"`
 
 **C21** - Agents list `500` shows the ProblemDetails `title` and button `Tentar de novo` (AGENT-03, AC 21)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query: agents"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query: 'agents'"`
 
 **C22** - Confirming Desativar (`title` `Desativar agente`, `confirmLabel` `Desativar`) calls `DELETE /api/v1/ai/agents/{agentId}` and marks the row `isActive: false`; cancelling sends zero HTTP (AGENT-03, AC 22)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/agents-list.spec.ts --filter "desativar com confirm"`
@@ -162,6 +162,7 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteAgentFileT
 
 **C39** - Agent with `list_agent_files` and `read_agent_file` on the allowlist: when the LLM asks `read_agent_file`, the tool returns the persisted `content` of that `fileId` and only of that agent (AGENT-05, AC 39)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentFileToolTests.ReadAgentFile_ShouldReturnContent_ForSameAgent`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentFileToolTests.ReadAgentFile_ShouldRejectFile_FromAnotherAgent`
 
 **C40** - This change does not create a vector store, embedding, hosted container, or MCP endpoint for these files (AGENT-05, AC 40)
 Proof: `dotnet test tests/ArchitectureTests --filter FullyQualifiedName~SliceStructureTests.Features_ShouldNotContain_LayerFolders`

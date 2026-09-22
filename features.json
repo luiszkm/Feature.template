@@ -87,14 +87,6 @@
     "featureFlag": null,
     "policy": "AuthorizationRolesRead"
   },
-  "GetRole": {
-    "m": "Authorization",
-    "app": "src/Api/Features/Authorization/GetRole.cs",
-    "test": "tests/Api.Tests/Authorization/AuthorizationManagementTests.cs",
-    "route": "GET /api/v1/authorization/roles/{roleId}",
-    "featureFlag": null,
-    "policy": "AuthorizationRolesRead"
-  },
   "GetRolePermissions": {
     "m": "Authorization",
     "app": "src/Api/Features/Authorization/GetRole.cs",
@@ -231,7 +223,7 @@
     "featureFlag": null,
     "policy": "TenantsManage"
   },
-    "ChatAi": {
+  "ChatAi": {
     "m": "Ai",
     "app": "src/Api/Features/Ai/ChatAi.cs",
     "test": "tests/Api.Tests/Ai/ChatAiHandlerTests.cs",

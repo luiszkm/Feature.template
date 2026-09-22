@@ -36,7 +36,16 @@ test('edita um utilizador a partir da lista', async ({ page }) => {
   await expect(page.getByTestId('firstName')).toHaveValue('Antes');
 
   await page.getByTestId('firstName').fill('Depois');
+  // Against a local API the `PUT` round-trips in single-digit milliseconds - faster than any
+  // polling assertion's check interval, so waiting on the `submit` button's `disabled` state (a
+  // UI-signal proxy, sampled on a timer) can miss the entire disable->enable flicker and either
+  // pass on the button's original never-yet-disabled state or time out never having caught it.
+  // Wait on the network response itself instead: deterministic regardless of how fast it is.
+  const saved = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().includes('/identity/users/'),
+  );
   await page.getByTestId('submit').click();
+  await saved;
   await expect(page.getByTestId('firstName')).toHaveValue('Depois');
 
   await page.goto('/users');

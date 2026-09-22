@@ -9,6 +9,7 @@ import {
 } from '../../testing';
 import { Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { PageEvent } from '@angular/material/paginator';
 import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { server } from '../../test-setup';
@@ -103,6 +104,16 @@ describe('query das listas', () => {
       const requests = recorder();
       const fixture = await renderScreen(screen);
 
+      // Land on page 2 first: fresh-mounted is always page 1 already, so searching from there
+      // cannot tell "reset to 1" apart from "never left 1" - the mutant this once let through.
+      await (fixture.componentInstance as { changePage(event: PageEvent): Promise<void> }).changePage({
+        pageIndex: 1,
+        pageSize: 20,
+        length: 0,
+      });
+      await settle(fixture);
+      expect(requests.at(-1)?.url.searchParams.get('pageNumber')).toBe('2');
+
       const search = el<HTMLInputElement>(fixture, 'search');
       search.value = 'ana';
       search.dispatchEvent(new Event('input', { bubbles: true }));
@@ -136,6 +147,17 @@ describe('query das listas', () => {
       await settle(fixture);
 
       expect(requests.at(-1)?.url.searchParams.get('sortDirection')).toBe('desc');
+
+      // MatSort's third click reverts to no sort (`disableClear` is unset, so the cycle is
+      // none -> asc -> desc -> none) - the guard that omits `sortBy`/`sortDirection` on that
+      // reversion is identical code to the "no choice yet" case below, but a fresh mount never
+      // exercises the *transition* back to it, only the untouched starting state.
+      header!.click();
+      await settle(fixture);
+
+      const reverted = requests.at(-1)?.url.searchParams;
+      expect(reverted?.has('sortBy')).toBe(false);
+      expect(reverted?.has('sortDirection')).toBe(false);
     },
   );
 

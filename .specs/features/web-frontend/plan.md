@@ -88,7 +88,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 **Acceptance Criteria**
 
 24. WHEN `/roles` abre THEN o sistema SHALL chamar `GET /api/v1/authorization/roles?pageNumber=1&pageSize=20` e renderizar nome e descrição por linha
-25. WHEN o utilizador abre `/roles/{roleId}` THEN o sistema SHALL chamar `GET /api/v1/authorization/roles/{roleId}` e `GET /api/v1/authorization/roles/{roleId}/permissions` e listar as permissões atribuídas por nome
+25. WHEN o utilizador abre `/roles/{roleId}` THEN o sistema SHALL chamar `GET /api/v1/authorization/roles/{roleId}/permissions` (que já devolve nome, descrição e permissões) e listar as permissões atribuídas por nome - não há uma segunda rota sem `/permissions`
 26. WHEN o utilizador atribui uma permissão a um role THEN o sistema SHALL chamar `POST /api/v1/authorization/roles/{roleId}/permissions` e, com `204`, acrescentar a permissão à lista sem recarregar a página
 27. WHEN o utilizador revoga uma permissão THEN o sistema SHALL chamar `DELETE /api/v1/authorization/roles/{roleId}/permissions/{permissionId}` e remover a permissão da lista ao receber `204`
 28. IF criar role devolver `409` THEN o sistema SHALL manter o diálogo aberto e mostrar o `detail` do ProblemDetails junto ao campo Nome
@@ -158,7 +158,7 @@ Quando isto estiver entregue, `npm start` em `src/web` dá um ecrã de login que
 | screen `login` | ação destrutiva confirma | n/a - nenhuma ação do ecrã destrói dados |
 | screen `shell` (barra + navegação) | estado não autorizado | AC 8, AC 21 - itens sem permissão não são renderizados |
 | screen `shell` | ação destrutiva confirma | AC 11 - Sair pede confirmação no diálogo partilhado |
-| screen `shell` | densidade e ordenação | AC 12 - ordem fixa Utilizadores, Roles, Permissões, Tenants, AI |
+| screen `shell` | densidade e ordenação | AC 12 - ordem fixa Utilizadores, Roles, Permissões, Tenants, AI. A feature `agentes` acrescentou um 6º item ("Agentes") ao mesmo `shell.ts`; nem essa feature nem esta têm check de ordem/membros do menu - a lacuna listada abaixo em `Observable` cobre agora 6 itens, não 5 |
 | screen `users-list` | estado vazio | AC 15 |
 | screen `users-list` | estado de carregamento | AC 14 |
 | screen `users-list` | estado de erro | AC 16 |
@@ -223,31 +223,30 @@ URLs de aplicação expostos pelo front (sem statuses — são rotas do router, 
 | `POST /api/v1/identity/register` | `email`, `password`, `firstName`, `lastName` | `UserOutput` · ProblemDetails | `201`, `400`, `409` |
 | `POST /api/v1/identity/login` | `email`, `password` | `AuthTokenOutput` · ProblemDetails | `200`, `400`, `401`, `409`, `429` |
 | `POST /api/v1/identity/refresh` | `refreshToken` | `AuthTokenOutput` · ProblemDetails | `200`, `400`, `401`, `404`, `409`, `429` |
-| `GET /api/v1/identity/users` | `pageNumber`, `pageSize`, `searchTerm` | `PaginatedListOutput<UserOutput>` | `200`, `401`, `403` |
+| `GET /api/v1/identity/users` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | `PaginatedListOutput<UserOutput>` | `200`, `401`, `403` |
 | `GET /api/v1/identity/users/{userId}` | `userId` | `UserOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
 | `PUT /api/v1/identity/users/{userId}` | `userId`, `firstName`, `lastName` | `UserOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
 | `DELETE /api/v1/identity/users/{userId}` | `userId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
 | `GET /api/v1/identity/users/{userId}/roles` | `userId` | lista de nomes de role | `200`, `401`, `403` |
-| `GET /api/v1/authorization/roles` | `pageNumber`, `pageSize`, `searchTerm` | `PaginatedListOutput<RoleOutput>` | `200`, `401`, `403` |
+| `GET /api/v1/authorization/roles` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | `PaginatedListOutput<RoleOutput>` | `200`, `401`, `403` |
 | `POST /api/v1/authorization/roles` | `name`, `description` | `RoleOutput` · ProblemDetails | `201`, `400`, `401`, `403`, `409` |
-| `GET /api/v1/authorization/roles/{roleId}` | `roleId` | `RoleWithPermissionsOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
 | `PUT /api/v1/authorization/roles/{roleId}` | `roleId`, `name`, `description` | `RoleOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
 | `DELETE /api/v1/authorization/roles/{roleId}` | `roleId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
 | `GET /api/v1/authorization/roles/{roleId}/permissions` | `roleId` | `RoleWithPermissionsOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
 | `POST /api/v1/authorization/roles/{roleId}/permissions` | `roleId`, `permissionId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
 | `DELETE /api/v1/authorization/roles/{roleId}/permissions/{permissionId}` | `roleId`, `permissionId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
-| `GET /api/v1/authorization/permissions` | `pageNumber`, `pageSize`, `searchTerm` | `PaginatedListOutput<PermissionOutput>` | `200`, `401`, `403` |
+| `GET /api/v1/authorization/permissions` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | `PaginatedListOutput<PermissionOutput>` | `200`, `401`, `403` |
 | `POST /api/v1/authorization/permissions` | `name`, `description` | `PermissionOutput` · ProblemDetails | `201`, `400`, `401`, `403`, `409` |
 | `PUT /api/v1/authorization/permissions/{permissionId}` | `permissionId`, `name`, `description` | `PermissionOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
 | `DELETE /api/v1/authorization/permissions/{permissionId}` | `permissionId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
 | `GET /api/v1/authorization/users/{userId}/roles` | `userId` | lista de `RoleOutput` | `200`, `401`, `403` |
 | `POST /api/v1/authorization/users/{userId}/roles` | `userId`, `roleId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
 | `DELETE /api/v1/authorization/users/{userId}/roles/{roleId}` | `userId`, `roleId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
-| `GET /api/v1/tenants` | `pageNumber`, `pageSize`, `searchTerm` | `PaginatedListOutput<TenantOutput>` | `200`, `401`, `403` |
+| `GET /api/v1/tenants` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | `PaginatedListOutput<TenantOutput>` | `200`, `401`, `403` |
 | `POST /api/v1/tenants` | `tenantKey`, `displayName`, `contactEmail`, `isolationMode` | `TenantOutput` · ProblemDetails | `201`, `400`, `401`, `403`, `409` |
-| `GET /api/v1/tenants/{id}` | `id` | `TenantOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
-| `PUT /api/v1/tenants/{id}` | `id`, `displayName`, `contactEmail` | `TenantOutput` · ProblemDetails | `200`, `400`, `401`, `403`, `404` |
-| `DELETE /api/v1/tenants/{id}` | `id` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
+| `GET /api/v1/tenants/{tenantId}` | `tenantId` | `TenantOutput` · ProblemDetails | `200`, `401`, `403`, `404` |
+| `PUT /api/v1/tenants/{tenantId}` | `tenantId`, `displayName`, `contactEmail` | `TenantOutput` · ProblemDetails | `200`, `400`, `401`, `403`, `404` |
+| `DELETE /api/v1/tenants/{tenantId}` | `tenantId` | sem corpo · ProblemDetails | `204`, `401`, `403`, `404` |
 | `POST /api/v1/ai/chat` | `message`, `history` | `ChatAiResponse` · ProblemDetails | `200`, `401`, `404` |
 
 ## Landing

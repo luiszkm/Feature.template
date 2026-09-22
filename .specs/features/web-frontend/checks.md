@@ -5,7 +5,7 @@ Plan: `.specs/features/web-frontend/plan.md`
 
 ## Intent
 
-68 checks in 6 slices · 7 one-way doors · 0 open
+70 checks in 6 slices · 7 one-way doors · 0 open
 
 ## Checks
 
@@ -117,7 +117,7 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity
 **C32** - Abrir `/roles` emite `GET /api/v1/authorization/roles?pageNumber=1&pageSize=20` e renderiza nome e descrição por linha (WEB-03, AC 24)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/roles-list.spec.ts --filter "carrega a primeira pagina"`
 
-**C33** - Abrir `/roles/{roleId}` emite `GET /api/v1/authorization/roles/{roleId}` e mostra nome e descrição do role (WEB-03, AC 25)
+**C33** - Abrir `/roles/{roleId}` mostra nome e descrição do role a partir da mesma resposta que C34 lê - não há uma segunda rota `GET /roles/{roleId}` sem `/permissions`; a API nunca a expõe (WEB-03, AC 25)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/authorization/role-detail.spec.ts --filter "carrega o role"`
 
 **C34** - O ecrã de detalhe emite `GET /api/v1/authorization/roles/{roleId}/permissions` e lista as permissões atribuídas por `name` (WEB-03, AC 25)
@@ -170,16 +170,16 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/
 **C49** - Criar tenant que devolve `409` mantém o formulário preenchido e mostra o `detail` junto ao campo Chave (WEB-04, AC 35)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "409 marca o campo chave"`
 
-**C50** - Guardar a edição emite `PUT /api/v1/tenants/{id}` e, com `200`, os campos em ecrã passam a mostrar os valores da resposta (WEB-04, AC 36)
+**C50** - Guardar a edição emite `PUT /api/v1/tenants/{tenantId}` e, com `200`, os campos em ecrã passam a mostrar os valores da resposta (WEB-04, AC 36)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "200 substitui os dados em ecra"`
 
-**C51** - `PUT /api/v1/tenants/{id}` que devolve `400` mostra cada mensagem de `errors[campo]` sob o campo correspondente (WEB-04, AC 36)
+**C51** - `PUT /api/v1/tenants/{tenantId}` que devolve `400` mostra cada mensagem de `errors[campo]` sob o campo correspondente (WEB-04, AC 36)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "400 marca os campos"`
 
-**C52** - Confirmar a desativação emite `DELETE /api/v1/tenants/{id}` e, com `204`, a linha passa a mostrar `isActive` falso (WEB-04, AC 37)
+**C52** - Confirmar a desativação emite `DELETE /api/v1/tenants/{tenantId}` e, com `204`, a linha passa a mostrar `isActive` falso (WEB-04, AC 37)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenants-list.spec.ts --filter "204 marca a linha como inativa"`
 
-**C53** - Abrir `/tenants/{id}` emite `GET /api/v1/tenants/{id}` e mostra os sete campos de `TenantOutput` (WEB-04, AC 38)
+**C53** - Abrir `/tenants/{id}` emite `GET /api/v1/tenants/{tenantId}` e mostra os sete campos de `TenantOutput` (WEB-04, AC 38)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/tenants/tenant-form.spec.ts --filter "mostra os sete campos"`
 
 ### S5 - Chat AI · 2 ficheiros novos · ~7 KB · ~2k
@@ -225,12 +225,18 @@ Proof: `cd src/web && npx playwright test e2e/users.spec.ts -g "edita um utiliza
 **C67** - Escrever na caixa de pesquisa envia `searchTerm` e volta a `pageNumber=1`, nos quatro ecrãs de lista (WEB-02, AC 17)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-query.spec.ts --filter "pesquisar envia searchTerm"`
 
-**C68** - Clicar num cabeçalho ordenável envia `sortBy` com o campo que a API aceita e `sortDirection` a alternar `asc`/`desc`; sem escolha do utilizador nenhum `sortBy` é enviado e a ordem é o default da API, nos quatro ecrãs (WEB-02, AC 13)
+**C68** - Clicar num cabeçalho ordenável envia `sortBy` com o campo que a API aceita e `sortDirection` a alternar `asc`/`desc`; um terceiro clique reverte para "sem ordenação" e volta a não enviar `sortBy`/`sortDirection`; sem escolha do utilizador nenhum `sortBy` é enviado e a ordem é o default da API, nos quatro ecrãs (WEB-02, AC 13)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-query.spec.ts --filter "ordenar por coluna"`
 Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-query.spec.ts --filter "sem ordenacao escolhida"`
 
 **C65** - `npx playwright test e2e/auth.spec.ts` prova, contra a API real, que uma sessão sem access token em memória (o estado a seguir a recarregar a página, igual ao de um token expirado) é renovada a partir do refresh token sem devolver o utilizador ao login (WEB-01, AC 6)
 Proof: `cd src/web && npx playwright test e2e/auth.spec.ts -g "renova o token expirado"`
+
+**C69** - No ecrã de detalhe, a própria pessoa vê o botão Editar mesmo sem `identity.user.manage`, espelhando a policy `UserManageOrSelf` da API (`STATE.md`, lacuna "Edição de utilizador"; WEB-02, AC 23)
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-detail.spec.ts --filter "a propria pessoa ve Editar sem identity.user.manage"`
+
+**C70** - No ecrã de detalhe, quem não é gestor nem é a própria pessoa não vê o botão Editar (`STATE.md`, lacuna "Edição de utilizador"; WEB-02, AC 23)
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/identity/user-detail.spec.ts --filter "nem manager nem a propria pessoa nao ve Editar"`
 
 ## Coverage
 
@@ -248,10 +254,9 @@ Uma set row por rota da secção `Surface` do plano; os membros são os statuses
 | `GET /api/v1/identity/users/{userId}/roles` statuses (3) | 200 C26 · 401 C6 · 403 C31 | - |
 | `GET /api/v1/authorization/roles` statuses (3) | 200 C32 · 401 C6 · 403 C10 | - |
 | `POST /api/v1/authorization/roles` statuses (5) | 201 C37 · 400 C3 · 401 C6 · 403 C10 · 409 C38 | - |
-| `GET /api/v1/authorization/roles/{roleId}` statuses (4) | 200 C33 · 401 C6 · 403 C10 · 404 C28 | - |
 | `PUT /api/v1/authorization/roles/{roleId}` statuses (4) | 200 C39 · 401 C6 · 403 C10 · 404 C30 | - |
 | `DELETE /api/v1/authorization/roles/{roleId}` statuses (4) | 204 C40 · 401 C6 · 403 C10 · 404 C30 | - |
-| `GET /api/v1/authorization/roles/{roleId}/permissions` statuses (4) | 200 C34 · 401 C6 · 403 C10 · 404 C28 | - |
+| `GET /api/v1/authorization/roles/{roleId}/permissions` statuses (4) | 200 C33, C34 · 401 C6 · 403 C10 · 404 C28 | - |
 | `POST /api/v1/authorization/roles/{roleId}/permissions` statuses (4) | 204 C35 · 401 C6 · 403 C10 · 404 C30 | - |
 | `DELETE /api/v1/authorization/roles/{roleId}/permissions/{permissionId}` statuses (4) | 204 C36 · 401 C6 · 403 C10 · 404 C30 | - |
 | `GET /api/v1/authorization/permissions` statuses (3) | 200 C42 · 401 C6 · 403 C10 | - |
@@ -263,9 +268,9 @@ Uma set row por rota da secção `Surface` do plano; os membros são os statuses
 | `DELETE /api/v1/authorization/users/{userId}/roles/{roleId}` statuses (4) | 204 C41 · 401 C6 · 403 C10 · 404 C30 | - |
 | `GET /api/v1/tenants` statuses (3) | 200 C47 · 401 C6 · 403 C10 | - |
 | `POST /api/v1/tenants` statuses (5) | 201 C48 · 400 C3 · 401 C6 · 403 C10 · 409 C49 | - |
-| `GET /api/v1/tenants/{id}` statuses (4) | 200 C53 · 401 C6 · 403 C10 · 404 C28 | - |
-| `PUT /api/v1/tenants/{id}` statuses (5) | 200 C50 · 400 C51 · 401 C6 · 403 C10 · 404 C30 | - |
-| `DELETE /api/v1/tenants/{id}` statuses (4) | 204 C52 · 401 C6 · 403 C10 · 404 C30 | - |
+| `GET /api/v1/tenants/{tenantId}` statuses (4) | 200 C53 · 401 C6 · 403 C10 · 404 C28 | - |
+| `PUT /api/v1/tenants/{tenantId}` statuses (5) | 200 C50 · 400 C51 · 401 C6 · 403 C10 · 404 C30 | - |
+| `DELETE /api/v1/tenants/{tenantId}` statuses (4) | 204 C52 · 401 C6 · 403 C10 · 404 C30 | - |
 | `POST /api/v1/ai/chat` statuses (3) | 200 C55 · 401 C57 · 404 C54 | - |
 | ecrãs do plano (14) | login C1 · shell C12 · users-list C17 · user-form C22, C66 · user-detail C26 · user-roles C41 · roles-list C32 · role-detail C33 · permissions-list C42 · tenants-list C47 · tenant-form C48 · ai-chat C55 · forbidden C10 · not-found C28 | - |
 | estados dos 4 ecrãs de lista (12) | C18, C19 e C20, cada um table-driven sobre os 4 ecrãs de lista - 12 combinações | - |
@@ -315,7 +320,7 @@ um caminho de componente que por acaso as atravessa, e uma segunda ramificação
 - idempotency: C7 - três `401` em paralelo produzem um único refresh, porque `RefreshTokenHandler` roda e revoga o token anterior a cada chamada
 - authorization: C9, C10, C25 - permissões derivadas do token, `403` no interceptor, ações escondidas por permissão
 - concurrency: C7 - a fila partilhada de refresh é a única secção com corrida no front
-- data lifecycle: C11 - as chaves `pt.auth` e `pt.tenant` são removidas no logout; não há outro dado persistido no browser
+- data lifecycle: C11 - `pt.auth` é removida no logout; `pt.tenant` é mantida de propósito (a escolha de tenant sobrevive à sessão) e `session.store.spec.ts` assere que sobrevive; não há outro dado persistido no browser
 - dependency failure: C20, C54 - API a devolver `500` ou ligação recusada cai no estado de erro; feature flag desligada devolve `404` e o item some da navegação
 - state transitions: C6, C8, C11 - anónimo -> autenticado -> expirado-renovado -> anónimo, com o guard a cobrir a entrada pela porta errada
 - observability: n/a - nenhum critério do plano pede telemetria no browser; a instrumentação fica na API (`ObservabilityConfiguration`), e este trabalho não acrescenta sink nem sampler do lado do cliente

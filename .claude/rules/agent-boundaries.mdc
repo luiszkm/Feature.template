@@ -1,0 +1,32 @@
+---
+description: Absolute agent boundaries for Product.Template — secrets, git, deps, confirmation gates
+alwaysApply: true
+---
+
+# Agent boundaries
+
+## Ask before editing
+- `compose.env`, `**/appsettings.*.local.json`, user-secrets, Key Vault refs
+- `Directory.Build.props`, `*.sln`, `*.csproj`, `docker-compose.yml`
+- `features.json` — only structural renames/removals; routine slice entries from `/new-slice` or `/new-module` are OK
+- EF migrations (create/remove) — confirm intent + name
+
+## Never auto-run
+- `git push --force`, hard reset, mass delete
+- `rm -rf` on a path that differs from an existing one only by case. macOS resolves `src/App` and
+  `src/app` to the **same** directory, so a backend path typed from inside `src/web/` deletes the
+  front end. Use absolute paths and `ls` the target first.
+- Commits / PRs unless the user explicitly asked
+- Prod/staging mutators (deploy, DB drop, secret rotate)
+
+## Secrets
+- Do not commit real passwords, connection strings, or API keys
+- Dev seed creds in docs are Development-only; never reuse in prod config
+- If a secret appears in chat/diff/logs: stop, tell the user to rotate, do not repeat the value
+
+## Dependencies
+- Prefer packages already in the solution; justify any new NuGet package before adding
+
+## Work quality
+- No symptom-only workarounds without a root-cause note in the reply
+- Before concluding multi-step work: check `git status` / diff and run `make verify` (or the smallest relevant test filter)

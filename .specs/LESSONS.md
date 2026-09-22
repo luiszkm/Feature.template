@@ -98,6 +98,84 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: src/web/src/app/shell/shell.spec.ts:48 (src/web)
 - last seen: 2026-09-13T13:45:28Z
 
+### L-015 - Assert an endpoint's success and not-found status codes by calling the mapped route through the test host, not only by invoking the handler directly and checking its return value or thrown exception type.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: agentes
+- evidence: C1,C4,C5,C6,C11,C14,C35,C37,C38 - src/Api/Features/Ai/{CreateAgent,UpdateAgent,DeactivateAgent,GetAgent,CreateAgentFile,DeleteAgentFile}.cs (api-tests)
+- last seen: 2026-09-19T19:57:54Z
+
+### L-016 - When a shared test stub fully replaces a service, it also erases the ability to assert the specific arguments the caller passed it; assert dialog copy via a recording spy, not a fixed-answer stub.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web-tests` · harmful: 0
+- features: agentes
+- evidence: C22 - src/web/src/testing.ts:180-182, src/web/src/app/features/ai/agents-list.ts:178-180 (web-tests)
+- last seen: 2026-09-19T19:57:59Z
+
+### L-017 - When citing a --filter for a data-driven it.each Vitest case, match the test name's actual rendered form including any quoting the interpolation adds, and confirm the run reports at least one executed test before trusting a zero exit code.
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `web-tests` · harmful: 0
+- features: agentes
+- evidence: C20,C21 - src/web/src/app/shared/list-state.spec.ts:54,93 (web-tests)
+- last seen: 2026-09-19T19:58:01Z
+
+### L-018 - Prove per-owner scoping guards such as tenant or agent ownership checks with a negative case that attempts access from a different owner, not only a same-owner happy path.
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: agentes
+- evidence: C39 - src/Api/Features/Ai/AgentFileTools.cs (ReadAgentFileTool), fault F5 (api-tests)
+- last seen: 2026-09-19T19:58:06Z
+
+### L-019 - State per-field tie-break ordering rules as a testable claim with at least one case where the primary sort key ties, not only cases proven on distinct primary-key values.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: agentes
+- evidence: C2 - tests/Api.Tests/Ai/CreateAgentTests.cs:263-286 (ListAgentsTests) (api-tests)
+- last seen: 2026-09-19T19:58:08Z
+
+### L-020 - Phrase a check's expected cardinality or rate-limit threshold as a reference to its authority (the current size of the set, the configured limiter value), not a hardcoded snapshot number - an unrelated feature that grows the set or reconfigures a shared limiter leaves the literal number stale even though the underlying guard stays correct.
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `checks-authoring` · harmful: 0
+- features: auth-cookie-contract
+- evidence: checks.md:76 (C19), checks.md:55 (C13) (checks-authoring)
+- last seen: 2026-09-19T22:51:16Z
+
+### L-021 - When an e2e test waits for a busy indicator to clear before proceeding, first assert it became busy, not only that it is not busy, so the wait cannot pass without ever having observed the operation start
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `src/web` · harmful: 0
+- features: web-frontend
+- evidence: C66 (src/web/e2e/users.spec.ts:46) (src/web)
+- last seen: 2026-09-19T22:55:15Z
+
+### L-022 - When a table-driven test always mounts a component fresh at its default state, a reset-to-default assertion on that same field is vacuous unless the test first drives the component away from the default before triggering the action
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `src/web` · harmful: 0
+- features: web-frontend
+- evidence: C67 (src/web/src/app/features/identity/users-list.ts:183) (src/web)
+- last seen: 2026-09-19T22:55:17Z
+
+### L-023 - When a UI element's visibility is an OR of a management permission and a self-identity check, assert both the self-without-permission and the neither-self-nor-permission branches, not just one
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `src/web` · harmful: 0
+- features: web-frontend
+- evidence: src/web/src/app/features/identity/user-detail.ts:80-84 (src/web)
+- last seen: 2026-09-19T22:55:19Z
+
+### L-024 - When another feature's change adds an item to a UI component this feature's plan already fixes the arrangement of, recheck that plan's stated membership and order against the shipped component, not only against this feature's own diff
+- signal: `spec_deviation` · recurrence: 1 feature(s) · scope: `src/web` · harmful: 0
+- features: web-frontend
+- evidence: src/web/src/app/shell/shell.ts:28-62 (src/web)
+- last seen: 2026-09-19T22:55:22Z
+
+### L-025 - Give every branch of a decision table its own asserted case, including opt-out context flags
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `front-list-sort` · harmful: 0
+- features: web-frontend
+- evidence: src/web/src/app/features/identity/users-list.ts:189 / C68 / Faults F3 (front-list-sort)
+- last seen: 2026-09-19T22:59:20Z
+
+### L-026 - An architecture guard that maps a route to having a client by URL path alone lets an unrelated HTTP method at the same path mask a missing client for the actual method - compare the full method-and-path pair
+- signal: `spec_deviation` · recurrence: 1 feature(s) · scope: `src/web` · harmful: 0
+- features: web-frontend
+- evidence: src/web/src/app/architecture.spec.ts:34-50 / achado 8-9 / Faults F2 (src/web)
+- last seen: 2026-09-19T23:00:25Z
+
+### L-027 - When new code adds a real decision point (a duplicated branch, a new permission check), add it to the checks' Test Policy Evidence list, not only to the checks themselves, so a required proof level is visible for it
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `.specs` · harmful: 0
+- features: web-frontend
+- evidence: src/web/src/app/features/identity/users-list.ts:183 (checks.md Test policy Evidence list) (.specs)
+- last seen: 2026-09-19T23:05:44Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

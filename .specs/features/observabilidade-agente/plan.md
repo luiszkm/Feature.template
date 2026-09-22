@@ -57,8 +57,8 @@ que qualquer backend de OTel já entende.
 | Versões do agente, rollback, diff de prompt | É o W3, e reverteria a porta 2 de `plano-agentes.md` |
 | Avaliações, datasets, modelo juiz | É o W8 e depende de W1+W2 |
 | Moderação, rate limit no chat, quota por consumidor | É o W7. O `429` e o limiter não entram aqui |
-| Modelo por agente (coluna `Model`) | É o W5; o modelo continua em `Ai:Llm:Model` |
-| Custo em dinheiro (€/$ por chamada) | Nenhum provider devolve preço; uma tabela de preços por modelo é o catálogo Azure que ficou de fora |
+| Modelo por agente (coluna `Model`) | Antecipado em `.design/comparar-modelos.md` B1 (AD-009) |
+| Custo em dinheiro (€/$ por chamada) | ~~Nenhum provider devolve preço~~ — premissa errada: OpenRouter devolve `usage.cost` em todo response. Custo entra em `.design/comparar-modelos.md` B2 (`LlmResponse.Cost`, `AiUsageEntry.Cost`); tabela de preços para o provider MAF continua fora |
 | Exportador OTLP / App Insights / collector no compose | Pacote novo + endpoint por ambiente; ver pergunta aberta 1 |
 | Métricas OTel (`gen_ai.client.token.usage`, `gen_ai.client.operation.duration`) | Os mesmos números ficam na tabela de usage; `EnableMetrics` fica como está |
 | Conteúdo nos spans (`gen_ai.input.messages`, `gen_ai.output.messages`, argumentos e resultados de tools) | `opt_in` na convenção e são dados do tenant |
@@ -95,6 +95,10 @@ que qualquer backend de OTel já entende.
 ## Criteria
 
 ### S1: O custo de cada chat fica registado (P1)
+
+> **Absorvido por `.design/comparar-modelos.md` bloco B2 (AD-009).** AC 1–9 e doors 1, 3 e 6 são
+> reutilizados lá tal e qual, mais `Cost decimal?` em `LlmResponse` e `AiUsageEntry`, e
+> `Operation` ∈ {`chat`, `compare`}. Não implementar S1 a partir deste plano.
 
 **Acceptance Criteria**
 

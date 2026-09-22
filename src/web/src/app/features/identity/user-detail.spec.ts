@@ -55,4 +55,38 @@ describe('UserDetail', () => {
     expect(text(fixture, 'user-email')).toBe('ana@example.com');
     expect(maybeEl(fixture, 'forbidden')).toBeNull();
   });
+
+  it('a propria pessoa ve Editar sem identity.user.manage', async () => {
+    server.use(
+      api.get('/api/v1/identity/users/user-1', () => HttpResponse.json(USER)),
+      api.get('/api/v1/identity/users/user-1/roles', () => HttpResponse.json([])),
+    );
+    provideRouteStub({ userId: 'user-1' });
+    // `authenticate()`'s token always carries `sub: 'user-1'`, matching `USER.id` here - a
+    // non-empty, non-`userManage` permission list is what keeps this session off the `Admin`
+    // role default (which would bypass `hasPermission` and prove nothing about the self branch).
+    authenticate(['identity.user.read']);
+
+    const fixture = TestBed.createComponent(UserDetail);
+    await settle(fixture);
+
+    expect(maybeEl(fixture, 'detail-edit')).not.toBeNull();
+  });
+
+  it('nem manager nem a propria pessoa nao ve Editar', async () => {
+    const other = { ...USER, id: 'user-2', email: 'outro@example.com' };
+    server.use(
+      api.get('/api/v1/identity/users/user-2', () => HttpResponse.json(other)),
+      api.get('/api/v1/identity/users/user-2/roles', () => HttpResponse.json([])),
+    );
+    provideRouteStub({ userId: 'user-2' });
+    // Same session as above (`sub: 'user-1'`) viewing a *different* user's detail (`user-2`).
+    authenticate(['identity.user.read']);
+
+    const fixture = TestBed.createComponent(UserDetail);
+    await settle(fixture);
+
+    expect(text(fixture, 'user-email')).toBe('outro@example.com');
+    expect(maybeEl(fixture, 'detail-edit')).toBeNull();
+  });
 });

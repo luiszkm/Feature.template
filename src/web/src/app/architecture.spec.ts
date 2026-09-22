@@ -29,19 +29,25 @@ describe('arquitetura do front', () => {
       .map((path) => readFileSync(path, 'utf8'))
       .join('\n');
 
+    // Method-aware: a path-only match lets a PUT/DELETE at the same URL vouch for a GET nobody
+    // calls (that is how the plain-`GetRole` regression above got past this guard once).
+    const calls = new Set(
+      [...sources.matchAll(/this\.http\.(get|post|put|delete|patch)[^(]*\(\s*`\$\{API_BASE\}([^`]*)`/g)].map(
+        (match) => {
+          const method = match[1].toUpperCase();
+          const path = `/api/v1${match[2].split('?')[0]}`.replace(/\$\{[^}]+\}/g, '{param}');
+          return `${method} ${path}`;
+        },
+      ),
+    );
+
     const missing = Object.entries(features)
-      .map(([slice, { route }]) => ({ slice, path: route.split(' ')[1] }))
-      .filter(({ path }) => {
-        const pattern = new RegExp(
-          '\\$\\{API_BASE\\}' +
-            path
-              .replace('/api/v1', '')
-              .replace(/[.*+?^$()|[\]\\]/g, '\\$&')
-              .replace(/\{[^}]+\}/g, '\\$\\{[^}]+\\}'),
-        );
-        return !pattern.test(sources);
+      .map(([slice, { route }]) => {
+        const [method, path] = route.split(' ');
+        return { slice, route, normalized: `${method} ${path.replace(/\{[^}]+\}/g, '{param}')}` };
       })
-      .map(({ slice, path }) => `${slice} (${path})`);
+      .filter(({ normalized }) => !calls.has(normalized))
+      .map(({ slice, route }) => `${slice} (${route})`);
 
     expect(missing).toEqual([]);
   });

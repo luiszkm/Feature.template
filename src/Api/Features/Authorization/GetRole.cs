@@ -23,20 +23,10 @@ public sealed class GetRoleEndpoint : IEndpoint
 {
     public void Map(IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/v1/authorization/roles/{roleId:guid}", async (
-            Guid roleId,
-            IMediator mediator,
-            CancellationToken cancellationToken) =>
-        {
-            var result = await mediator.Send(new GetRoleQuery(roleId), cancellationToken);
-            return Results.Ok(result);
-        })
-        .WithName("GetRole")
-        .WithTags("Authorization")
-        .RequireAuthorization(SecurityPolicies.AuthorizationRolesRead)
-        .Produces<RoleWithPermissionsOutput>(StatusCodes.Status200OK)
-        .ProducesProblem(StatusCodes.Status404NotFound);
-
+        // No bare `GET /roles/{roleId}` here: `RoleWithPermissionsOutput` is a strict superset
+        // of `RoleOutput`, nothing in the SPA ever read it without `/permissions` on the end,
+        // and the front's architecture guard now catches a route with no client - carrying a
+        // second one for the same query and payload would only be redundant surface.
         app.MapGet("/api/v1/authorization/roles/{roleId:guid}/permissions", async (
             Guid roleId,
             IMediator mediator,

@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 15,
+  "next_id": 28,
   "lessons": [
     {
       "id": "L-001",
@@ -256,6 +256,240 @@
       ],
       "created": "2026-09-13T13:45:28Z",
       "last_seen": "2026-09-13T13:45:28Z"
+    },
+    {
+      "id": "L-015",
+      "key": "ac_gap::assert an endpoint s success and not found status codes by calling the mapped route through the test host not only by invoking the handler directly and checking its return value or thrown exception type",
+      "text": "Assert an endpoint's success and not-found status codes by calling the mapped route through the test host, not only by invoking the handler directly and checking its return value or thrown exception type.",
+      "signal": "ac_gap",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "agentes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C1,C4,C5,C6,C11,C14,C35,C37,C38 - src/Api/Features/Ai/{CreateAgent,UpdateAgent,DeactivateAgent,GetAgent,CreateAgentFile,DeleteAgentFile}.cs (api-tests)"
+      ],
+      "created": "2026-09-19T19:57:54Z",
+      "last_seen": "2026-09-19T19:57:54Z"
+    },
+    {
+      "id": "L-016",
+      "key": "ac_gap::when a shared test stub fully replaces a service it also erases the ability to assert the specific arguments the caller passed it assert dialog copy via a recording spy not a fixed answer stub",
+      "text": "When a shared test stub fully replaces a service, it also erases the ability to assert the specific arguments the caller passed it; assert dialog copy via a recording spy, not a fixed-answer stub.",
+      "signal": "ac_gap",
+      "scope": "web-tests",
+      "status": "candidate",
+      "features": [
+        "agentes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C22 - src/web/src/testing.ts:180-182, src/web/src/app/features/ai/agents-list.ts:178-180 (web-tests)"
+      ],
+      "created": "2026-09-19T19:57:59Z",
+      "last_seen": "2026-09-19T19:57:59Z"
+    },
+    {
+      "id": "L-017",
+      "key": "ac_gap::when citing a filter for a data driven it each vitest case match the test name s actual rendered form including any quoting the interpolation adds and confirm the run reports at least one executed test before trusting a zero exit code",
+      "text": "When citing a --filter for a data-driven it.each Vitest case, match the test name's actual rendered form including any quoting the interpolation adds, and confirm the run reports at least one executed test before trusting a zero exit code.",
+      "signal": "ac_gap",
+      "scope": "web-tests",
+      "status": "candidate",
+      "features": [
+        "agentes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C20,C21 - src/web/src/app/shared/list-state.spec.ts:54,93 (web-tests)"
+      ],
+      "created": "2026-09-19T19:58:01Z",
+      "last_seen": "2026-09-19T19:58:01Z"
+    },
+    {
+      "id": "L-018",
+      "key": "surviving_mutant::prove per owner scoping guards such as tenant or agent ownership checks with a negative case that attempts access from a different owner not only a same owner happy path",
+      "text": "Prove per-owner scoping guards such as tenant or agent ownership checks with a negative case that attempts access from a different owner, not only a same-owner happy path.",
+      "signal": "surviving_mutant",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "agentes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C39 - src/Api/Features/Ai/AgentFileTools.cs (ReadAgentFileTool), fault F5 (api-tests)"
+      ],
+      "created": "2026-09-19T19:58:06Z",
+      "last_seen": "2026-09-19T19:58:06Z"
+    },
+    {
+      "id": "L-019",
+      "key": "spec_precision_gap::state per field tie break ordering rules as a testable claim with at least one case where the primary sort key ties not only cases proven on distinct primary key values",
+      "text": "State per-field tie-break ordering rules as a testable claim with at least one case where the primary sort key ties, not only cases proven on distinct primary-key values.",
+      "signal": "spec_precision_gap",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "agentes"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C2 - tests/Api.Tests/Ai/CreateAgentTests.cs:263-286 (ListAgentsTests) (api-tests)"
+      ],
+      "created": "2026-09-19T19:58:08Z",
+      "last_seen": "2026-09-19T19:58:08Z"
+    },
+    {
+      "id": "L-020",
+      "key": "spec_precision_gap::phrase a check s expected cardinality or rate limit threshold as a reference to its authority the current size of the set the configured limiter value not a hardcoded snapshot number an unrelated feature that grows the set or reconfigures a shared limiter leaves the literal number stale even though the underlying guard stays correct",
+      "text": "Phrase a check's expected cardinality or rate-limit threshold as a reference to its authority (the current size of the set, the configured limiter value), not a hardcoded snapshot number - an unrelated feature that grows the set or reconfigures a shared limiter leaves the literal number stale even though the underlying guard stays correct.",
+      "signal": "spec_precision_gap",
+      "scope": "checks-authoring",
+      "status": "candidate",
+      "features": [
+        "auth-cookie-contract"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "checks.md:76 (C19), checks.md:55 (C13) (checks-authoring)"
+      ],
+      "created": "2026-09-19T22:51:16Z",
+      "last_seen": "2026-09-19T22:51:16Z"
+    },
+    {
+      "id": "L-021",
+      "key": "ac_gap::when an e2e test waits for a busy indicator to clear before proceeding first assert it became busy not only that it is not busy so the wait cannot pass without ever having observed the operation start",
+      "text": "When an e2e test waits for a busy indicator to clear before proceeding, first assert it became busy, not only that it is not busy, so the wait cannot pass without ever having observed the operation start",
+      "signal": "ac_gap",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C66 (src/web/e2e/users.spec.ts:46) (src/web)"
+      ],
+      "created": "2026-09-19T22:55:15Z",
+      "last_seen": "2026-09-19T22:55:15Z"
+    },
+    {
+      "id": "L-022",
+      "key": "surviving_mutant::when a table driven test always mounts a component fresh at its default state a reset to default assertion on that same field is vacuous unless the test first drives the component away from the default before triggering the action",
+      "text": "When a table-driven test always mounts a component fresh at its default state, a reset-to-default assertion on that same field is vacuous unless the test first drives the component away from the default before triggering the action",
+      "signal": "surviving_mutant",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C67 (src/web/src/app/features/identity/users-list.ts:183) (src/web)"
+      ],
+      "created": "2026-09-19T22:55:17Z",
+      "last_seen": "2026-09-19T22:55:17Z"
+    },
+    {
+      "id": "L-023",
+      "key": "ac_gap::when a ui element s visibility is an or of a management permission and a self identity check assert both the self without permission and the neither self nor permission branches not just one",
+      "text": "When a UI element's visibility is an OR of a management permission and a self-identity check, assert both the self-without-permission and the neither-self-nor-permission branches, not just one",
+      "signal": "ac_gap",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/features/identity/user-detail.ts:80-84 (src/web)"
+      ],
+      "created": "2026-09-19T22:55:19Z",
+      "last_seen": "2026-09-19T22:55:19Z"
+    },
+    {
+      "id": "L-024",
+      "key": "spec_deviation::when another feature s change adds an item to a ui component this feature s plan already fixes the arrangement of recheck that plan s stated membership and order against the shipped component not only against this feature s own diff",
+      "text": "When another feature's change adds an item to a UI component this feature's plan already fixes the arrangement of, recheck that plan's stated membership and order against the shipped component, not only against this feature's own diff",
+      "signal": "spec_deviation",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/shell/shell.ts:28-62 (src/web)"
+      ],
+      "created": "2026-09-19T22:55:22Z",
+      "last_seen": "2026-09-19T22:55:22Z"
+    },
+    {
+      "id": "L-025",
+      "key": "surviving_mutant::give every branch of a decision table its own asserted case including opt out context flags",
+      "text": "Give every branch of a decision table its own asserted case, including opt-out context flags",
+      "signal": "surviving_mutant",
+      "scope": "front-list-sort",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/features/identity/users-list.ts:189 / C68 / Faults F3 (front-list-sort)"
+      ],
+      "created": "2026-09-19T22:59:20Z",
+      "last_seen": "2026-09-19T22:59:20Z"
+    },
+    {
+      "id": "L-026",
+      "key": "spec_deviation::an architecture guard that maps a route to having a client by url path alone lets an unrelated http method at the same path mask a missing client for the actual method compare the full method and path pair",
+      "text": "An architecture guard that maps a route to having a client by URL path alone lets an unrelated HTTP method at the same path mask a missing client for the actual method - compare the full method-and-path pair",
+      "signal": "spec_deviation",
+      "scope": "src/web",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/architecture.spec.ts:34-50 / achado 8-9 / Faults F2 (src/web)"
+      ],
+      "created": "2026-09-19T23:00:25Z",
+      "last_seen": "2026-09-19T23:00:25Z"
+    },
+    {
+      "id": "L-027",
+      "key": "ac_gap::when new code adds a real decision point a duplicated branch a new permission check add it to the checks test policy evidence list not only to the checks themselves so a required proof level is visible for it",
+      "text": "When new code adds a real decision point (a duplicated branch, a new permission check), add it to the checks' Test Policy Evidence list, not only to the checks themselves, so a required proof level is visible for it",
+      "signal": "ac_gap",
+      "scope": ".specs",
+      "status": "candidate",
+      "features": [
+        "web-frontend"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "src/web/src/app/features/identity/users-list.ts:183 (checks.md Test policy Evidence list) (.specs)"
+      ],
+      "created": "2026-09-19T23:05:44Z",
+      "last_seen": "2026-09-19T23:05:44Z"
     }
   ]
 }

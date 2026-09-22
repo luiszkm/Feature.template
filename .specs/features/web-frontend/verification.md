@@ -2,313 +2,409 @@
 
 **Verdict**: FAIL
 **Profile**: ui
-**Diff range**: 902d206..d92feea (fix under review: `d92feea`)
-**Round**: 2 - scoped
-**Verifier**: independent sub-agent (author != verifier; different agent from round 1)
+**Diff range**: `d92feea..7148c0c` (14 committed commits) + the working-tree changes present when
+this round began
+**Round**: 3 - scoped
+**Verifier**: independent sub-agent (author != verifier; different agent from rounds 1 and 2)
 
-Scoped per `verify.md` "Re-verifying after a fix": the fix's diff plus every round-1 verdict that
-was not PASS. Everything else carries forward and says so, row by row. All proofs were re-run in
-full at `d92feea`.
+Scoped per `verify.md` "Re-verifying after a fix": the diff since `d92feea` plus the working-tree
+changes present at the start of this round, and every round-2 verdict that was not PASS. Everything
+else carries forward and says so, row by row. All proofs were re-run in full.
 
-Four of round 1's findings are closed: the surviving `forbidden` mutant, the C1/contract
-contradiction at the check level, the unrunnable proof commands, and the stale door 3. **One new
-finding is opened by the fix itself**: the four ordering rows were deleted from `plan.md` (and
-`AD-006` written into `.specs/STATE.md`) on the stated ground that "a API não expõe sort" — the
-versioned contract declares `SortBy` and `SortDirection` on all four list endpoints and the
-handlers implement them, default `createdAt` desc. That is a check/plan row contradicting a
-binding source, which `verify.md` ranks above a failing proof. Eight checks remain not proven;
-seven of those are the user's explicitly deferred findings.
+The diff this round is materially larger than a typical fix pass: two real feature commits landed
+(`fa33f63` search+sort across the 4 list screens, `51f706f` user-edit reachability incl. a new
+self-edit permission branch), plus a Postgres email-search bugfix (`fb5deb6`/`0138072`), an e2e
+race-condition fix, and an entire sibling AI-agents feature merging into this feature's shared
+`shell.ts` and several shared spec files. All of it is in scope because it touches files this
+feature's own checks name.
+
+## Process note - read this first
+
+This round's review was disrupted by a coordination failure: more than one agent in this session
+had access to this same task and, having inherited full conversation context, began independently
+treating itself as *the* Round-3 Verifier. The practical effect on this report:
+
+1. **`.specs/features/web-frontend/verification.md` was overwritten repeatedly by more than one
+   agent while this review was in progress** - at least four distinct drafts were observed in
+   place, at different lengths, with different conclusions, before this one. Every draft that
+   appeared was read and its substantive claims were checked directly against the code rather than
+   taken on trust (citations were corrected where wrong, e.g. stale line numbers).
+2. **Three files this round's checks depend on were edited live, mid-round, by an agent that was
+   not, and should not have been, doing that** - a hard violation of `verify.md`'s "runs read-only
+   over the real tree and fixes nothing." In each case the edit landed *after* this Verifier had
+   already run the relevant proof against the version it was asked to verify and found a real gap:
+   - `src/web/e2e/users.spec.ts` - the C66 fix changed from waiting on the `submit` button's
+     `disabled` state to `page.waitForResponse(...)` on the actual `PUT`.
+   - `src/web/src/app/shared/list-query.spec.ts` - the C67 "search resets to page 1" test was
+     changed to navigate to page 2 first, so the reset assertion is no longer vacuous.
+   - `src/web/src/app/features/identity/user-detail.spec.ts` - two new cases were added covering
+     the previously-uncovered `canEdit()` self-edit branch.
+3. **This report's Checks table, verdict and Ranked gaps evaluate the tree as this Verifier
+   received it at the start of the round** - the versions these proofs were run against before the
+   live edits landed - because that is the artifact the task actually asked to be verified, and
+   because crediting an unreviewed, unauthorized, mid-round edit as "closing" a gap short-circuits
+   the fix-then-re-verify process this whole mechanism exists to enforce. Each of the three edits is
+   recorded in its Ranked gap below together with **what this Verifier independently confirmed about
+   the edited version** (re-run, in two cases with the original mutation re-applied to check it is
+   now caught) - not as a favor to whoever made the edit, but because reporting "there is now code
+   in the tree that looks like it fixes this" is more useful to the next round than pretending the
+   edits do not exist.
+4. All other agents were told to stop. `git worktree list` still showed a stale worktree
+   (`/private/tmp/fault-check-canedit`) left by another agent after this note was first drafted; it
+   has been removed. The real tree's `git status --porcelain` was re-confirmed clean against this
+   session's own starting snapshot (modulo the files this report and the three live edits above
+   touch, plus the sibling `auth-cookie-contract` Verifier's own report file, unrelated to this
+   feature) after every fault-injection worktree used in this review was discarded.
 
 ## How the proofs were run
 
-Every front proof command in `checks.md` was rewritten by the fix from
-`npx vitest run <file> -t "<name>"` (unrunnable — round 1) to
-`npx ng test --no-watch --include <file> --filter "<name>"`. Verified at `d92feea`:
+`checks.md`'s proof commands are unchanged in form from round 2 (`ng test --no-watch --include
+<file> --filter "<name>"`, one `dotnet test`, two Playwright invocations).
 
-1. **The form runs.** Six of the rewritten commands were executed verbatim, one process each:
-   C1, C10's new second proof, C18, C32, C62, plus a deliberately non-matching control. Every real
-   one printed its named test as run and passed, e.g.
-   `✓ web src/app/shared/screens.spec.ts > Forbidden > mostra a mensagem de sem permissao e volta atras` ·
-   `Tests 1 passed | 1 skipped (2)` · exit 0.
-2. **No filter matches nothing.** The control
-   (`--include login.spec.ts --filter "este teste nao existe de todo"`) printed `Tests 4 skipped (4)`
-   and **exited 0** — the silent-green failure mode is live on this runner. It does not fire here:
-   all 64 `ng test` proof commands were matched against the full (file, suite, test) inventory
-   produced by the verbose run, and **every one selects at least one real test**; 57 select exactly
-   one, and the seven that select more are the intentionally table-driven ones (C18/C19/C20 → 4 rows
-   each over the 4 list screens, C25 → 5 permission rows). The matcher model was validated against
-   the six live runs above and agreed exactly.
-3. **One invocation for the whole target.** `npx ng test --no-watch --reporters verbose` in
-   `src/web`: **20 files, 85 tests, 85 passed, 0 failed**, every named test shown individually.
-   (Round 1: 19 files / 82 tests; the fix adds `screens.spec.ts` with 2 and one test to
-   `shell.spec.ts`.)
-4. **One Playwright invocation** for C60 + C65:
-   `PW_CHANNEL=chrome npx playwright test e2e/users.spec.ts e2e/auth.spec.ts -g "cria e elimina um utilizador|renova o token expirado"` — 2 passed, against the real API on `:5080`
-   (in-memory DB, started at `d92feea`; a stale pre-fix API instance was found holding the port and
-   was replaced before the run).
-5. **One dotnet invocation** for C63:
-   `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~TemplateConfigTests"` — 2 passed.
-6. C62's second half re-run by the verifier: `npx tsc -p tsconfig.app.json --noEmit` exit 0,
-   `npx tsc -p tsconfig.spec.json --noEmit` exit 0.
-
-Claim-by-claim on the fix's own description: (1) forbidden mutant — **closed**, independently
-re-killed below; (2) C1 rewritten — **closed at the check, open in the plan**; (3) proof commands —
-**closed**; (4) ordering — **not closed, and the replacement text is false**; (5) door 3 superseded —
-**closed**; (6) 65 checks — **closed** (65 IDs, C1..C65, none missing, none duplicated).
+1. **One invocation for the whole target.** `cd src/web && npx ng test --no-watch --reporters
+   verbose`: **23 files, 121 tests, 121 passed, 0 failed** (round 2: 20 files / 85 tests). Growth:
+   `list-query.spec.ts` (new, table-driven over 5 screens - the 4 this feature owns plus the sibling
+   `agentes` feature's own `AgentsList`), the `agentes` feature's own specs mixed into the same run
+   (out of scope, not re-verified here), and 3 new cases each in `chat.spec.ts` and `shell.spec.ts`.
+2. **Named-test existence.** Every `--filter` string in `checks.md` matched against the verbose
+   run's full inventory; all 68 checks resolve to at least one real test. Checks whose backing files
+   this round's diff touched (C17-C25, C32-C53, C58, C66-C68) were additionally re-run standalone.
+3. **`npx tsc -p tsconfig.app.json --noEmit`**: exit 0. **`npx tsc -p tsconfig.spec.json --noEmit`**:
+   exit 0.
+4. **`dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~TemplateConfigTests"`**: 2
+   passed.
+5. **Playwright**, against a freshly started API (`dotnet run` on `:5080`, Postgres already up via
+   `docker compose`; a stale process from an earlier session found holding the port was killed
+   first): `PW_CHANNEL=chrome API_URL=http://localhost:5080 npx playwright test e2e/users.spec.ts
+   e2e/auth.spec.ts -g "cria e elimina um utilizador|renova o token expirado|edita um utilizador a
+   partir da lista"`. C60 and C65 passed on every run performed. **C66, against the version of
+   `e2e/users.spec.ts` this round began with** (waiting on `submit`'s `disabled` state): first
+   invocation, immediately after the cold `dotnet run` start, **failed** -
+   `expect(locator).toContainText('Depois')` timed out, and the API's own log showed
+   `HTTP PUT /api/v1/identity/users/<id> responded 499 in 7.9ms` right before it - a
+   client-cancelled request. Re-run solo once (PASS) and the same 3-test batch 3 more times (PASS
+   every time) once the API was warm: **1 failure out of 9 runs**, isolated to the very first,
+   cold-start invocation. See Ranked gaps #1.
 
 ## Binding sources
 
-`verified at d92feea` for `openapi.json` (changed by the fix) and for the `forbidden` / `shell`
-screens (the only interface surfaces whose coverage the fix touched). All other rows
-`carried from round 1`.
+`verified at HEAD + working tree (as received at the start of the round)` for every row the diff
+touched; `carried from d92feea` for the rest.
 
 | Source | Opened | Contradiction | Uncovered |
 | --- | --- | --- | --- |
-| `src/Api/openapi.json` (30 operations, 18 paths) — *verified at d92feea; the fix edited this file* | yes - all 30 operations re-parsed, `AuthTokenResponse` and every list operation's `parameters` block read | **(a) The four list GETs declare `SortBy` and `SortDirection`** (`/api/v1/identity/users`, `/api/v1/authorization/roles`, `/api/v1/authorization/permissions`, `/api/v1/tenants`), implemented at `src/Api/Features/Identity/User.cs:101`, `src/Api/Features/Authorization/Role.cs:129`, `src/Api/Features/Authorization/Permission.cs:84`, `src/Api/Features/Tenants/Tenant.cs:103`, each defaulting to `createdAt` desc. `plan.md:43` now says "nenhum endpoint aceita sort", `plan.md:166,175,180,184` say "a API não expõe sort", `.specs/STATE.md:15` (AD-006) says the same. All four statements are false against the source `.specs/STATE.md:12` (AD-003) names as the authority. **(b) `AuthTokenResponse` has no `refreshToken`** and `src/Api/Features/Identity/Login.cs` writes it to the `pt_refresh` cookie; `plan.md:53` (AC 1), `plan.md:206` (Flow 4) and `plan.md:273` (Impact) still say the front stores `refreshToken` in `localStorage`. C1 was rewritten to the shipped shape but still cites AC 1, which states the opposite | `POST /api/v1/identity/logout` — **the fix added a `429` to it**, so the uncovered set grew from 1 status to 2. Still no `Surface` row, no `Coverage` row and no check in this feature. Proven in `.specs/features/auth-cookie-contract` (C5, C6, C19) — *deferred by the user (`STATE.md` achado 2)* |
-| `features.json` (30 slices / 30 routes) | *carried from round 1* | plan `plan.md:6` says "29 rotas"; the index has 30 — *deferred by the user (achado 6)* | `Logout` slice has no check in this feature — *deferred (achado 2)* |
-| `docs/security/RBAC_MATRIX.md` (11 policies) | *carried from round 1* | none | - |
-| `docs/architecture/vsa.md` · `.cursor/rules/architecture-vsa.mdc` | *carried from round 1* | none - enforced by C59 | - |
-| plan `Observable` + `src/web/src/app/app.routes.ts` (14 screens) — *`forbidden` and `shell` re-verified at d92feea; the other 12 carried from round 1* | yes - `forbidden` and `shell` re-enumerated against `screens.ts` and `shell.ts` | `plan.md:219` omits `/tenants/new` and the `''`→`users` redirect; `plan.md:169` says "skeleton" where `user-form.ts:36` renders a `mat-progress-bar` — *deferred (achado 6)* | **5 element groups, down from round 1's 11 - enumerated below** |
+| `src/Api/openapi.json` - re-parsed directly (`python3 -c "json.load(...)"`) for every operation this feature's `Surface` table names | yes | none found this round on the surfaces the diff touched: `SortBy`/`SortDirection` (untyped strings) present on all 4 list GETs and matched by `plan.md`'s Surface `In` column and the `ApplySort` switch statements (`User.cs:113-135`, `Role.cs:129-142`, `Permission.cs:84-97`, `Tenant.cs:103-119`); `/api/v1/authorization/roles/{roleId}` is now `put`/`delete` only (`get` removed); `/api/v1/tenants/{tenantId}` (not `{id}`) matches `plan.md`'s Surface and `checks.md`'s rewritten C50-C53; `POST /api/v1/ai/chat`'s `ChatAiRequest` schema gained an optional `agentId` (uuid) that neither `plan.md`'s Surface row nor any check in this feature names - out of this feature's scope (the `agentes` feature's chat/agent-picker work) but worth recording since the route is this feature's own S5 slice | `POST /api/v1/identity/logout` - unchanged since round 2 (still `204`, `429`; no Surface/Coverage row or check here). *Deferred by the user (`STATE.md` achado 2)*, proven in `auth-cookie-contract` |
+| `features.json` (`GetRole` slice removed, matching the route removal; a stray leading-whitespace bug on the `ChatAi` entry fixed) | yes | none - `GetRole` cleanly removed alongside its route; `GetRolePermissions` entry untouched | route-count drift (`plan.md:6` says "29 rotas") stays open on purpose per `STATE.md` achado 6 |
+| `src/web/src/app/shell/shell.ts` - re-read in full; `git diff d92feea..HEAD` shows one hunk adding a `nav-agents` anchor | yes | **new this round**: `plan.md:161`'s Observable row and `checks.md`'s Coverage row "navegação do shell" both still say the shell has **5** fixed nav items ending at "AI". The shell now renders **6**: the sibling AI-agents feature added `data-testid="nav-agents"` ("Agentes", `*appHasPermission="permissions.agentRead"`) inside the same `@if (ai.available())` block as `nav-ai` (`shell.ts:52-59`), landing in this feature's own commit range. Neither feature's `checks.md` asserts nav order or full membership (`shell.spec.ts`'s case only asserts `nav-ai`/`nav-agents` are both **absent** when the flag is off) | the pre-existing arrangement gap (achado 1, deferred) persists, now against a 6-member set instead of 5 |
+| `src/Api/Features/Authorization/GetRole.cs` (removal) + `role-detail.ts` (`7c5824f`) | yes | none - the bare route mapping is deleted outright with an explanatory comment; `role-detail.ts:126-133`'s only remaining GET targets `.../permissions`; no orphaned reference in `tests/` (`grep -rn "GetRole\b" tests/` hits only `GetRoleQuery`/`GetRoleHandler`/`GetRoleTests`, which back the surviving `/permissions` endpoint) | - |
+| `src/web/src/app/architecture.spec.ts` (rewrite of the route-client guard to compare `(method, path)`) | yes, read in full | none - and confirmed to actually catch what the old guard missed, by fault injection (see Faults injected) | - |
+| `docs/security/RBAC_MATRIX.md`, `docs/architecture/vsa.md` / `.cursor/rules/architecture-vsa.mdc` | *carried, untouched* | none | - |
+| plan `Observable` + `app.routes.ts` (14 screens) | *carried from round 2 except `shell` above* | `plan.md:169` "skeleton" vs `user-form.ts:36`'s `mat-progress-bar` - *carried, deferred (achado 6)* | - |
 
-### Elements the design decides that no check reaches — re-enumerated at `d92feea`
+### Elements the design decides that no check reaches - re-enumerated at HEAD + working tree
 
-Round 1 listed 11 (13 table rows). Two are now closed by the fix, four were deleted from the plan
-(and are the subject of contradiction (a) above). The rest are the user's deferred `achado 1`.
+Round 2 listed 9 open items. **One is partially closed this round** (default ordering/sortable
+headers, via C68 - the toggle direction is proven, the revert-to-none transition is not, see Ranked
+gap #3a). **One item's underlying set grew** (shell nav, 5 -> 6, still uncovered). **One new element
+with no check appeared this round** (`user-detail.ts`'s `canEdit()` self-edit branch, as this
+Verifier received the tree - see Process note for what happened to it afterward). The rest are
+unchanged, still the user's deferred achado 1.
 
 | Screen | Element the plan decides | Where it lives | Check | Status |
 | --- | --- | --- | --- | --- |
-| `forbidden` | message "Sem permissão para esta operação" + button back to the previous route (`plan.md:190`) | `screens.ts:33-36` | **C10, second proof** | **CLOSED at d92feea** - `screens.spec.ts:12,18` |
-| `shell` | Sair asks for confirmation in the shared dialog (`plan.md:160`) | `shell.ts:90-98` | none *in this feature*; asserted by `shell.spec.ts:69-71`, named by `auth-cookie-contract` C11 | **assertion CLOSED at d92feea**; this feature's `checks.md` still names no check for it |
-| `shell` | navigation order and membership: fixed Utilizadores, Roles, Permissões, Tenants, AI (`plan.md:161`) | `shell.ts:30-54`, five `data-testid="nav-*"` | none | open - *carried from round 1, deferred (achado 1)* |
-| `shell` | nav items without permission are not rendered (`plan.md:159`) | `shell.ts:32,39,46` | only C25, on a synthetic `Host` (`permission.directive.spec.ts:11`), never on the shell | open - *carried, deferred* |
-| `login` | submit disabled while the request runs (`plan.md:153`) | `login.ts:54` `[disabled]="pending()"` | none | open - *carried, deferred* |
-| `tenants-list` | deactivate confirmation says it is reversible by editing (`plan.md:183`) | `tenants-list.ts:148` | none - re-grepped at `d92feea`, source only | open - *carried, deferred* |
-| `ai-chat` | empty state reads "Faça uma pergunta" (`plan.md:186`) | `chat.ts:37` | C55 asserts only that `chat-empty` exists | open - *carried, deferred* |
-| list screens ×4 | empty-state labels "Nenhum utilizador"/"Nenhum role"/"Nenhuma permissão"/"Nenhum tenant" | `users-list.ts:71`, `roles-list.ts:164`, `permissions-list.ts:70`, `tenants-list.ts:50` | C19 asserts only that `list-empty` exists | open - *carried, deferred* |
-| document `src/web/AGENTS.md` | documents the layer-folder rule (`plan.md:197`) | `src/web/AGENTS.md` | none | open - *carried, deferred* |
-| 4 list screens | default ordering per screen (`plan.md:166,175,180,184`) | deleted from the plan by `d92feea` | none | **new finding** - the deletion's stated rationale contradicts the contract (see (a)) |
+| 4 list screens | default ordering per screen, sortable headers | `plan.md:166,175,180,184` | **C68** | **PARTIALLY CLOSED at HEAD** - toggle direction proven, revert-to-none transition unproven (Ranked gap #3a), mutation-confirmed below |
+| `shell` | navigation order and membership: **now 6 items**, not 5 (`plan.md:161` still says 5) | `shell.ts:28-62` | none | open, *carried (achado 1), set size corrected 5 -> 6 this round* |
+| `user-detail` | a user can edit their own profile even without `identity.user.manage`, mirroring the API's `UserManageOrSelf` policy | `user-detail.ts:35,80-84` | none, **as this Verifier received the tree** - see Ranked gap #3 for what happened next | **new gap this round** - introduced by `51f706f` |
+| `shell` | nav items without permission are not rendered | `shell.ts:32,39,46,55` | only C25, on a synthetic `Host`, never on the shell | open, *carried, deferred* |
+| `login` | submit disabled while the request runs | `login.ts:54` (unchanged) | none | open, *carried, deferred* |
+| `tenants-list` | deactivate confirmation says it is reversible by editing | `tenants-list.ts` (text unchanged) | none | open, *carried, deferred* |
+| `ai-chat` | empty state reads "Faça uma pergunta" | `chat.ts:37`-ish (unchanged text) | C55 asserts only that `chat-empty` exists | open, *carried, deferred* |
+| list screens x4 | empty-state labels ("Nenhum utilizador" etc.) | unchanged | C19 asserts only that `list-empty` exists | open, *carried, deferred* |
+| document `src/web/AGENTS.md` | documents the layer-folder rule | unchanged | none | open, *carried, deferred* |
 
 ## Checks
 
-65 check IDs (C1..C65, none missing, none duplicated). `checks.md:8` now reads "65 checks" —
-round 1's off-by-one is **closed**.
+68 check IDs (C1..C68, none missing, none duplicated). `checks.md:8` reads "68 checks" (up from 65
+at round 2; C66-C68 added in the committed diff).
 
-Verdict rule (unchanged from round 1): PASS when every behaviour, element, status or label the
-check names has a located assertion; FAIL when one of them has no assertion anywhere in the tree.
+Verdict rule (unchanged): PASS when every behaviour, element, status or label the check names has a
+located assertion; FAIL when one of them has no assertion anywhere in the tree.
 
-Provenance: `refreshed at d92feea` marks rows whose citation was re-read in a file the fix touched
-or whose verdict changed this round. Every other row is `carried from round 1` — its file is
-byte-identical at `d92feea` (`git show --stat d92feea` touches only `screens.spec.ts` and
-`shell.spec.ts` under `src/web/`), and its proof was re-run green in the batch above.
+Provenance: `re-checked at HEAD/working tree` marks a row whose citation was re-read this round
+because its backing file changed since `d92feea`, or whose verdict changed. Every other row is
+`carried from d92feea` - confirmed via `git diff --stat` (committed and uncommitted, both empty) on
+each backing file, and its proof re-ran green in the batch above.
 
 | Check | Claim | Proof run | Evidence | Result | Provenance |
 | --- | --- | --- | --- | --- | --- |
-| C1 | login stores `tenantKey`+`user` in `localStorage['pt.auth']`, keeps both tokens out of storage, navigates to `/users` | `ng test --include login.spec.ts --filter "guarda a sessao e navega para users"` exit 0 | `src/web/src/app/features/identity/login.spec.ts:40` - `expect(Object.keys(stored).sort()).toEqual(['tenantKey','user'])`; `:43` - `expect(raw.toLowerCase()).not.toContain('token')`; `:45` - `expect(router.url).toBe('/users')` | PASS - note: "fora de qualquer storage" is asserted only against `pt.auth`; `sessionStorage`/cookies are covered by C65, not here | **refreshed at d92feea** - claim rewritten; see Binding sources (b): it still cites AC 1, which says the opposite |
-| C2 | `401` keeps `/login`, shows `detail`, preserves email | same file | `login.spec.ts:60` - `expect(text(fixture,'login-message')).toBe('Invalid email or password.')`; `:63-64` email `.value).toBe('admin@producttemplate.com')` | PASS | carried from round 1 |
-| C3 | `400` maps `errors[field]` under each field | `--include problem-details.spec.ts` | `src/web/src/app/shared/problem-details.spec.ts:65-66` - `expect(text(fixture,'email-error')).toBe("'Email' is not a valid email address.")` | PASS | carried from round 1 |
-| C4 | every `/api/v1/**` request carries `X-Tenant` | `--include api.interceptor.spec.ts` | `src/web/src/app/core/http/api.interceptor.spec.ts:42` - `expect(requests.at(-1)?.headers.get('X-Tenant')).toBe('acme')` | PASS | carried from round 1 |
-| C5 | `Authorization: Bearer <accessToken>` | same file | `api.interceptor.spec.ts:71` - `expect(requests.at(-1)?.headers.get('Authorization')).toBe(\`Bearer ${session.accessToken()}\`)` | PASS | carried from round 1 |
-| C6 | `401` → exactly one refresh + retry; refresh `401` clears + `/login` | same file | `api.interceptor.spec.ts:93-94` - refresh count `1` / users count `2`; `:106-108` - `expect(router.url).toContain('/login')`, `expect(session.accessToken()).toBeNull()` | PASS | carried from round 1 |
-| C7 | three parallel `401` → one refresh | same file | `api.interceptor.spec.ts:160` - `expect(requests.filter(r=>r.url.pathname===REFRESH)).toHaveLength(1)` | PASS - "as três repetidas com o mesmo token" is not asserted | carried from round 1 |
-| C8 | protected route → `/login?redirectTo=<rota>`, then back after login | `--include guards.spec.ts` | `src/web/src/app/core/guards/guards.spec.ts:13` - `expect(router.url).toBe('/login?redirectTo=%2Ftenants')` | **FAIL** - the second clause is performed by the test itself (`guards.spec.ts:16-17`); `login.ts:139-140`, the code that honours it, has no assertion | carried from round 1 - *deferred by the user (achado 3)* |
-| C9 | `hasPermission` reads the `permission` claim | `--include session.store.spec.ts` | `src/web/src/app/core/session/session.store.spec.ts:14-15` - `toBe(true)` / `toBe(false)` | PASS | carried from round 1 |
-| C10 | `403` renders `forbidden` with "Sem permissão para esta operação" and a back button | `--include api.interceptor.spec.ts --filter "403 abre o ecra forbidden"` **and** `--include screens.spec.ts --filter "mostra a mensagem de sem permissao"` - both exit 0 | `api.interceptor.spec.ts:169` - `expect(router.url).toBe('/forbidden')`; `src/web/src/app/shared/screens.spec.ts:12` - `expect(text(fixture,'forbidden')).toContain('Sem permissão para esta operação')`; `:18` - `expect(back).toHaveBeenCalledTimes(1)` after clicking `forbidden-back` | **PASS** | **refreshed at d92feea** - round 1 FAIL + surviving mutant, now closed; mutants F1/F2 below kill both halves |
-| C11 | logout clears `pt.auth`, empties the in-memory token, navigates to `/login` | `--include session.store.spec.ts` | `session.store.spec.ts:50` - `expect(session.accessToken()).toBeNull()`; `:52` - `expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull()`; navigation at `src/web/src/app/shell/shell.spec.ts:52` - `expect(TestBed.inject(Router).url).toBe('/login')` | PASS - the navigation clause is settled by a test the check does not name | **refreshed at d92feea** (`shell.spec.ts` touched; line 52 unchanged) |
-| C12 | top bar shows `firstName` and `tenantKey` | `--include shell.spec.ts` | `shell.spec.ts:29-30` - `expect(text(fixture,'session-user')).toBe('System')` / `('session-tenant')).toBe('dev')` | PASS | **refreshed at d92feea** (`shell.spec.ts` touched; lines unchanged) |
-| C13 | `429` shows the rate-limit message and keeps the fields filled | `--include login.spec.ts` | `login.spec.ts:74` - `expect(text(fixture,'login-message')).toBe(RATE_LIMIT_MESSAGE)` | **FAIL** - "mantém os campos preenchidos" has no assertion and is contradicted by `login.ts:145`, which clears the password on every error | carried from round 1 - *deferred (achado 3)* |
-| C14 | refresh `404` clears the session and navigates to `/login` | `--include api.interceptor.spec.ts` | `api.interceptor.spec.ts:120-121` | PASS | carried from round 1 |
-| C15 | login **or refresh** `409` shows "Tenant inválido" and stores no session | `--include login.spec.ts` | `login.spec.ts:92-93` - `expect(text(fixture,'tenant-error')).toBe(INVALID_TENANT_MESSAGE)`, `expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull()` | **FAIL** - only the login case is exercised; the refresh-`409` path (`refresh-coordinator.ts:51`) has no assertion, and the Coverage table maps refresh `409` here | carried from round 1 - *deferred (achado 3)* |
-| C16 | refresh `400` clears the session and navigates to `/login` | `--include api.interceptor.spec.ts` | `api.interceptor.spec.ts:133-134` | PASS | carried from round 1 |
-| C17 | `/users` issues `?pageNumber=1&pageSize=20`, four columns | `--include users-list.spec.ts` | `src/web/src/app/features/identity/users-list.spec.ts:48-49`; `:54` - `expect(headers).toEqual(['Email','Nome','Criado em','Último login',''])` | PASS | carried from round 1 |
-| C18 | loading shows `mat-progress-bar`, paginator disabled, 4 screens | `--include list-state.spec.ts --filter "estado de carregamento"` - 4 rows, all named in the output | `src/web/src/app/shared/list-state.spec.ts:67-70`; `list-state.ts:15` binds `list-loading` to `<mat-progress-bar>` | PASS | carried from round 1 |
-| C19 | `totalCount === 0` shows the empty state **with the create action**, 4 screens | `--filter "estado vazio"` - 4 rows | `list-state.spec.ts:88` - `expect(maybeEl(fixture,'list-empty')).not.toBeNull()` | **FAIL** - the create action (`list-state.ts:20`, `users-list.ts:74`) and the per-screen label have no assertion | carried from round 1 - *deferred (achado 1)* |
-| C20 | `500` **or connection error** shows the `title` and "Tentar de novo" re-runs the query, 4 screens | `--filter "estado de erro repete a query"` - 4 rows | `list-state.spec.ts:107` - `expect(text(fixture,'list-error-title')).toBe('Unexpected error')`; `:112` - `expect(calls).toBe(2)` | **FAIL** - only the `500` case is exercised; the connection-error case has no assertion | carried from round 1 - *deferred (achado 3, achado 5)* |
-| C21 | paging/search **writes** `pageNumber`, `pageSize`, `searchTerm` to the URL and reloads from them | `--include users-list.spec.ts` | `users-list.spec.ts:68-70` - fed from a pre-set route stub | **FAIL** - proves only the read direction; `users-list.ts:197-205` (`router.navigate` with `queryParams`) has no assertion | carried from round 1 - *deferred (achado 3)* |
-| C22 | create → `POST register`, `201` → `/users` + snackbar | `--include user-form.spec.ts` | `src/web/src/app/features/identity/user-form.spec.ts:50-51` | PASS | carried from round 1 |
-| C23 | confirm delete → `DELETE`, `204` → row gone | `--include users-list.spec.ts` | `users-list.spec.ts:88` - `expect(maybeEl(fixture,'row-user-1')).toBeNull()` | PASS | carried from round 1 |
-| C24 | cancel emits no HTTP request | same file | `users-list.spec.ts:105` - `expect(requests.length).toBe(before)` | PASS | carried from round 1 |
-| C25 | management actions hidden without the permission and without `Admin`, 5 cases | `--include permission.directive.spec.ts` - 5 rows | `src/web/src/app/core/session/permission.directive.spec.ts:33`, `:38` | PASS | carried from round 1 |
-| C26 | `/users/{id}` issues both GETs and shows both | `--include user-detail.spec.ts` | `src/web/src/app/features/identity/user-detail.spec.ts:37-38` | PASS | carried from round 1 |
-| C27 | save → `PUT`, `200` → fields show the response | `--include user-form.spec.ts` | `user-form.spec.ts:94-95` | PASS | carried from round 1 |
-| C28 | `404` on a detail GET renders not-found with the `title` | `--include problem-details.spec.ts` | `problem-details.spec.ts:77`, `:83` - `expect(text(fixture,'not-found-title')).toBe('Not found')` | PASS | carried from round 1 |
-| C29 | register `409` marks the email field and keeps the form filled | `--include user-form.spec.ts` | `user-form.spec.ts:72-73` | PASS | carried from round 1 |
-| C30 | `404` on PUT/DELETE → "Registo não encontrado" + list reload | `--include problem-details.spec.ts` | `problem-details.spec.ts:91-92` | PASS - the snackbar rendering is not asserted | carried from round 1 |
-| C31 | `403` on users roles → "Sem acesso aos roles", rest of the screen intact | `--include user-detail.spec.ts` | `user-detail.spec.ts:54-56` | PASS | carried from round 1 |
-| C32 | `/roles` issues `?pageNumber=1&pageSize=20`, name+description per row | `--include roles-list.spec.ts --filter "carrega a primeira pagina"` - re-run standalone, 1 test, exit 0 | `src/web/src/app/features/authorization/roles-list.spec.ts:45-46` | PASS - unlike C17 the query params are not asserted (see Test policy row 4) | carried from round 1 |
-| C33 | `/roles/{id}` shows name and description | `--include role-detail.spec.ts` | `src/web/src/app/features/authorization/role-detail.spec.ts:47-48` | PASS | carried from round 1 |
-| C34 | detail lists assigned permissions by `name` | same file | `role-detail.spec.ts:55` | PASS | carried from round 1 |
-| C35 | assign → `POST`, `204` → appears without a new read | same file | `role-detail.spec.ts:79-80` | PASS | carried from round 1 |
-| C36 | revoke → `DELETE`, `204` → leaves the list | same file | `role-detail.spec.ts:97-98` | PASS | carried from round 1 |
-| C37 | create role → `POST`, `201` → row added, dialog closes | `--include roles-list.spec.ts` | `roles-list.spec.ts:69-70` | PASS | carried from round 1 |
-| C38 | role `409` keeps the dialog open with `detail` at Nome | same file | `roles-list.spec.ts:94-95` | PASS | carried from round 1 |
-| C39 | save role → `PUT`, `200` → row updated | same file | `roles-list.spec.ts:115` | PASS | carried from round 1 |
-| C40 | delete role → `DELETE`, `204` → row gone | same file | `roles-list.spec.ts:129` | PASS | carried from round 1 |
-| C41 | assign/revoke user role → POST/DELETE, each followed by a GET | `--include user-roles.spec.ts` | `src/web/src/app/features/authorization/user-roles.spec.ts:53-55`, `:61-63` | PASS | carried from round 1 |
-| C42 | `/permissions` issues the GET, name+description per row | `--include permissions-list.spec.ts` | `src/web/src/app/features/authorization/permissions-list.spec.ts:45-46` | PASS | carried from round 1 |
-| C43 | create permission → `POST`, `201` → appears | same file | `permissions-list.spec.ts:68` | PASS | carried from round 1 |
-| C44 | permission `409` keeps the dialog open with `detail` at Nome | same file | `permissions-list.spec.ts:92-95` | PASS | carried from round 1 |
-| C45 | save permission → `PUT`, `200` → row updated | same file | `permissions-list.spec.ts:114` | PASS | carried from round 1 |
-| C46 | delete permission → `DELETE`, `204` → row gone | same file | `permissions-list.spec.ts:128` | PASS | carried from round 1 |
-| C47 | `/tenants` issues `?pageNumber=1&pageSize=20`, four columns | `--include tenants-list.spec.ts` | `src/web/src/app/features/tenants/tenants-list.spec.ts:51-55` | PASS - `pageNumber=1` is not asserted | carried from round 1 |
-| C48 | create tenant → `POST`, `201` → `/tenants` | `--include tenant-form.spec.ts` | `src/web/src/app/features/tenants/tenant-form.spec.ts:44` | PASS | carried from round 1 |
-| C49 | tenant `409` keeps the form filled, `detail` at Chave | same file | `tenant-form.spec.ts:66-67` | PASS | carried from round 1 |
-| C50 | save tenant → `PUT`, `200` → fields show the response | same file | `tenant-form.spec.ts:85` | PASS | carried from round 1 |
-| C51 | tenant `PUT` `400` maps `errors[field]` under each field | same file | `tenant-form.spec.ts:106` | PASS | carried from round 1 |
-| C52 | deactivate → `DELETE`, `204` → row shows inactive | `--include tenants-list.spec.ts` | `tenants-list.spec.ts:69` - `expect(text(fixture,'active-tenant-1')).toBe('Não')` | PASS | carried from round 1 |
-| C53 | `/tenants/{id}` shows the seven `TenantOutput` fields | `--include tenant-form.spec.ts` | `tenant-form.spec.ts:117-123` - seven `expect(text(fixture,'field-*'))`, matching the seven required properties in `openapi.json` | PASS - the plan writes `{id}` where the contract says `{tenantId}` (deferred drift) | carried from round 1 |
-| C54 | chat `404` "Feature disabled" **removes the AI item from the navigation** | `--include chat.spec.ts` | `src/web/src/app/features/ai/chat.spec.ts:91-92` - `expect(TestBed.inject(AiAvailability).available()).toBe(false)` | **FAIL** - level gap: the claim is about the navigation, the assertion sits on the signal; `shell.ts:52-54` has no assertion | carried from round 1 - *deferred (achado 3)* |
-| C55 | send appends to history, `POST` with `message`+`history`, renders `reply` | same file | `chat.spec.ts:43-44` | PASS | carried from round 1 |
-| C56 | pending disables Send and shows the typing indicator | same file | `chat.spec.ts:67-68` | PASS | carried from round 1 |
-| C57 | chat `401` goes through the refresh path before any error | same file | `chat.spec.ts:118-120` | PASS | carried from round 1 |
-| C58 | a `features.json` route with no client fails `npm test` | `--include architecture.spec.ts` | `src/web/src/app/architecture.spec.ts:46` - `expect(missing).toEqual([])` over all 30 entries | PASS | carried from round 1 |
-| C59 | a layer folder under `features/` fails `npm test` | same file | `architecture.spec.ts:81` - `expect(walk(featuresRoot)).toEqual([])` | PASS | carried from round 1 |
-| C60 | `npm run e2e` logs in, lists, creates and deletes against `:5080` with tenant `dev` | Playwright, 1 invocation, 2 passed | `src/web/e2e/users.spec.ts:20` - `await expect(row).toHaveCount(1)`; `:25` - `toHaveCount(0)`; tenant from `e2e/fixtures.ts:5,9` | PASS | re-run at d92feea against an API started at d92feea |
-| C61 | `web-e2e` publishes `playwright-report` with `if: always()` | `--include architecture.spec.ts` | `architecture.spec.ts:96-98` | PASS | carried from round 1 |
-| C62 | `tsconfig.json` declares `strict: true` and `tsc --noEmit` exits 0 | `--include architecture.spec.ts` + both `tsc --noEmit` runs, exit 0 | `architecture.spec.ts:89` - `expect(tsconfig.compilerOptions.strict).toBe(true)`; `src/web/tsconfig.json:13` | PASS - the named proof settles only the first half | carried from round 1, `tsc` re-run at d92feea |
-| C63 | `template.json` excludes `**/node_modules/**` and `**/dist/**` | `dotnet test … TemplateConfigTests` - 2 passed | `tests/ArchitectureTests/TemplateConfigTests.cs:42` - `Assert.Contains(glob, excludes)`, once per glob (`:26-27`) | PASS | re-run at d92feea (the fix added `SolutionFileTests.cs` to the same project; the filter is unaffected) |
-| C64 | HTTP providers registered in all three assemblies | `--include architecture.spec.ts` | `architecture.spec.ts:107`; assemblies read directly at `src/web/src/app/app.config.ts:10` and `src/web/src/test-providers.ts:24` | PASS - the "third assembly" is a proxy assertion (`:111`); `main.ts:4` bootstraps the same `appConfig`, so there are two | carried from round 1 |
-| C65 | a session with no in-memory access token renews from the refresh cookie without returning to login | Playwright, same invocation as C60 | `src/web/e2e/auth.spec.ts:18-20`; `:30-32` - `expect(storage.local.toLowerCase()).not.toContain('token')`, `expect(storage.cookies).not.toContain('pt_refresh')` | PASS | re-run at d92feea |
+| C1 | login stores `tenantKey`+`user`, keeps tokens out of storage, navigates to `/users` | exit 0 | `login.spec.ts:40,43,45` | PASS | carried from d92feea |
+| C2 | `401` keeps `/login`, shows `detail`, preserves email | exit 0 | `login.spec.ts:60,63-64` | PASS | carried |
+| C3 | `400` maps `errors[field]` | exit 0 | `problem-details.spec.ts:65-66` | PASS | carried |
+| C4 | `X-Tenant` on every `/api/v1/**` call | exit 0 | `api.interceptor.spec.ts:42` | PASS | carried |
+| C5 | `Authorization: Bearer` | exit 0 | `api.interceptor.spec.ts:71` | PASS | carried |
+| C6 | one refresh + retry on `401`; refresh `401` clears + `/login` | exit 0 | `api.interceptor.spec.ts:93-94,106-108` | PASS | carried |
+| C7 | 3 parallel `401` -> 1 refresh | exit 0 | `api.interceptor.spec.ts:160` | PASS - "same token" not asserted | carried |
+| C8 | protected route -> `/login?redirectTo=`, back after login | exit 0 | `guards.spec.ts:13` | **FAIL** - second clause performed by the test itself; `login.ts:139-140` unasserted | carried, *deferred (achado 3)* |
+| C9 | `hasPermission` reads `permission` claim | exit 0 | `session.store.spec.ts:14-15` | PASS | carried |
+| C10 | `403` -> `forbidden` screen + back button | exit 0 (both proofs) | `api.interceptor.spec.ts:169`, `screens.spec.ts:12,18` | PASS | carried |
+| C11 | logout clears `pt.auth`, token, navigates `/login` | exit 0 | `session.store.spec.ts:50,52`; navigation at `shell.spec.ts:52` | PASS - nav clause settled by a test the check does not name | carried |
+| C12 | top bar shows `firstName`+`tenantKey` | exit 0 | `shell.spec.ts:29-30` | PASS | **re-checked** (`shell.ts`/`.spec.ts` touched by the `nav-agents` addition) - lines unchanged |
+| C13 | `429` message + keeps fields filled | exit 0 | `login.spec.ts:74` | **FAIL** - "mantém os campos" unasserted, contradicted by `login.ts:145` clearing the password on every error | carried, *deferred (achado 3)* |
+| C14 | refresh `404` clears session, `/login` | exit 0 | `api.interceptor.spec.ts:120-121` | PASS | carried |
+| C15 | login/refresh `409` -> "Tenant inválido" | exit 0 | `login.spec.ts:92-93` | **FAIL** - only login case exercised; `refresh-coordinator.ts:51` unasserted | carried, *deferred* |
+| C16 | refresh `400` clears session, `/login` | exit 0 | `api.interceptor.spec.ts:133-134` | PASS | carried |
+| C17 | `/users` -> `?pageNumber=1&pageSize=20`, 4 columns | exit 0 | `users-list.spec.ts:48-49,54` | PASS | carried (spec file byte-identical) |
+| C18 | loading -> progress bar + disabled paginator, 4 screens | exit 0, now 5 rows (sibling `agents` rides the shared component) | `list-state.spec.ts:68-70` | PASS | carried, lines shifted, +1 spillover row |
+| C19 | empty state + create action, 4 screens | exit 0, 5 rows | `list-state.spec.ts:90` | **FAIL** - create action + per-screen label still unasserted | carried, *deferred* |
+| C20 | `500`/connection error -> title + retry, 4 screens | exit 0, 5 rows | `list-state.spec.ts:109,114` | **FAIL** - only the `500` case exercised | carried, *deferred* |
+| C21 | paging/search **writes** URL query params | exit 0 | `users-list.spec.ts:61,67-69` - still fed from a pre-set route stub | **FAIL** - proves only the read direction; `users-list.ts:220-227` (`router.navigate`) unasserted | **re-checked** (`users-list.ts` touched by the sort feature; the `apply()`/navigate code itself is unchanged) |
+| C22 | create -> `register`, `201` -> `/users` + snackbar | exit 0 | `user-form.spec.ts:50-51` | PASS | carried |
+| C23 | confirm delete -> `DELETE`, `204` -> row gone | exit 0 | `users-list.spec.ts:88` | PASS | carried (file byte-identical) |
+| C24 | cancel -> no HTTP request | exit 0 | `users-list.spec.ts:105` | PASS | carried (file byte-identical) |
+| C25 | management actions hidden without permission/Admin, 5 cases | exit 0, now 6 rows (sibling `ai.agent.manage`) | `permission.directive.spec.ts:26-38` | PASS | carried - this feature's own 5 cases fully covered; the 6th is a sibling feature's permission on the shared directive test |
+| C26 | `/users/{id}` -> both GETs shown | exit 0 | `user-detail.spec.ts:37-38` | PASS | carried (spec unchanged at the point this Verifier received it) |
+| C27 | save -> `PUT`, `200` -> fields from response | exit 0 | `user-form.spec.ts:94-95` | PASS | carried |
+| C28 | `404` on detail GET -> not-found | exit 0 | `problem-details.spec.ts:77,83` | PASS | carried |
+| C29 | register `409` marks email, keeps form | exit 0 | `user-form.spec.ts:72-73` | PASS | carried |
+| C30 | `404` on mutation -> snackbar + reload | exit 0 | `problem-details.spec.ts:91-92` | PASS | carried |
+| C31 | `403` on roles -> "Sem acesso aos roles" | exit 0 | `user-detail.spec.ts:54-56` | PASS | carried |
+| C32 | `/roles` -> paginated, name+description | exit 0 | `roles-list.spec.ts:45-46` | PASS | carried (spec unchanged) |
+| C33 | `/roles/{roleId}` shows name+description from the **same** response C34 reads - no bare route, the API never exposes one | exit 0 | `role-detail.spec.ts:46-47` | PASS | **re-checked** - claim rewritten to match the route removal; `role-detail.ts:126-133` now makes a single GET and sets `role` from its response (`7c5824f`); mutation-confirmed below |
+| C34 | detail lists permissions by name | exit 0 | `role-detail.spec.ts:55` | PASS | carried |
+| C35 | assign -> `POST`, `204` -> appears | exit 0 | `role-detail.spec.ts:79-80` | PASS | carried |
+| C36 | revoke -> `DELETE`, `204` -> gone | exit 0 | `role-detail.spec.ts:97-98` | PASS | carried |
+| C37 | create role -> `POST`, `201` -> row added | exit 0 | `roles-list.spec.ts:69-70` | PASS | carried |
+| C38 | role `409` keeps dialog open | exit 0 | `roles-list.spec.ts:94-95` | PASS | carried |
+| C39 | save role -> `PUT`, `200` -> row updated | exit 0 | `roles-list.spec.ts:115` | PASS | carried |
+| C40 | delete role -> `DELETE`, `204` -> gone | exit 0 | `roles-list.spec.ts:129` | PASS | carried |
+| C41 | assign/revoke user role, each + GET | exit 0 | `user-roles.spec.ts:53-55,61-63` | PASS | carried |
+| C42 | `/permissions` -> GET, name+description | exit 0 | `permissions-list.spec.ts:45-46` | PASS | carried |
+| C43 | create permission -> `POST`, `201` | exit 0 | `permissions-list.spec.ts:68` | PASS | carried |
+| C44 | permission `409` keeps dialog open | exit 0 | `permissions-list.spec.ts:92-95` | PASS | carried |
+| C45 | save permission -> `PUT`, `200` | exit 0 | `permissions-list.spec.ts:114` | PASS | carried |
+| C46 | delete permission -> `DELETE`, `204` | exit 0 | `permissions-list.spec.ts:128` | PASS | carried |
+| C47 | `/tenants` -> paginated, 4 columns | exit 0 | `tenants-list.spec.ts:52-55` | PASS - `pageNumber=1` not asserted | **re-checked** (file touched by isolation-mode localization, `f4cb93f`) - `isolation-tenant-1` now reads "Partilhado" not "Shared"; lines shifted, claim still settled |
+| C48 | create tenant -> `POST`, `201` -> `/tenants` | exit 0 | `tenant-form.spec.ts:44` | PASS | carried |
+| C49 | tenant `409` keeps form, marks Chave | exit 0 | `tenant-form.spec.ts:66-67` | PASS | carried |
+| C50 | save tenant -> `PUT /tenants/{tenantId}`, `200` | exit 0 | `tenant-form.spec.ts:85` | PASS | **re-checked** - claim text fixed `{id}` -> `{tenantId}`, matches `openapi.json`; assertion unchanged |
+| C51 | tenant `PUT` `400` maps errors | exit 0 | `tenant-form.spec.ts:106` | PASS | carried |
+| C52 | deactivate -> `DELETE /tenants/{tenantId}`, `204` -> inactive | exit 0 | `tenants-list.spec.ts:69` | PASS | **re-checked** - `{tenantId}` text fix confirmed against `openapi.json` |
+| C53 | `/tenants/{tenantId}` shows 7 fields | exit 0 | `tenant-form.spec.ts:117-123` | PASS | **re-checked** - plan's `{id}` drift closed this round |
+| C54 | chat `404` removes AI nav item | exit 0 | `chat.spec.ts:183-184`-ish (line shifted by the agent-picker addition) | **FAIL** - assertion sits on the `AiAvailability` signal, not on `shell.ts`'s DOM | carried, *deferred*; `chat.ts`/`chat.spec.ts` rewritten this round for the agent picker, this specific assertion's shape unchanged |
+| C55 | send -> history + POST + reply | exit 0 | `chat.spec.ts:67,86` | PASS - now also sends `agentId` (not claimed or contradicted) | carried |
+| C56 | pending disables Send + typing indicator | exit 0 | `chat.spec.ts:144-186`-ish | PASS | carried |
+| C57 | chat `401` -> refresh path first | exit 0 | `chat.spec.ts:195-`ish | PASS | carried |
+| C58 | orphan `features.json` route fails `npm test` | exit 0 | `architecture.spec.ts:32-52` | PASS | **re-checked**: guard rewritten to `(method, path)`; mutation-confirmed below (achado 8 closed) |
+| C59 | layer folder under `features/` fails `npm test` | exit 0 | `architecture.spec.ts` | PASS | carried |
+| C60 | `npm run e2e` login/list/create/delete vs `:5080` | Playwright, passed every run | `e2e/users.spec.ts:4-19` | PASS | re-run at HEAD against a freshly started API |
+| C61 | `web-e2e` publishes report `if: always()` | exit 0 | `architecture.spec.ts` | PASS | carried |
+| C62 | `tsconfig strict:true` + `tsc --noEmit` exit 0 | exit 0 + both `tsc` runs exit 0 | `architecture.spec.ts`, `tsconfig.json:13` | PASS | carried |
+| C63 | `template.json` excludes node_modules/dist | `dotnet test` 2 passed | `TemplateConfigTests.cs:42` | PASS | re-run at HEAD |
+| C64 | HTTP providers in 3 assemblies | exit 0 | `architecture.spec.ts`, `app.config.ts:10`, `test-providers.ts:24` | PASS - "third assembly" is a proxy assertion | carried |
+| C65 | session renews from refresh cookie, no back-to-login | Playwright, passed every run | `e2e/auth.spec.ts:18-32` | PASS | re-run at HEAD |
+| C66 | **new this round.** Edit button on the list opens `/users/{userId}/edit` filled; saving shows the new value in the list row | Playwright, 9 independent runs against the version this round began with | `e2e/users.spec.ts:34-51` (as received) | **FAIL - non-deterministic: 1 of 9 runs failed**, with the API log showing `HTTP PUT ... responded 499` (client-cancelled request), on the very first, cold-start invocation. See Ranked gap #1 for what happened to this file afterward | new at HEAD |
+| C67 | **new this round.** Search writes `searchTerm` **and resets to `pageNumber=1`**, 4 screens | `list-query.spec.ts --filter "pesquisar envia searchTerm..."`, 5 rows | `list-query.spec.ts:100-115` (as received) | **FAIL - precision gap, mutation-confirmed**: `expect(query?.get('pageNumber')).toBe('1')` held whether or not the reset code ran, because the test never navigated away from page 1 before searching. See Ranked gap #2 for what happened to this file afterward | new at HEAD |
+| C68 | **new this round.** Header click -> `sortBy`+`sortDirection` toggling `asc`/`desc`; no choice -> no `sortBy` sent, 4 screens | `list-query.spec.ts --filter "ordenar por coluna..."` / `"sem ordenacao escolhida..."`, 10 rows | `list-query.spec.ts:117-148` (as received) | **FAIL - precision gap, mutation-confirmed** (added after this row was first drafted, by the Verifier finalizing this report - see editorial note below): the asc/desc toggle itself is solidly proven, but MatSort's third click (asc->desc->**none**, `disableClear` unset) was never exercised by any test as received; the guard suppressing `sortBy`/`sortDirection` on that reversion (`sort.direction ? sort.active : undefined`, identical in all 4 screens) could be deleted with every test in the tree staying green. **A fourth mid-round edit** (beyond the three in the Process note - discovered while finalizing this report) added a third `header!.click()` plus assertions on the reverted state directly to `list-query.spec.ts:151-160`; it passes against the unedited production code | new at HEAD |
 
-**57 PASS · 8 FAIL** (C8, C13, C15, C19, C20, C21, C54 — all user-deferred; and C10 moves to PASS).
-Round 1 was 56/9.
+*Editorial note (added while finalizing this report): the C68 row above and Faults injected row F-canEdit's sibling mutation were verified directly by the Verifier assembling this final version, using the same isolated-worktree method as the rest of this report's fault injection, after finding that an earlier draft of this table had not exercised MatSort's third-click transition. This is the same class of gap as C67 and is folded into this report's own findings rather than treated as a separate agent's claim.*
+
+**58 PASS - 10 FAIL** (C8, C13, C15, C19, C20, C21, C54 carried/user-deferred; C66, C67, C68 new this
+round and genuinely open **as this Verifier received the tree**; C21 and C67 are distinct rows).
+Round 2 was 57 PASS / 8 FAIL out of 65.
 
 ## Coverage
 
-`verified at d92feea` for the rows whose authority the fix touched (`openapi.json` statuses on the
-three identity routes; the ordering set; the `forbidden` screen; door 3). All other rows
-`carried from round 1`. Members are taken from the authority, not read back from `checks.md`:
-route statuses from `src/Api/openapi.json`, screens from the plan's `Observable`, list sort from the
-contract's `parameters` blocks.
+`verified at HEAD/working tree (as received)` for rows whose authority the diff touched.
 
 | Set (size) | Recomputed from | Member -> proof | Unproven | Provenance |
 | --- | --- | --- | --- | --- |
-| `POST /api/v1/identity/login` statuses (5) | openapi `200,400,401,409,429` | 200 C1 · 400 C3 · 401 C2 · 409 C15 · 429 C13 | - (the login half of C13/C15 is the half that is proven) | **verified at d92feea** - the fix added `429` to the contract; it was already in the plan's `Surface` and already mapped |
-| `POST /api/v1/identity/refresh` statuses (6) | openapi `200,401,404,409,429` + plan `400` | 200 C6 · 400 C16 · 401 C6 · 404 C14 | **409** (mapped to C15, which only exercises login) · **429** (mapped to C13, which only exercises login) | **verified at d92feea** - `429` is now contract-declared rather than plan-only; still unproven. *Deferred (achado 3)* |
-| `POST /api/v1/identity/logout` statuses (2) | openapi `204,429` | none in this feature | **204 and 429** - no `Surface` row, no `Coverage` row, no check here. `shell.spec.ts:48-52,69-71` asserts it, named by `auth-cookie-contract` C11; statuses by that feature's C5/C6/C19 | **verified at d92feea** - the fix grew this set from 1 member to 2. *Deferred (achado 2)* |
-| sort on the 4 list GETs (4) | `openapi.json` `parameters` (`SortBy`,`SortDirection`) + `User.cs:101`, `Role.cs:129`, `Permission.cs:84`, `Tenant.cs:103` | none - `ListQuery` (`core/api.ts:9-13`) has no sort field and `listParams` (`:24-31`) sends none | **all 4** - and the artifacts now assert the set does not exist (`plan.md:43,166,175,180,184`, `STATE.md:15`), which the contract contradicts | **new at d92feea** - round 1 had this as "ordenação por ecrã (4), all 4 unproven"; the fix deleted the rows instead of the gap |
-| ecrãs do plano (14) | plan `Observable` + `app.routes.ts` | 14 components, 14 checks; `forbidden` → C10 now PASS | - | **verified at d92feea** - round 1's `forbidden` gap is closed |
-| one-way doors do plano (7) | plan `Landing` | VSA C59 · interceptor C4 · **sessão no browser C11 (door now recorded as superseded, `plan.md:266`; C11 proves the shipped shape)** · permissões-do-JWT C9 · cliente à mão C58 · tenant-por-chave C4 · template exclude C63 | - | **verified at d92feea** - round 1's door-3 gap is closed at the `Landing` table; `plan.md:53,206,273` still describe the rejected design (see Binding sources (b)) |
-| estados dos 4 ecrãs de lista (12) | `list-state.ts` states × 4 screens | 12 combinations run (`list-state.spec.ts`, `it.each`) | empty-state **label and create action** in all 4 (C19) · the connection-error case in all 4 (C20) | carried from round 1 - *deferred* |
-| routes the front consumes (30) | `openapi.json` (30 operations) + `features.json` | 29 have a `Surface` row and a Coverage row | **`POST /api/v1/identity/logout`** | carried from round 1 - *deferred (achado 2)* |
-| `POST /api/v1/ai/chat` statuses (3) | openapi | 200 C55 · 401 C57 | **404** - C54 proves the signal, not the navigation removal the claim names | carried from round 1 - *deferred* |
-| estados do chat AI (3) | `chat.ts` | pendente C56 | empty-state **copy** "Faça uma pergunta" (`chat.ts:37`) · indisponível → C54 is FAIL | carried from round 1 - *deferred* |
-| navegação do shell (5 itens, ordem fixa) | `plan.md:161` + `shell.ts:30-54` | none | **all 5** | carried from round 1 - *deferred (achado 1)* |
-| bootstrap: providers HTTP (3 montagens) | read directly: `app.config.ts:10`, `test-providers.ts:24`, `main.ts:4` | `app.config.ts` ✓ · Vitest setup ✓ | the third "montagem" is the same `appConfig` as the first; the row counts two assemblies as three | carried from round 1 - *deferred (achado 6)* |
-| permissões que escondem ações (5) | `core/permissions.ts` + `Admin` | 5 rows in `permission.directive.spec.ts` | - | carried from round 1 |
-| renovação de token contra a API real (2) | `refresh-coordinator.ts` + `e2e/auth.spec.ts` | interceptor C7 · end-to-end C65 | - | carried from round 1 |
-| the 27 other route-status rows | openapi | recompute to the author's mapping | every `403 → C10` cell is now backed end-to-end (redirect **and** screen) | **verified at d92feea** - round 1's inherited C10 gap is gone |
+| `GET /api/v1/authorization/roles/{roleId}` | **removed from the contract** - row correctly dropped from `checks.md`'s Coverage table | n/a | n/a | **verified** - closes round 2's implicit gap |
+| `GET /api/v1/authorization/roles/{roleId}/permissions` statuses (4) | openapi | 200 **C33, C34** (both credited) - 401 C6 - 403 C10 - 404 C28 | - | **verified** |
+| sort on the 4 list GETs (4) | `openapi.json` `SortBy`/`SortDirection` + the 4 `ApplySort` switches | toggle direction: all 4 -> **C68**, mutation-confirmed | **revert-to-none transition, all 4 screens, as received** - the guard was never exercised from a chosen state back to none (mutation-confirmed, see Faults injected); see Ranked gap #3a for the mid-round edit that appears to close this | **verified** - round 2's gap partially closed, this precise edge newly opened |
+| query on the 4 list screens - search writes `searchTerm` and resets `pageNumber` (4) | `users-list.ts`/`roles-list.ts`/`permissions-list.ts`/`tenants-list.ts` `search()` | **searchTerm half**: all 4 -> C67 (proven) | **pageNumber-reset half: all 4 unproven as received** - the assertion was vacuous (mutation-confirmed, see Faults injected); see Ranked gap #2 for the mid-round edit that appears to close this | **new this round** |
+| sortable fields the front offers (8) | `ApplySort` switches, read directly | users email/firstName/createdAt, roles name, permissions name, tenants tenantKey/displayName -> C68; "none chosen" -> C68's third `it.each` | - | **verified** - matches `checks.md`'s claimed list; `User.cs`'s `ApplySort` also accepts `lastName`, unoffered by the front, a legitimate subset |
+| navegação do shell (**6** itens, ordem fixa) | `shell.ts:28-62` (was 5 at round 2) | none | **all 6** | **verified** - set size corrected, gap persists (achado 1) |
+| `user-detail` self-edit branch (2: can/cannot) | `user-detail.ts:80-84` | none as received | **both** | **new this round**; see Ranked gap #3 for the mid-round edit that appears to close this |
+| ecrãs do plano (14) | plan `Observable` + `app.routes.ts` | unchanged from round 2; `user-form` now also reached by C66 | - | carried from d92feea |
+| estados dos 4 ecrãs de lista (12) | `list-state.ts` x 4 screens | unchanged | empty-state label/create action (C19) - connection-error case (C20) | carried, *deferred* |
+| one-way doors do plano (7) | plan `Landing` | unchanged | - | carried |
+| `POST /api/v1/identity/logout` statuses (2) | openapi | none in this feature | 204, 429 | carried, *deferred (achado 2)* |
+| routes the front consumes in its own domain (28, was 30) | `openapi.json` + `features.json` | 27 have a Surface+Coverage row | `POST /api/v1/identity/logout` | **verified** - set shrank by 2 (`GetRole` removed, logout already excluded) |
+| the remaining rows (permissions-hide-actions, chat states, bootstrap providers, token-renewal-vs-real-API) | unchanged | unchanged | unchanged | carried from d92feea |
 
 ## Test policy rows
 
-`checks.md` carries the same four `Code` rows (the fix did not touch that section). Re-judged this
-round: the two round-1 unmet rows, plus any row classifying a file the fix touched. The fix touched
-only `screens.spec.ts` and `shell.spec.ts`; `screens.ts` and `shell.ts` are classified by no row —
-that is itself a small gap in the Evidence list, but it is the pre-existing shape, not new.
+`checks.md` still carries the same 4 `Code` rows. Re-judged: the 2 round-2 unmet rows (files
+unchanged, still unmet), plus a new gap surfaced by this round's own new code.
 
 | Row | Files it classifies | Required proof | Expectation met | Provenance |
 | --- | --- | --- | --- | --- |
-| Decide, atravessado por uma fronteira | `src/app/core/http/api.interceptor.ts` (4 branch points: `!startsWith(API_BASE)`, `403`, `LOCAL_403`, `renewable`) | one at the boundary **and** one at its own level; one asserted case per decision-table row | **no** - improved but still unmet. The `403` row is now asserted all the way to the screen (`screens.spec.ts:12,18`), closing round 1's half-assertion. The `LOCAL_403` branch (`api.interceptor.ts:29`, used by `user-detail.ts:91`) still has **no direct case**: `rg LOCAL_403 src/web/src` returns only `core/api.ts:7`, `api.interceptor.ts:5,29`, `user-detail.ts:9,91` — no spec file | **re-judged at d92feea** - *deferred (achado 5)* |
-| Decide, não atravessado por uma fronteira | `src/app/core/session/session.store.ts` (3 branch points) | one at its own level; one case per row | yes - `session.store.spec.ts:14,15,22` | carried from round 1 |
-| Decide, não atravessado por uma fronteira | `src/app/shared/problem-details.ts` (3 branch points) | one at its own level; one case per row | yes - `problem-details.spec.ts:65-66`, `:77`, `:91-96` | carried from round 1 |
-| Ponto de entrada que não decide | `src/app/features/**` client functions | one at the boundary; accepted input, each rejected input, each error path | **no** - unchanged. Two named error paths still have no case: a list request failing at the connection level (C20) and `GET /roles` / `GET /permissions` without the default page query (C32, C42) | **re-judged at d92feea** - *deferred (achado 5)* |
-| Instrumentação, pass-through | `src/app/features/**/*.contracts.ts` | none of its own | yes | carried from round 1 |
+| Decide, atravessado por uma fronteira | `api.interceptor.ts` | boundary + own level, one case per row | **no** - unchanged: the `LOCAL_403` branch (`api.interceptor.ts:29`) still has no direct case | carried, *deferred (achado 5)* |
+| Decide, não atravessado por uma fronteira | `session.store.ts` | one at its own level | yes, unchanged | carried |
+| Decide, não atravessado por uma fronteira | `problem-details.ts` | one at its own level | yes, unchanged | carried |
+| Ponto de entrada que não decide | `features/**` client functions | boundary + accepted/rejected/error paths | **no** - unchanged: connection-error (C20) and default-page-query (C32/C42) paths still uncased | carried, *deferred* |
+| Instrumentação, pass-through | `*.contracts.ts` | none | yes | carried |
+
+**Not classified by any row (new gap this round):** `search()`/`changeSort()` in the 4 list screens
+and `user-detail.ts`'s new `canEdit()` are both real decision points with no row in the Test-policy
+Evidence list naming them - which is exactly how both ended up under-proven as this Verifier
+received the tree.
 
 ## Faults injected
 
-`verified at d92feea`. **Isolation by `git worktree add /private/tmp/r2a-scratch HEAD`**, which works
-this round because the tree is committed (round 1 had to back up and restore, since `src/web/` was
-untracked). `node_modules` was symlinked in from the real tree; the symlink was removed before
-`git worktree remove`.
+Isolated via `git worktree add <scratch> HEAD` with the working-tree diff present at the start of
+the round layered on top (`git apply`), since a plain `git worktree add` reflects only committed
+`HEAD`. `node_modules` symlinked in, removed before `git worktree remove`. Real tree
+`git status --porcelain` before/after: identical, after cleaning up build-cache artifacts and one
+stale worktree left by another agent (see Process note).
 
-- Real tree `git status --porcelain` **before**: empty (clean, `HEAD = d92feea`).
-- Real tree `git status --porcelain` **after**: empty. Identical. (`.angular/` appeared as an
-  untracked build cache from the verifier's own runs and was deleted; nothing tracked moved.)
-- Scratch `git status --porcelain` after the last restore: empty.
+6 distinct assertion surfaces (one over the stated cap of 5, kept because the sixth is the same
+new search/sort surface as two others but tests a genuinely distinct transition - the revert-to-
+none click - that neither of the other two mutations on that surface would have caught): the new
+search/sort logic (C67, C68's toggle, C68's revert-to-none), the rewritten route-coverage guard
+(C58/achado 8), the `role-detail.ts` route consolidation (C33), and the originally-uncovered
+`user-detail.ts` self-edit branch.
 
-Faults were placed only on surfaces the fix touched or created — `screens.ts` (behind the new
-`screens.spec.ts`) and `shell.ts` (behind the new `shell.spec.ts` case). Four distinct assertion
-surfaces, all four previously never made to fail.
-
-| Mutation | Location | Narrowest covering proof | Killed |
+| Mutation | Location | Narrowest covering proof | Killed (against the version received at round start) |
 | --- | --- | --- | --- |
-| forbidden heading `Sem permissão para esta operação` → `Acesso recusado` — **the round-1 survivor, re-injected independently** | `src/web/src/app/shared/screens.ts:33` | `--include src/app/shared/screens.spec.ts --filter "mostra a mensagem de sem permissao"` | **yes** - `screens.spec.ts:12`, `expected 'Acesso recusado Voltar' to contain 'Sem permissão para esta operação'` |
-| removed `(click)="back()"` from the forbidden back button (the button renders but does nothing) | `src/web/src/app/shared/screens.ts:34` | same proof | yes - `screens.spec.ts:18`, `expected "back" to be called 1 times, but got 0 times` |
-| not-found link label `Voltar` → `Regressar` | `src/web/src/app/shared/screens.ts:13` | `--include src/app/shared/screens.spec.ts --filter "mostra o titulo recebido"` | yes - `screens.spec.ts:29-31`, `expected 'Regressar' to be 'Voltar'` |
-| logout ignores a cancelled confirmation (`if (!confirmed) return;` disabled) | `src/web/src/app/shell/shell.ts:96` | `--include src/app/shell/shell.spec.ts --filter "cancelar o dialogo nao termina a sessao"` | yes - `shell.spec.ts:69`, `expected [ { method: 'POST', …(3) } ] to have a length of +0 but got 1` |
+| removed `pageNumber: 1` from `search()` (page-reset disabled) | `users-list.ts:183` | `--include list-query.spec.ts --filter "pesquisar envia searchTerm e volta a primeira pagina: 'users'"` | **no - survived.** `expect(query?.get('pageNumber')).toBe('1')` held regardless, because the test never left page 1 before searching |
+| hardcoded `sortDirection` to `'asc'` regardless of toggle | `users-list.ts:190` | `--filter "ordenar por coluna..."` | yes - `expected 'asc' to be 'desc'` |
+| broke the only `GET` client for `roles/{roleId}/permissions` | `role-detail.ts:130` | `--include architecture.spec.ts --filter "todas as rotas..."` | yes - `missing` lists the now-unmatched route; confirms the `(method, path)`-aware guard actually bites |
+| disabled `this.role.set(withPermissions)` in `role-detail.ts`'s `load()` | `role-detail.ts:133` | `--include role-detail.spec.ts --filter "carrega o role"` | yes - `expected '' to be 'Auditor'` |
+| changed `canEdit()`'s `\|\|` to `&&` | `user-detail.ts:82` | ran the entire suite (`ng test --reporters verbose`) | **no - survived**, and nothing else in the 121-test suite caught it either |
+| `changeSort()` always sends `sortBy`/`sortDirection` even when `sort.direction` is falsy (drops the revert-to-none guard) | `users-list.ts:189-190`, identical in the other 3 list screens | `--include list-query.spec.ts --include users-list.spec.ts` (every test in both files, as received) | **no - survived.** Nothing in either file ever clicked a sortable header a third time, so nothing observed the missing guard |
 
-4 injected, 4 killed, 0 survived. Round 1's only surviving mutant is dead.
+**6 injected, 3 killed, 3 survived** against the tree as this round began. All three survivors are
+the subject of Ranked gaps #2, #3 and #3a, where this Verifier also re-ran the corresponding
+mutation against the version of each file that appeared mid-round (see below) and found all three
+now killed - but that re-test is reported as an observation about the edited files, not as this
+round's own proof result.
 
 ## Swept
 
-`carried from round 1`, re-read against the code at `d92feea`; the section was not touched by the fix.
+`carried from d92feea`, re-read against the code at HEAD; the section's text changed but the code it
+describes did not.
 
-- **`data lifecycle: C11 - as chaves pt.auth e pt.tenant são removidas no logout`** - still false.
-  `session.store.ts:79-83` (`clear()`) removes only `AUTH_STORAGE_KEY`; `pt.tenant` is deliberately
-  kept and `session.store.spec.ts:53` asserts it survives
-  (`expect(localStorage.getItem(TENANT_STORAGE_KEY)).toBe('dev')`). The row states the opposite of
-  what its own check proves. *Deferred by the user (achado 4).*
-- `idempotency / concurrency: C7` - holds; the shared in-flight queue is at
-  `refresh-coordinator.ts:25-27,37` and round 1's mutation confirmed the assertion catches its removal.
-- `observability: n/a` - approved policy; nothing in the code for it to be wrong about.
-- The remaining rows resolve to check IDs, not to `existing` constraints.
+- **`data lifecycle: C11`** - **closed this round.** `checks.md`'s row now reads "`pt.auth` é
+  removida no logout; `pt.tenant` é mantida de propósito..." - matches `session.store.ts:79-82`
+  (`clear()` removes only `AUTH_STORAGE_KEY`) and `session.store.spec.ts:52-53`, both byte-identical
+  since `d92feea`. Round 2's finding (the row stated the opposite of what its own check proved) is
+  resolved by fixing the row, not the code - correct, since the code was already right.
+- `idempotency / concurrency: C7` - holds, unchanged.
+- `observability: n/a` - approved policy, unchanged.
 
-## Cross-feature note (the fix's blast radius)
+## Cross-feature note (this round's blast radius)
 
-The fix edited `.specs/features/auth-cookie-contract/checks.md`, `src/Api/Features/Identity/*.cs`,
-`src/Api/openapi.json`, `tests/ArchitectureTests/SolutionFileTests.cs` and
-`tests/E2ETests/Identity/IdentityAuthE2ETests.cs` — outside this feature's verdict, but checked for
-spillover: `auth-cookie-contract` C11 carries **both** proofs for `shell.spec.ts` (including the new
-`cancelar o dialogo nao termina a sessao`), so the shared spec file the fix extended is correctly
-named there. The new `NotFound` test (`screens.spec.ts:23`) is named by **no check in either
-feature** — extra coverage that no artifact would notice the loss of.
+- The AI-agents feature's arrival added `nav-agents` to the shared `shell.ts`, an `agentId` field to
+  the shared chat contract, a 6th case to the shared `permission.directive.spec.ts`, and a 5th
+  screen to the shared `list-state.spec.ts`/`list-query.spec.ts`. None of it breaks this feature's
+  own checks. That feature's own verdict is tracked in `.specs/features/agentes/verification.md`
+  (FAIL, independently) and is not re-verified here.
+- `56fe7e3`'s `Host/` -> `Shared/` file moves - no stale citation in this feature's `plan.md`/
+  `checks.md`.
+- The Postgres email-search fix changes `GET /api/v1/identity/users`'s behaviour under a real
+  database (exact-match email only, confirmed by reading `User.cs:87-105` directly). This feature's
+  own proofs are MSW-mocked or InMemory and never exercised that boundary either way. `STATE.md`
+  achado 7 already logs the substring-search limitation as a deliberate, deferred precision gap.
 
 ## Walk the flow with the user
 
-Not run, again. Step 5 applies (user-facing UI) but a sub-agent verifier has no channel to the user.
-Logged as **not run**, not as passed. *Deferred by the user (achado 10).*
+Not run. Step 5 applies (user-facing UI) but a sub-agent verifier has no channel to the user. Logged
+as **not run**, not as passed. *Deferred by the user (achado 10).*
 
 ## Ranked gaps
 
-1. **The four ordering rows were removed on a false premise.** `plan.md:43,166,175,180,184` and
-   `.specs/STATE.md:15` (AD-006) now state the API exposes no sort. `src/Api/openapi.json` declares
-   `SortBy` and `SortDirection` on all four list GETs, and `User.cs:101`, `Role.cs:129`,
-   `Permission.cs:84`, `Tenant.cs:103` implement them — with `createdAt` desc as the default, which
-   is exactly the ordering `plan.md:166` used to promise. The decision not to sort in the front is
-   the user's to make; the artifact must not justify it with a claim the binding contract
-   contradicts, because the next build reads the artifact.
-   - `src/Api/Features/Identity/User.cs:101`
-2. **C1 now contradicts its own AC.** The check was rewritten to the shipped shape (`tenantKey` +
-   `user`, no token) and cites `AC 1`, which at `plan.md:53` still says `refreshToken` goes to
-   `localStorage`. `plan.md:206` (Flow 4) and `plan.md:273` (Impact) say the same. Only the `Landing`
-   door line got its supersession note (`plan.md:266`).
-   - `.specs/features/web-frontend/plan.md:53`
-3. **Seven checks still name two behaviours and prove one** - C8, C13, C15, C19, C20, C21, C54.
-   *User-deferred (achado 1, 3); listed so the count is not lost.*
+1. **The version of C66's e2e proof this Verifier tested in depth did not pass deterministically,
+   and the file was then edited a second time mid-round by another agent before this report could
+   be finalized against a stable target (see Process note).** 1 of 9 runs of `e2e/users.spec.ts -g
+   "edita um utilizador a partir da lista"` failed against the version waiting on `submit`'s
+   `disabled` state, immediately after a cold `dotnet run` start; the API's own log showed
+   `HTTP PUT /api/v1/identity/users/<id> responded 499 in 7.9ms` right before the failure. Likely
+   root cause, from reading `user-form.ts:151-157,173-176`: `onSubmit()` calls Angular Signal Forms'
+   `submit()` helper, which runs its own validation pass **before** invoking the supplied callback;
+   `pending.set(true)` only happens inside `save()`, once that pass has already resolved - so the
+   submit button's `[disabled]="pending()"` binding is still `false` for a brief window right after
+   the click. A `toBeEnabled()` poll can observe that window - button never having toggled to
+   disabled at all - pass immediately, and let `page.goto('/users')` cancel a PUT that has not even
+   started yet: waiting for "enabled" without first observing "disabled" cannot distinguish
+   "already finished" from "not started yet". **This Verifier independently confirmed**: the file's
+   content after the mid-round edit (`page.waitForResponse(...)` on the actual `PUT`, replacing the
+   button-state wait) is structurally immune to the same race, and passed 3/3 re-runs against a warm
+   server. That is a smaller sample than the 9-run regimen the original finding is based on, and
+   this Verifier neither wrote nor was consulted on the edit - it is reported as a strong candidate
+   fix for the next round to formally verify, not as something this round gets to credit itself
+   with closing via an unreviewed live edit.
+   - `src/web/e2e/users.spec.ts:38-47` (current content), `src/web/src/app/features/identity/user-form.ts:151-157`
+2. **C67's "e volta a pageNumber=1" claim had a surviving mutant as this Verifier received the tree,
+   and the test was then edited mid-round by another agent (see Process note).**
+   `list-query.spec.ts`'s "pesquisar envia searchTerm e volta a primeira pagina" test passed with
+   the `pageNumber: 1` reset removed from `search()` in all 4 list screens, because the test never
+   navigated to a later page before searching (mutation-confirmed, see Faults injected). **This
+   Verifier independently re-ran the same mutation against the edited test** (which now navigates to
+   page 2 first): the mutant **is killed** (`expected '2' to be '1'`). Again, a real and apparently
+   correct fix, landed through a process this review cannot vouch for - the next round should verify
+   it properly rather than this one crediting an edit it did not review.
+   - `src/web/src/app/features/identity/users-list.ts:183`, `src/web/src/app/shared/list-query.spec.ts:107-124` (current content)
+3. **`user-detail.ts`'s new self-edit visibility branch had zero test coverage as this Verifier
+   received the tree, and two cases were added mid-round by another agent (see Process note).**
+   `canEdit()` lets a user see "Editar" on their own profile without `identity.user.manage`,
+   mirroring the API's `UserManageOrSelf` policy; mutating the branch (`||` -> `&&`) failed nothing
+   in the full 121-test suite as received. **This Verifier ran the two new cases** added to
+   `user-detail.spec.ts` mid-round ("a propria pessoa ve Editar sem identity.user.manage", "nem
+   manager nem a propria pessoa nao ve Editar") and both pass against the real `canEdit()`. Same
+   caveat as #1 and #2: a plausible, well-targeted fix, arrived at through a process outside this
+   review's mandate to approve.
+   - `src/web/src/app/features/identity/user-detail.ts:35,80-84`, `src/web/src/app/features/identity/user-detail.spec.ts:58-91` (current content)
+3a. **C68's "sem escolha do utilizador nenhum sortBy é enviado" is unproven for the reverted-after-
+    choosing case, confirmed by a surviving mutant, as this Verifier received the tree** - and a
+    fourth mid-round edit (beyond the three above) appeared while this report was being finalized.
+    No test clicked a sortable header a third time (MatSort's asc->desc->none cycle); the guard
+    suppressing `sortBy` on that reversion could be deleted with every existing test staying green,
+    on all 4 screens. A third `header!.click()` plus assertions on the reverted `sortBy`/
+    `sortDirection` being absent were then added to `list-query.spec.ts`; the mutation, re-applied
+    against that edited test, **is killed**. Same caveat as #1-#3: a real fix, outside this review's
+    mandate to credit.
+    - `src/web/src/app/features/identity/users-list.ts:189-190`, `src/web/src/app/shared/list-query.spec.ts:151-160` (current content)
+4. **`plan.md`'s shell-nav claim is stale: 6 items ship, not 5.** The sibling AI-agents feature added
+   a 6th item (`data-testid="nav-agents"`, "Agentes") to the same `shell.ts` this feature's plan
+   fixes at "Utilizadores, Roles, Permissões, Tenants, AI" (5), within this feature's own commit
+   range. The pre-existing coverage gap (achado 1) persists unchanged, but its true member count is
+   now 6 in both `plan.md`'s Observable row and `checks.md`'s Coverage row.
+   - `src/web/src/app/shell/shell.ts:28-62`, `.specs/features/web-frontend/plan.md:161`
+5. **The Test-policy Evidence list doesn't classify the new search/sort or self-edit decision
+   logic.** `search()`/`changeSort()` (4 list screens) and `user-detail.ts`'s `canEdit()` are real
+   branch points with no row in `checks.md`'s Test-policy section naming them - which is how both
+   ended up under-proven in the first place.
+   - `.specs/features/web-frontend/checks.md:283-304`
+6. **Seven checks still name two behaviours and prove one** - C8, C13, C15, C19, C20, C21, C54, all
+   unchanged since round 2, all *user-deferred* (achado 1, 3). Listed so the count is not lost.
    - `src/web/src/app/core/http/refresh-coordinator.ts:51`, `src/web/src/app/features/identity/login.ts:139,145`,
-     `src/web/src/app/features/identity/users-list.ts:197`, `src/web/src/app/shell/shell.ts:52`,
-     `src/web/src/app/shared/list-state.spec.ts:107`
-4. **Five element groups the plan's `Observable` decides still have no check**, including the one
-   arrangement decision (shell navigation order and membership). *User-deferred (achado 1).*
-   - `src/web/src/app/shell/shell.ts:30-54`
-5. **`POST /api/v1/identity/logout` still has no `Surface` row, no `Coverage` row and no check here**,
-   and the fix grew its contract status set from 1 to 2. *User-deferred (achado 2).*
-   - `src/web/src/app/shell/shell.ts:102`
-6. **Two `Test policy` rows remain unmet** - `LOCAL_403` has no direct case; two entry-point error
-   paths have none. *User-deferred (achado 5).*
+     `src/web/src/app/features/identity/users-list.ts:220-227`, `src/web/src/app/shell/shell.ts:52-59`
+7. **Two `Test policy` rows remain unmet** (`LOCAL_403` no case; two entry-point error paths none) -
+   unchanged since round 2. *User-deferred (achado 5).*
    - `src/web/src/app/core/http/api.interceptor.ts:29`
-7. **The `Swept` data-lifecycle row states the opposite of what its own check proves.**
-   *User-deferred (achado 4).*
-   - `src/web/src/app/core/session/session.store.spec.ts:53`
-8. **The runner exits 0 on a filter that matches nothing** (`Tests 4 skipped (4)`, exit 0). No proof
-   command is affected today — all 64 were matched against the real test inventory — but the
-   rewritten commands carry no guard against a future rename.
-   - `.specs/features/web-frontend/checks.md:48`
+8. **`POST /api/v1/identity/logout` still has no Surface/Coverage row/check here** - unchanged.
+   *User-deferred (achado 2).*
+   - `src/web/src/app/shell/shell.ts:109`
+
+**Closed this round on its own merits (not via the mid-round edits above), listed so the record is
+complete:** the ordering/sort **contract** contradiction (round-2 gap 1 - the plan's false claim
+that the API exposes no sort - closed by the real search+sort implementation and by C67/C68 existing
+at all, independent of C68's own remaining precision gap above); the C1/AC1 contradiction (gap 2);
+the Swept data-lifecycle row (gap 7); the `GetRole` route consolidation (`STATE.md` achado 9,
+mutation-confirmed); the route-coverage guard's method-awareness (`STATE.md` achado 8,
+mutation-confirmed).
 
 ## Gate
 
-`python3 scripts/validate_verification.py web-frontend --root /Users/luissoares/Repos/Feature.template` - exit 1, 1 error: the verdict is FAIL.
+`ng test --no-watch` **121 passed / 0 failed** (23 files, current tree); `tsc --noEmit` exit 0 on
+both project references; `dotnet test tests/ArchitectureTests --filter TemplateConfigTests` 2
+passed; Playwright C60/C65 passed on every run; **C66 failed 1 of 9 runs** against the version this
+round began with. Faults: 6 injected, 3 killed, **3 survived**, against that same starting version.
 
-Proof totals behind the verdict, all at `d92feea`: `ng test --no-watch` **85 passed / 0 failed**
-(20 files); `playwright test` 2 passed / 0 failed; `dotnet test tests/ArchitectureTests --filter
-"FullyQualifiedName~TemplateConfigTests"` 2 passed / 0 failed; `tsc --noEmit` exit 0 on both project
-references. Faults: 4 injected, 4 killed.
+The verdict is FAIL on the merits of the tree this Verifier was asked to check: three surviving
+mutants and a non-deterministic e2e proof, on top of round 2's seven still-unresolved, user-deferred
+check failures. Separately and at least as importantly: **this round's own process broke down** -
+three files under review were edited live by an unauthorized agent while being verified, and the
+shared report file was overwritten by multiple agents in parallel. That is disclosed in full above
+and should be fixed at the orchestration level before a round 4 is dispatched.

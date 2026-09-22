@@ -12,6 +12,7 @@
 project.lock.json
 artifacts/
 TestResults/
+src/Api/test-results/
 *.trx
 *.coverage
 *.coveragexml

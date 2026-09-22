@@ -171,6 +171,49 @@ public sealed class AgentFileToolTests
     }
 
     [Fact]
+    public async Task ReadAgentFile_ShouldRejectFile_FromAnotherAgent()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(ReadAgentFile_ShouldRejectFile_FromAnotherAgent));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantTestDefaults.DevelopmentTenantId);
+        var createAgent = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var createFile = scope.ServiceProvider.GetRequiredService<CreateAgentFileHandler>();
+        var runtime = scope.ServiceProvider.GetRequiredService<IAgentRuntimeContext>();
+        var tool = scope.ServiceProvider.GetRequiredService<IEnumerable<ITool>>()
+            .Single(t => t.Definition.Name == AgentToolNames.ReadAgentFile);
+
+        var owner = await createAgent.Handle(
+            new CreateAgentCommand(
+                "Owner",
+                "x",
+                [AgentToolNames.ListAgentFiles, AgentToolNames.ReadAgentFile]),
+            CancellationToken.None);
+        var file = await createFile.Handle(
+            new CreateAgentFileCommand(owner.AgentId, "kb.txt", "secret-body"),
+            CancellationToken.None);
+        var intruder = await createAgent.Handle(
+            new CreateAgentCommand(
+                "Intruder",
+                "x",
+                [AgentToolNames.ListAgentFiles, AgentToolNames.ReadAgentFile]),
+            CancellationToken.None);
+
+        // The chat is bound to `intruder`, not `owner`: reading `owner`'s file by id must not
+        // leak its content, even though both agents live in the same tenant.
+        runtime.Set(intruder.AgentId);
+        var json = await tool.ExecuteAsync(
+            new ToolCall("c1", AgentToolNames.ReadAgentFile, new System.Text.Json.Nodes.JsonObject
+            {
+                ["file_id"] = file.FileId.ToString()
+            }),
+            CancellationToken.None);
+
+        Assert.DoesNotContain("secret-body", json);
+        Assert.Contains("not found", json, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void Module_ShouldNotExposeVectorOrMcpEndpoints()
     {
         var root = RepoRoot();
