@@ -176,6 +176,18 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: src/web/src/app/features/identity/users-list.ts:183 (checks.md Test policy Evidence list) (.specs)
 - last seen: 2026-09-19T23:05:44Z
 
+### L-028 - Inject the clock into any time-window decision and assert the window start at its own layer, because tests that write and read at now cannot tell a daily window from a rolling or unbounded one
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `quota` · harmful: 0
+- features: guardrails-agente
+- evidence: verification.md round 1 gap 1 - AiRateLimit.cs:80 (quota)
+- last seen: 2026-09-22T19:25:09Z
+
+### L-029 - Assert both title and detail of every ProblemDetails a check names, not only the title
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: guardrails-agente
+- evidence: verification.md round 1 gap 3 - AiRateLimitTests.cs:138 (api-tests)
+- last seen: 2026-09-22T19:25:09Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

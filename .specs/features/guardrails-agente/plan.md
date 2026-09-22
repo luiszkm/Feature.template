@@ -155,11 +155,11 @@ tem um tecto de pedidos por minuto nas rotas que gastam LLM, mais um tecto diár
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| GUARD-01 | S1 | 1, 2, 3, 4, 5 | Pending |
-| GUARD-02 | S2 | 6, 7, 8, 9 | Pending |
-| GUARD-03 | S3 | 10, 11, 12, 13, 14, 15, 16, 17 | Pending |
-| GUARD-04 | S4 | 18, 19, 20, 21, 22, 23 | Pending |
-| GUARD-05 | S5 | 24, 25 | Pending |
+| GUARD-01 | S1 | 1, 2, 3, 4, 5 | Verified |
+| GUARD-02 | S2 | 6, 7, 8, 9 | Verified |
+| GUARD-03 | S3 | 10, 11, 12, 13, 14, 15, 16, 17 | Verified |
+| GUARD-04 | S4 | 18, 19, 20, 21, 22, 23 | Verified |
+| GUARD-05 | S5 | 24, 25 | Verified |
 
 ## Observable
 

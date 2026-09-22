@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 28,
+  "next_id": 30,
   "lessons": [
     {
       "id": "L-001",
@@ -490,6 +490,42 @@
       ],
       "created": "2026-09-19T23:05:44Z",
       "last_seen": "2026-09-19T23:05:44Z"
+    },
+    {
+      "id": "L-028",
+      "key": "ac_gap::inject the clock into any time window decision and assert the window start at its own layer because tests that write and read at now cannot tell a daily window from a rolling or unbounded one",
+      "text": "Inject the clock into any time-window decision and assert the window start at its own layer, because tests that write and read at now cannot tell a daily window from a rolling or unbounded one",
+      "signal": "ac_gap",
+      "scope": "quota",
+      "status": "candidate",
+      "features": [
+        "guardrails-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 gap 1 - AiRateLimit.cs:80 (quota)"
+      ],
+      "created": "2026-09-22T19:25:09Z",
+      "last_seen": "2026-09-22T19:25:09Z"
+    },
+    {
+      "id": "L-029",
+      "key": "spec_precision_gap::assert both title and detail of every problemdetails a check names not only the title",
+      "text": "Assert both title and detail of every ProblemDetails a check names, not only the title",
+      "signal": "spec_precision_gap",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "guardrails-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 gap 3 - AiRateLimitTests.cs:138 (api-tests)"
+      ],
+      "created": "2026-09-22T19:25:09Z",
+      "last_seen": "2026-09-22T19:25:09Z"
     }
   ]
 }
