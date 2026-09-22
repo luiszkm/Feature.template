@@ -81,6 +81,7 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTes
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenAgentLoopThrows`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenTurnIsRefusedBeforeTheLoop`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenQuotaRefusesTheTurn`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenGuardBlocksOrAgentIsInactive`
 
 **C42** - Com um guard que bloqueia a mensagem, `POST /api/v1/ai/chat` sem `conversationId` responde `400` e nenhuma `Conversation` nem `ConversationItem` existe depois; com a quota esgotada, `429` e o mesmo resultado (CONV-01, AC 42)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldPersistNothing_WhenGuardBlocksMessage`
@@ -223,7 +224,7 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ConversationRete
 | screens (2) | chat C25,C26,C27,C28,C29,C30,C47 · conversations-list C31,C32,C33,C34,C46 | - |
 | lista: pesquisa e ordenação (4) | `searchTerm` C17 · `title` asc C17 · `title` desc C17 · `lastActivityAt` asc C17 (desc por omissão C17) | - |
 | conversa inexistente para o caller (3) | id aleatório C6 · outro utilizador C6 · outro tenant C6 | - |
-| saídas do chat com linha de log (4) | sucesso C16 · loop lança C16 · recusa antes do loop (404, 409) C16 · quota 429 C16 | - |
+| saídas do chat com linha de log (8) | sucesso C16 · loop lança C16 · conversa desconhecida 404 C16 · agente diferente 409 C16 · `MaxItems` 409 C16 · quota 429 C16 · guard 400 C16 · agente inactivo 404 C16 | - |
 | chat copy (2) | `Nova conversa` desativado inicialmente C25 · `Conversa não encontrada` C27 | - |
 | conversations-list copy (2) | vazio `Nenhuma conversa` C31 · confirm `Apagar conversa` / `Apagar {título}? Esta ação não pode ser anulada.` C34 | - |
 | startup config: bloco `Ai:Conversations` (1 assembly) | `appsettings.json`, partilhado com o `TestWebApplicationFactory` C41 | - |

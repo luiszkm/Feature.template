@@ -476,6 +476,50 @@ public sealed class ChatAiHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldLogTenantAgentAndConversationId_WhenGuardBlocksOrAgentIsInactive()
+    {
+        var blockedLog = new ListLogger<ChatAiHandler>();
+        var blocked = ConversationProvider(
+            $"{nameof(Handle_ShouldLogTenantAgentAndConversationId_WhenGuardBlocksOrAgentIsInactive)}-guard",
+            ScriptedLlmService.Replying(),
+            services =>
+            {
+                services.AddSingleton<ILogger<ChatAiHandler>>(blockedLog);
+                services.AddSingleton<IContentGuard>(new BlockingContentGuard(GuardSubject.UserMessage));
+            });
+        var seeded = await ConversationTestSupport.SeedAsync(blocked, TestServiceFactory.DefaultUserId, DateTime.UtcNow, "t", ("user", "a"));
+
+        await Assert.ThrowsAsync<ContentBlockedException>(() => ChatAsync(blocked, new ChatAiCommand("hi", ConversationId: seeded.Id)));
+
+        var guardLine = blockedLog.Entries.Single(e => e.Message.StartsWith("AI chat finished", StringComparison.Ordinal));
+        Assert.Contains(TenantId.ToString(), guardLine.Message);
+        Assert.Contains(seeded.AgentId.ToString(), guardLine.Message);
+        Assert.Contains(seeded.Id.ToString(), guardLine.Message);
+
+        var inactiveLog = new ListLogger<ChatAiHandler>();
+        var inactive = ConversationProvider(
+            $"{nameof(Handle_ShouldLogTenantAgentAndConversationId_WhenGuardBlocksOrAgentIsInactive)}-inactive",
+            ScriptedLlmService.Replying(),
+            services => services.AddSingleton<ILogger<ChatAiHandler>>(inactiveLog));
+        var agentId = await CreateAgentAsync(inactive, "Parked");
+        var conversationId = (await ChatAsync(inactive, new ChatAiCommand("first", AgentId: agentId))).ConversationId;
+        using (var scope = inactive.CreateScope())
+        {
+            TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+            await scope.ServiceProvider.GetRequiredService<DeactivateAgentHandler>()
+                .Handle(new DeactivateAgentCommand(agentId), CancellationToken.None);
+        }
+
+        await Assert.ThrowsAsync<NotFoundException>(() => ChatAsync(inactive, new ChatAiCommand("again", ConversationId: conversationId)));
+
+        var inactiveLine = inactiveLog.Entries.Last(e => e.Message.StartsWith("AI chat finished", StringComparison.Ordinal));
+        Assert.Contains(TenantId.ToString(), inactiveLine.Message);
+        Assert.Contains(agentId.ToString(), inactiveLine.Message);
+        Assert.Contains(conversationId.ToString(), inactiveLine.Message);
+        Assert.Contains("success False", inactiveLine.Message);
+    }
+
+    [Fact]
     public async Task Handle_ShouldThrow_WhenConversationBelongsToAnotherTenant()
     {
         var llm = ScriptedLlmService.Replying();
