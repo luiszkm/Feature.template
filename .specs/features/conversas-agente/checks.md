@@ -150,10 +150,10 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/conversations-list.spec.ts --filter "estado vazio: nenhuma conversa"`
 
 **C32** - Enquanto a lista de conversas está `loading`, o ecrã mostra `mat-progress-bar` (`data-testid="list-loading"`) e o paginador fica desativado (CONV-03, AC 32)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento: conversations"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento: 'conversations'"`
 
 **C33** - Uma lista de conversas que falha com `500` mostra o `title` do ProblemDetails e o botão `Tentar de novo` (CONV-03, AC 33)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query: conversations"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query: 'conversations'"`
 
 **C34** - Confirmar o diálogo `Apagar conversa` (mensagem `Apagar {título}? Esta ação não pode ser anulada.`, `confirmLabel` `Apagar`) chama `DELETE /api/v1/ai/conversations/{conversationId}` e remove a linha da tabela; cancelar não emite nenhum pedido HTTP (CONV-03, AC 34)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/conversations-list.spec.ts --filter "apagar com confirm remove a linha"`
@@ -257,3 +257,9 @@ escreve ou altera, dividida por quatro:
 
 Total ~81k tokens, abaixo do orçamento de 150k -> **um único builder**, sem handoff a meio da
 feature.
+
+## Handoff
+
+- **Boundary:** C1–C45 fechados num só builder, sobre `9b0db04` (rebase em `b8010ee`)
+- **Settled mid-build:** (1) rebase: a mensagem de um POST falhado sai da lista e volta ao campo; itens `tool` guardam o que o modelo viu (decisões do utilizador). (2) `LastActivityAt` é concurrency token da `Conversation` — é o mecanismo do AC 14; no InMemory o perdedor recebe `409` mas, sem transacções, as suas linhas podem ficar; no Postgres o `SaveChanges` é transaccional e o índice único `(ConversationId, Sequence)` rejeita-as. `Handle_ShouldFailSecondWriter_*` assere o que o InMemory consegue provar. (3) As proofs C32/C33 citam `'conversations'` entre aspas: o `it.each($name)` do vitest interpola assim, e o filtro sem aspas seleccionava zero testes (mesmo achado 11 de `agentes`). (4) `chat.ts` muda o endereço com `Location.replaceState` depois da primeira resposta, para não recriar o componente nem recarregar o histórico (AC 28). (5) Handler tests passam a chamar `TestServiceFactory.SetUser`: o chat exige dono
+- **Abandoned:** nada

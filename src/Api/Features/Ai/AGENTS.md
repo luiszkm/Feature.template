@@ -9,6 +9,8 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 | `Agent.cs` | Agent + `IAgentRepository` + EF config (`AiAgents`) |
 | `AgentFile.cs` | AgentFile + `IAgentFileRepository` + EF config (`AiAgentFiles`) |
 | `AiUsageEntry.cs` | Ledger append-only de uso (`AiUsageEntries`) + `IAiUsageRepository` + `AiUsageTracker` |
+| `Conversation.cs` | Conversation (agregado, `TenantId` + `UserId` + `AgentId`, `Items`) + `IConversationRepository` (posse por linha) + EF config (`AiConversations`) |
+| `ConversationItem.cs` | ConversationItem (`Sequence`, `Role`, `Content`) + EF config (`AiConversationItems`, único `(ConversationId, Sequence)`, cascade) |
 | `ModelComparison.cs` | ModelComparison (owns `ModelComparisonResult`) + `IModelComparisonRepository` + EF config (`AiModelComparisons`, `AiModelComparisonResults`) |
 
 ## Slices (verbo)
@@ -16,6 +18,9 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 | Slice | Rota | Policy | Flag |
 |-------|------|--------|------|
 | ChatAi | `POST /api/v1/ai/chat` | `Authenticated` | `EnableAI` |
+| ListConversations | `GET /api/v1/ai/conversations` | `Authenticated` | `EnableAI` |
+| GetConversation | `GET /api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
+| DeleteConversation | `DELETE /api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
 | CreateAgent | `POST /api/v1/ai/agents` | `AiAgentsManage` | `EnableAI` |
 | ListAgents | `GET /api/v1/ai/agents` | `AiAgentsRead` | `EnableAI` |
 | GetAgent | `GET /api/v1/ai/agents/{agentId}` | `AiAgentsRead` | `EnableAI` |
@@ -46,6 +51,7 @@ Ver `features.json` com `"m": "Ai"`.
 | `MicrosoftAgentFrameworkLlmService.cs` | Provider `MicrosoftAgentFramework` |
 | `AgentSystemPrompt.cs` | Texto do seed default |
 | `ContentGuard.cs` | `IContentGuard` (default `AllowAllContentGuard`), `GuardrailOptions`, `AgentGuardrails` (sufixo, delimitador, erros de tool) |
+| `ConversationRetentionService.cs` | `BackgroundService`: apaga conversas com `LastActivityAt` anterior a `Ai:Conversations:RetentionDays` (90; `0` desliga), a cada `PurgeIntervalHours` (24), `IgnoreQueryFilters` |
 | `AiRateLimit.cs` | Policy `ai` (`IRateLimiterPolicy`, partição por tenant), `AiQuota` (tokens/dia), opções |
 | `ModelCatalog.cs` | `IModelCatalog`: OpenRouter `/models` (só com `tools`, cache 1h), `ConfiguredModelCatalog` (MAF), `StubModelCatalog` |
 
@@ -76,7 +82,10 @@ Ver `features.json` com `"m": "Ai"`.
 - Uso já não é no-op: cada chat e cada modelo de uma comparação grava um `AiUsageEntry` (metadados, nunca conteúdo); falha a gravar só faz `LogError`
 - Comparação corre o agente uma vez por modelo, em paralelo, num scope DI próprio: **tools correm N vezes** — uma tool com efeito colateral não pode entrar num agente comparado
 - Guardrails no `AgentLoop` (valem para chat e comparação): system prompt = instruções + `AgentGuardrails.SystemSuffix`; toda a saída de tool é truncada, passa pelo `IContentGuard` e vai delimitada em `<tool_output>`; uma tool que lança vira `{"error":"permission_denied"|"tool_failed",...}` para o modelo — nunca `401`/`500`
-- `history` do chat só aceita texto `user`/`assistant` (≤ 50, ≤ 4000 chars); `tool`/`system`/tool calls → `400`. Temporário até W2 (`conversas-agente`)
+- O servidor é dono do transcript: `POST /ai/chat` recusa `history` (`400`, chave `history`), cria a conversa sem `conversationId` e devolve-o; o histórico reenviado são os últimos `HistoryWindow` (20) itens `user`/`assistant` não vazios — os `tool` ficam gravados e não são reenviados
+- Um turno grava user + mensagens do loop + resposta num só `SaveChangesAsync`; nada é gravado se o loop lança, o guard bloqueia ou a quota recusa. `LastActivityAt` é concurrency token: dois appends simultâneos → o segundo `409`
+- Posse no `IConversationRepository` (`UserId` do JWT), não numa policy; o chat exige utilizador — testes de handler chamam `TestServiceFactory.SetUser`
+- Agente fixado na conversa: outro `agentId` → `409`; agente desactivado → `404`; `MaxItems` (200) → `409`
 - Chat e comparações: `.RequireRateLimiting(RateLimitPolicies.AiRateLimitPolicy)` + `429` declarado; quota via `AiQuota.EnsureWithinAsync` antes do guard
 - Testes de quota por HTTP precisam de ledger isolado: a InMemory do host é `AppDb` para o processo inteiro (`AiRateLimitTests.IsolatedLedgerFactory`)
 - Catálogo inacessível → `ServiceUnavailableException` → `503`
@@ -102,5 +111,10 @@ tests/Api.Tests/Ai/
   CompareModelsTests.cs
   AgentLoopGuardrailTests.cs
   AiRateLimitTests.cs
+  ListConversationsTests.cs
+  GetConversationTests.cs
+  DeleteConversationTests.cs
+  ConversationRetentionServiceTests.cs
+  ConversationTestSupport.cs / ConversationHttp.cs
   AiTestDoubles.cs
 ```

@@ -86,6 +86,11 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | POST | `/api/v1/ai/comparisons` | `AiAgentsManage` | `EnableAI` |
 | GET | `/api/v1/ai/comparisons` | `AiAgentsRead` | `EnableAI` |
 | GET | `/api/v1/ai/comparisons/{comparisonId}` | `AiAgentsRead` | `EnableAI` |
+| GET | `/api/v1/ai/conversations` | `Authenticated` | `EnableAI` |
+| GET | `/api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
+| DELETE | `/api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
+
+**Conversas — a posse não é uma policy.** As rotas de conversas (e o `conversationId` de `POST /ai/chat`) ficam em `Authenticated`; quem pode ler ou apagar decide-o o `IConversationRepository`, que filtra sempre por `TenantId` **e** pelo `UserId` do JWT, sem excepção para `Admin`. A conversa de outro utilizador responde `404`, nunca `403`.
 
 ## Regras de revisão
 
