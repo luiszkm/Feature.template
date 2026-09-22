@@ -94,6 +94,8 @@ Proof: `dotnet test tests/ArchitectureTests --filter "FullyQualifiedName~OpenApi
 **C21** - Com `Ai:Quota:DailyTokensPerTenant=2` e o LLM a gastar 1+1 tokens, o primeiro chat responde `200` e o segundo `429` com `title` `AI quota exceeded` e `detail` `Limite diário de tokens de IA do tenant atingido.`; o LLM recebe 1 pedido; o mesmo `429` sai de `POST /api/v1/ai/comparisons` depois desse chat (GUARD-04, AC 20)
 Proof: `dotnet test tests/Api.Tests --filter "FullyQualifiedName~AiRateLimitTests.Chat_ShouldReturn429_WhenDailyTokenQuotaReached"`
 Proof: `dotnet test tests/Api.Tests --filter "FullyQualifiedName~AiRateLimitTests.Comparisons_ShouldReturn429_WhenDailyTokenQuotaReached"`
+Proof: `dotnet test tests/Api.Tests --filter "FullyQualifiedName~AiRateLimitTests.Quota_ShouldCountFromUtcMidnight_OfCurrentDay"`
+Proof: `dotnet test tests/Api.Tests --filter "FullyQualifiedName~AiRateLimitTests.Quota_ShouldThrowAtLimit_AndPassBelowIt"`
 
 **C22** - `IAiUsageRepository.SumTokensSinceAsync(since)` soma `InputTokens + OutputTokens` só do tenant corrente e só de linhas com `CreatedAt >= since`: `since` 1 minuto no futuro dá `0`, 1 minuto no passado dá a soma; linhas de outro tenant não contam (GUARD-04, AC 20)
 Proof: `dotnet test tests/Api.Tests --filter "FullyQualifiedName~AiRateLimitTests.UsageRepository_ShouldSumTokens_SinceInstant_ForCurrentTenant"`
@@ -145,7 +147,7 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.
 | delimitador, door 4 (3) | abertura/fecho C10 · escape case-insensitive C10 · sufixo C11 | - |
 | chamadas do loop com sufixo (3) | primeira C11 · após tool C11 · resumo pós-`MaxIterations` C11 | - |
 | rate limit, door 1-2 (4) | excedido C18 · balde partilhado C19 · partição por tenant C20 · ordem do pipeline C20 | - |
-| quota (4) | chat C21 · comparisons C21 · fronteira `since` C22 · desligada C23 | - |
+| quota (6) | chat C21 · comparisons C21 · início da janela = 00:00 UTC do dia C21 · `spent >= limit` na camada C21 · fronteira `since` C22 · desligada C23 | - |
 | `POST /api/v1/ai/chat` statuses (5) | 200 C5 · 400 C1, C13 · 401 C29 · 404 C29 · 429 C18, C21 | - |
 | `POST /api/v1/ai/comparisons` statuses (8) | 201 C30 · 400 C17 · 401 C28 · 403 C30 · 404 C30 · 409 C30 · 429 C19, C21 · 503 C30 | - |
 | rotas com policy `auth` (1 comportamento) | `429` sem corpo C25 | - |
@@ -197,3 +199,5 @@ Aritmética antes de código (`wc -c` dos ficheiros tocados ÷ 4):
 - **Boundary:** C1-C30 fechados num só builder (sem handoff)
 - **Settled mid-build:** (1) `IAiUsageRepository` ganhou `SumTokensSinceAsync`; `AiUsageTests.UsageRepository_ShouldExposeNoUpdateOrDelete` compara o conjunto exacto de métodos e passou a incluir essa leitura — continua a recusar update/delete. (2) A InMemory do host chama-se `AppDb` para o processo todo, logo os testes de quota por HTTP usam `ConfigureDbContext` com base própria. (3) As proofs `npx ng test` exigem Node ≥ 24.15; nesta máquina (24.11.1) correm com `npx -y node@24.15.0 node_modules/@angular/cli/bin/ng.js test ...` a partir de `src/web`
 - **Abandoned:** nada
+
+Ronda 1 do Verifier (FAIL): a janela diária da quota (00:00 UTC) não tinha prova e `AiQuota` não tinha prova na própria camada. Fechado acrescentando duas proofs a C21 (`TimeProvider` injectado em `AiQuota`), sem mudar nenhuma claim. Reforçados também C21 (detail no `429` das comparações) e C7 (mensagem de log exacta).

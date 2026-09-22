@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -30,6 +31,7 @@ public static class AiModule
         services.AddScoped<ToolRegistry>();
         services.AddScoped<AgentLoop>();
         services.AddSingleton<IContentGuard, AllowAllContentGuard>();
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<AiQuota>();
         services.AddScoped<IAiUsageRepository, AiUsageRepository>();
         services.AddScoped<IAiUsageTracker, AiUsageTracker>();

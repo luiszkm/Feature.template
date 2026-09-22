@@ -62,7 +62,7 @@ public sealed class AiRateLimitPolicy(IOptions<AiRateLimitOptions> options) : IR
             : NoTenantKey;
 }
 
-public sealed class AiQuota(IAiUsageRepository usage, IOptions<AiQuotaOptions> options)
+public sealed class AiQuota(IAiUsageRepository usage, IOptions<AiQuotaOptions> options, TimeProvider clock)
 {
     public const string ExceededTitle = "AI quota exceeded";
     public const string ExceededDetail = "Limite diário de tokens de IA do tenant atingido.";
@@ -77,7 +77,8 @@ public sealed class AiQuota(IAiUsageRepository usage, IOptions<AiQuotaOptions> o
         if (limit <= 0)
             return;
 
-        var spent = await usage.SumTokensSinceAsync(DateTime.UtcNow.Date, cancellationToken);
+        var startOfDayUtc = clock.GetUtcNow().UtcDateTime.Date;
+        var spent = await usage.SumTokensSinceAsync(startOfDayUtc, cancellationToken);
         if (spent >= limit)
             throw new TooManyRequestsException(ExceededTitle, ExceededDetail);
     }

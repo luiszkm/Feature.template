@@ -33,17 +33,17 @@ public sealed class AgentLoopGuardrailTests
     [Fact]
     public async Task RunAsync_ShouldReturnToolFailed_AndLogError_WhenToolThrows()
     {
-        var llm = CallsToolOnce("t");
+        var llm = CallsToolOnce("lookup_orders");
         var logger = new ListLogger<AgentLoop>();
-        var loop = Loop(llm, new LambdaTool("t", (_, _) => throw new InvalidOperationException("boom")), logger: logger);
+        var loop = Loop(llm, new LambdaTool("lookup_orders", (_, _) => throw new InvalidOperationException("boom")), logger: logger);
 
-        var result = await loop.RunAsync("go", "sys", null, ["t"]);
+        var result = await loop.RunAsync("go", "sys", null, ["lookup_orders"]);
 
         Assert.Equal("done", result.Reply);
         Assert.Equal(
-            "<tool_output>\n{\"error\":\"tool_failed\",\"tool\":\"t\"}\n</tool_output>",
+            "<tool_output>\n{\"error\":\"tool_failed\",\"tool\":\"lookup_orders\"}\n</tool_output>",
             ToolMessageOfSecondRequest(llm).Content);
-        Assert.Contains(logger.Entries, e => e.Level == LogLevel.Error && e.Message.Contains("t", StringComparison.Ordinal));
+        Assert.Contains(logger.Entries, e => e.Level == LogLevel.Error && e.Message == "Tool lookup_orders failed");
     }
 
     [Fact]

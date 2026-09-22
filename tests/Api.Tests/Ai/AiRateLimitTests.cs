@@ -136,7 +136,35 @@ public sealed class AiRateLimitTests
         Assert.Equal(HttpStatusCode.TooManyRequests, compare.StatusCode);
         var problem = await compare.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.Equal("AI quota exceeded", problem!.Title);
+        Assert.Equal("Limite diário de tokens de IA do tenant atingido.", problem.Detail);
         Assert.Single(llm.Requests);
+    }
+
+    [Fact]
+    public async Task Quota_ShouldCountFromUtcMidnight_OfCurrentDay()
+    {
+        var ledger = new CountingUsageRepository();
+        var clock = new FixedClock(new DateTimeOffset(2026, 9, 22, 23, 30, 0, TimeSpan.FromHours(-3)));
+        var quota = new AiQuota(ledger, Options.Create(new AiQuotaOptions { DailyTokensPerTenant = 10 }), clock);
+
+        await quota.EnsureWithinAsync(CancellationToken.None);
+
+        // 23:30 at UTC-3 is 02:30 UTC on the 23rd: the window opens at 2026-09-23T00:00Z.
+        Assert.Equal(new DateTime(2026, 9, 23, 0, 0, 0, DateTimeKind.Utc), ledger.LastSince);
+    }
+
+    [Fact]
+    public async Task Quota_ShouldThrowAtLimit_AndPassBelowIt()
+    {
+        var options = Options.Create(new AiQuotaOptions { DailyTokensPerTenant = 10 });
+        var clock = new FixedClock(DateTimeOffset.UtcNow);
+
+        await new AiQuota(new CountingUsageRepository(spent: 9), options, clock).EnsureWithinAsync(CancellationToken.None);
+
+        var error = await Assert.ThrowsAsync<TooManyRequestsException>(() =>
+            new AiQuota(new CountingUsageRepository(spent: 10), options, clock).EnsureWithinAsync(CancellationToken.None));
+        Assert.Equal("AI quota exceeded", error.Title);
+        Assert.Equal("Limite diário de tokens de IA do tenant atingido.", error.Message);
     }
 
     [Fact]
@@ -212,9 +240,15 @@ public sealed class AiRateLimitTests
         new("llm", "stub", "m", "ai", AiUsageOperations.Chat, tenantId, Guid.NewGuid(), input, output, null,
             TimeSpan.FromMilliseconds(1), true, null);
 
-    private sealed class CountingUsageRepository : IAiUsageRepository
+    private sealed class FixedClock(DateTimeOffset now) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => now.ToUniversalTime();
+    }
+
+    private sealed class CountingUsageRepository(long spent = 0) : IAiUsageRepository
     {
         public int SumCalls { get; private set; }
+        public DateTime? LastSince { get; private set; }
 
         public Task AddAsync(AiUsageEntry entry, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
@@ -224,7 +258,8 @@ public sealed class AiRateLimitTests
         public Task<long> SumTokensSinceAsync(DateTime since, CancellationToken cancellationToken = default)
         {
             SumCalls++;
-            return Task.FromResult(0L);
+            LastSince = since;
+            return Task.FromResult(spent);
         }
     }
 }
