@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { form, FormField, required, submit } from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,8 +17,10 @@ import {
   AgentOutput,
   CreateAgentRequest,
   KNOWN_AGENT_TOOLS,
+  ModelOutput,
   UpdateAgentRequest,
 } from './ai.contracts';
+import { ComparisonsClient } from './compare';
 
 @Component({
   selector: 'app-agent-form',
@@ -52,6 +54,28 @@ import {
         </mat-form-field>
         @if (message('instructions'); as text) {
           <p class="field-error" data-testid="instructions-error">{{ text }}</p>
+        }
+
+        <mat-form-field>
+          <mat-label>Modelo</mat-label>
+          <select
+            matNativeControl
+            data-testid="model"
+            [disabled]="modelsLoading()"
+            [value]="selectedModel() ?? ''"
+            (change)="selectedModel.set($any($event.target).value || null)"
+          >
+            <option value="">Padrão do sistema</option>
+            @for (option of modelOptions(); track option) {
+              <option [value]="option" [selected]="option === selectedModel()">{{ option }}</option>
+            }
+          </select>
+        </mat-form-field>
+        @if (modelsUnavailable()) {
+          <p class="field-error" data-testid="model-catalog-error">Catálogo de modelos indisponível</p>
+        }
+        @if (message('model'); as text) {
+          <p class="field-error" data-testid="model-error">{{ text }}</p>
         }
 
         <fieldset>
@@ -158,6 +182,7 @@ export class AgentForm {
   private readonly router = inject(Router);
   private readonly confirm = inject(ConfirmService);
   private readonly ai = inject(AiAvailability);
+  private readonly comparisons = inject(ComparisonsClient);
 
   readonly agentId = this.route.snapshot.paramMap.get('agentId');
   readonly pending = signal(false);
@@ -170,6 +195,17 @@ export class AgentForm {
   readonly fileProblem = signal<Problem | null>(null);
   readonly filePending = signal(false);
   readonly tools = KNOWN_AGENT_TOOLS;
+  readonly models = signal<ModelOutput[]>([]);
+  readonly modelsLoading = signal(true);
+  readonly modelsUnavailable = signal(false);
+  /** `null` is "Padrão do sistema": the agent follows `Ai:Llm:Model`. */
+  readonly selectedModel = signal<string | null>(null);
+  /** Catalog ids plus the agent's current model, so a model that left the catalog stays selectable. */
+  readonly modelOptions = computed(() => {
+    const ids = this.models().map((model) => model.id);
+    const current = this.selectedModel();
+    return current && !ids.includes(current) ? [current, ...ids] : ids;
+  });
 
   readonly model = signal({ name: '', instructions: '' });
   readonly agentForm = form(this.model, (path) => {
@@ -178,6 +214,7 @@ export class AgentForm {
   });
 
   constructor() {
+    void this.loadModels();
     if (this.agentId) {
       void this.load(this.agentId);
     }
@@ -231,6 +268,7 @@ export class AgentForm {
       );
       this.model.set({ name: agent.name, instructions: agent.instructions });
       this.selectedTools.set([...agent.toolNames]);
+      this.selectedModel.set(agent.model ?? null);
       this.files.set(
         await firstValueFrom(this.http.get<AgentFileOutput[]>(`${API_BASE}/ai/agents/${agentId}/files`)),
       );
@@ -238,6 +276,16 @@ export class AgentForm {
       const problem = parseProblem(error);
       this.ai.learnFrom(problem);
       this.problem.set(problem);
+    }
+  }
+
+  private async loadModels(): Promise<void> {
+    try {
+      this.models.set(await firstValueFrom(this.comparisons.listModels()));
+    } catch {
+      this.modelsUnavailable.set(true);
+    } finally {
+      this.modelsLoading.set(false);
     }
   }
 
@@ -249,6 +297,7 @@ export class AgentForm {
       name: value.name,
       instructions: value.instructions,
       toolNames: this.selectedTools(),
+      model: this.selectedModel(),
     } satisfies CreateAgentRequest & UpdateAgentRequest;
 
     try {

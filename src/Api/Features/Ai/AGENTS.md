@@ -8,6 +8,8 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 |----------|----------|
 | `Agent.cs` | Agent + `IAgentRepository` + EF config (`AiAgents`) |
 | `AgentFile.cs` | AgentFile + `IAgentFileRepository` + EF config (`AiAgentFiles`) |
+| `AiUsageEntry.cs` | Ledger append-only de uso (`AiUsageEntries`) + `IAiUsageRepository` + `AiUsageTracker` |
+| `ModelComparison.cs` | ModelComparison (owns `ModelComparisonResult`) + `IModelComparisonRepository` + EF config (`AiModelComparisons`, `AiModelComparisonResults`) |
 
 ## Slices (verbo)
 
@@ -23,6 +25,10 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 | ListAgentFiles | `GET /api/v1/ai/agents/{agentId}/files` | `AiAgentsRead` | `EnableAI` |
 | GetAgentFile | `GET /api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsRead` | `EnableAI` |
 | DeleteAgentFile | `DELETE /api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsManage` | `EnableAI` |
+| ListModels | `GET /api/v1/ai/models` | `AiAgentsRead` | `EnableAI` |
+| CompareModels | `POST /api/v1/ai/comparisons` | `AiAgentsManage` | `EnableAI` |
+| ListModelComparisons | `GET /api/v1/ai/comparisons` | `AiAgentsRead` | `EnableAI` |
+| GetModelComparison | `GET /api/v1/ai/comparisons/{comparisonId}` | `AiAgentsRead` | `EnableAI` |
 
 Ver `features.json` com `"m": "Ai"`.
 
@@ -39,6 +45,7 @@ Ver `features.json` com `"m": "Ai"`.
 | `OpenRouterLlmService.cs` | Provider `OpenRouter` |
 | `MicrosoftAgentFrameworkLlmService.cs` | Provider `MicrosoftAgentFramework` |
 | `AgentSystemPrompt.cs` | Texto do seed default |
+| `ModelCatalog.cs` | `IModelCatalog`: OpenRouter `/models` (só com `tools`, cache 1h), `ConfiguredModelCatalog` (MAF), `StubModelCatalog` |
 
 ## Tools
 
@@ -62,6 +69,12 @@ Ver `features.json` com `"m": "Ai"`.
 
 ## Gotchas
 
+- Modelo por agente: `Agent.Model` nulo = `Ai:Llm:Model`. `PUT /agents/{id}` substitui tudo — omitir `model` repõe o default
+- MAF prende o cliente a `Ai:Llm:Model` na construção: ignora `LlmRequest.Model`, o catálogo só oferece os modelos configurados, e `POST /comparisons` responde `409`
+- Uso já não é no-op: cada chat e cada modelo de uma comparação grava um `AiUsageEntry` (metadados, nunca conteúdo); falha a gravar só faz `LogError`
+- Comparação corre o agente uma vez por modelo, em paralelo, num scope DI próprio: **tools correm N vezes** — uma tool com efeito colateral não pode entrar num agente comparado
+- Catálogo inacessível → `ServiceUnavailableException` → `503`
+
 - Features ↛ Features/Host: seed em `CreateTenant` via `IDefaultAgentProvisioner` (Shared)
 - Soft-delete: `DeactivateAgent`; o último activo do tenant recusa com 409
 - Chat sem `agentId` usa o seed (`IsDefault`); id desconhecido/inactivo → 404, sem fallback
@@ -76,4 +89,10 @@ tests/Api.Tests/Ai/
   ChatAiTests.cs
   CreateAgentFileTests.cs
   LlmServiceTests.cs
+  AgentModelTests.cs
+  AgentLoopUsageTests.cs
+  AiUsageTests.cs
+  ListModelsTests.cs
+  CompareModelsTests.cs
+  AiTestDoubles.cs
 ```

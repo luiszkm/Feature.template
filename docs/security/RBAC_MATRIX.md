@@ -82,6 +82,10 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | GET | `/api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsRead` | `EnableAI` |
 | POST | `/api/v1/ai/agents/{agentId}/files` | `AiAgentsManage` | `EnableAI` |
 | DELETE | `/api/v1/ai/agents/{agentId}/files/{fileId}` | `AiAgentsManage` | `EnableAI` |
+| GET | `/api/v1/ai/models` | `AiAgentsRead` | `EnableAI` |
+| POST | `/api/v1/ai/comparisons` | `AiAgentsManage` | `EnableAI` |
+| GET | `/api/v1/ai/comparisons` | `AiAgentsRead` | `EnableAI` |
+| GET | `/api/v1/ai/comparisons/{comparisonId}` | `AiAgentsRead` | `EnableAI` |
 
 ## Regras de revisão
 

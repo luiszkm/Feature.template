@@ -16,7 +16,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { server } from '../../../test-setup';
 import { AgentForm } from './agent-form';
 
@@ -36,6 +36,19 @@ const AGENT = {
 
 const FILE = { fileId: FILE_ID, name: 'notes.txt' };
 
+const MODELS = '/api/v1/ai/models';
+const CATALOG = [
+  { id: 'a/model', name: 'A', contextLength: 8192, inputPricePerToken: 0.000001, outputPricePerToken: 0.000002 },
+  { id: 'b/model', name: 'B', contextLength: 8192, inputPricePerToken: 0.000001, outputPricePerToken: 0.000002 },
+];
+
+async function selectModel(fixture: Parameters<typeof el>[0], value: string): Promise<void> {
+  const select = el<HTMLSelectElement>(fixture, 'model');
+  select.value = value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+  await settle(fixture);
+}
+
 function stubEdit(files: typeof FILE[] = []): void {
   server.use(
     api.get(`${AGENTS}/${AGENT_ID}`, () => HttpResponse.json(AGENT)),
@@ -44,6 +57,118 @@ function stubEdit(files: typeof FILE[] = []): void {
 }
 
 describe('AgentForm', () => {
+  beforeEach(() => {
+    server.use(api.get(MODELS, () => HttpResponse.json(CATALOG)));
+  });
+
+  it('envia o modelo escolhido', async () => {
+    let created: unknown = null;
+    let updated: unknown = null;
+    stubEdit();
+    server.use(
+      api.post(AGENTS, async ({ request }) => {
+        created = await request.json();
+        return HttpResponse.json(AGENT, { status: 201 });
+      }),
+      api.put(`${AGENTS}/${AGENT_ID}`, async ({ request }) => {
+        updated = await request.json();
+        return HttpResponse.json(AGENT);
+      }),
+    );
+
+    provideRouteStub();
+    authenticate();
+    const createFixture = TestBed.createComponent(AgentForm);
+    await settle(createFixture, 2);
+    await type(createFixture, 'name', 'Support');
+    await type(createFixture, 'instructions', 'help');
+    await selectModel(createFixture, 'b/model');
+    await click(createFixture, 'submit');
+    await waitFor(createFixture, () => expect(created).not.toBeNull());
+    expect((created as { model: string }).model).toBe('b/model');
+
+    TestBed.resetTestingModule();
+    provideRouteStub({ agentId: AGENT_ID });
+    authenticate();
+    const editFixture = TestBed.createComponent(AgentForm);
+    await settle(editFixture);
+    await selectModel(editFixture, 'a/model');
+    await click(editFixture, 'submit');
+    await waitFor(editFixture, () => expect(updated).not.toBeNull());
+    expect((updated as { model: string }).model).toBe('a/model');
+  });
+
+  it('envia model null com Padrão do sistema', async () => {
+    let updated: Record<string, unknown> | null = null;
+    server.use(
+      api.get(`${AGENTS}/${AGENT_ID}`, () => HttpResponse.json({ ...AGENT, model: 'a/model' })),
+      api.get(`${AGENTS}/${AGENT_ID}/files`, () => HttpResponse.json([])),
+      api.put(`${AGENTS}/${AGENT_ID}`, async ({ request }) => {
+        updated = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(AGENT);
+      }),
+    );
+    provideRouteStub({ agentId: AGENT_ID });
+    authenticate();
+
+    const fixture = TestBed.createComponent(AgentForm);
+    await settle(fixture);
+    await selectModel(fixture, '');
+    await click(fixture, 'submit');
+
+    await waitFor(fixture, () => expect(updated).not.toBeNull());
+    expect(updated).toHaveProperty('model', null);
+  });
+
+  it('mostra o modelo do agente', async () => {
+    server.use(
+      api.get(`${AGENTS}/${AGENT_ID}`, () => HttpResponse.json({ ...AGENT, model: 'b/model' })),
+      api.get(`${AGENTS}/${AGENT_ID}/files`, () => HttpResponse.json([])),
+    );
+    provideRouteStub({ agentId: AGENT_ID });
+    authenticate();
+    const fixture = TestBed.createComponent(AgentForm);
+    await settle(fixture);
+
+    const select = el<HTMLSelectElement>(fixture, 'model');
+    expect(select.value).toBe('b/model');
+    expect(select.selectedOptions[0].textContent?.trim()).toBe('b/model');
+
+    TestBed.resetTestingModule();
+    stubEdit();
+    provideRouteStub({ agentId: AGENT_ID });
+    authenticate();
+    const defaultFixture = TestBed.createComponent(AgentForm);
+    await settle(defaultFixture);
+
+    const defaultSelect = el<HTMLSelectElement>(defaultFixture, 'model');
+    expect(defaultSelect.value).toBe('');
+    expect(defaultSelect.selectedOptions[0].textContent?.trim()).toBe('Padrão do sistema');
+  });
+
+  it('catálogo indisponível mantém o modelo', async () => {
+    let updated: Record<string, unknown> | null = null;
+    server.use(
+      api.get(MODELS, () => problem(503, { title: 'Service unavailable', status: 503 })),
+      api.get(`${AGENTS}/${AGENT_ID}`, () => HttpResponse.json({ ...AGENT, model: 'a/model' })),
+      api.get(`${AGENTS}/${AGENT_ID}/files`, () => HttpResponse.json([])),
+      api.put(`${AGENTS}/${AGENT_ID}`, async ({ request }) => {
+        updated = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json(AGENT);
+      }),
+    );
+    provideRouteStub({ agentId: AGENT_ID });
+    authenticate();
+
+    const fixture = TestBed.createComponent(AgentForm);
+    await settle(fixture);
+
+    expect(text(fixture, 'model-catalog-error')).toBe('Catálogo de modelos indisponível');
+    await click(fixture, 'submit');
+    await waitFor(fixture, () => expect(updated).not.toBeNull());
+    expect(updated).toHaveProperty('model', 'a/model');
+  });
+
   it('201 navega para agents', async () => {
     server.use(
       api.post(AGENTS, () => HttpResponse.json(AGENT, { status: 201 })),
