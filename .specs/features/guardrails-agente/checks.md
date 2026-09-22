@@ -201,3 +201,11 @@ Aritmética antes de código (`wc -c` dos ficheiros tocados ÷ 4):
 - **Abandoned:** nada
 
 Ronda 1 do Verifier (FAIL): a janela diária da quota (00:00 UTC) não tinha prova e `AiQuota` não tinha prova na própria camada. Fechado acrescentando duas proofs a C21 (`TimeProvider` injectado em `AiQuota`), sem mudar nenhuma claim. Reforçados também C21 (detail no `429` das comparações) e C7 (mensagem de log exacta).
+
+## Superseded
+
+Pelo rebase de `conversas-agente` (2026-09-22, decisão do utilizador):
+
+- **C1–C5** — o validador item a item do `history` sai; `conversas-agente` C5 recusa o `history` inteiro com `400`. Os testes `Validator_ShouldFail_WhenHistoryRoleIsNotUserOrAssistant`, `Validator_ShouldPass_WhenHistoryRoleIsUserOrAssistant`, `Validator_ShouldFail_WhenHistoryItemHasToolCalls`, `Validator_ShouldFail_WhenHistoryItemHasToolCallId`, `Validator_ShouldBoundHistory_At50Items`, `Validator_ShouldBoundHistoryContent_At4000Chars`, `ChatAi_ShouldReturn400_WhenHistoryRoleIsForgeable` e `ChatAi_ShouldPassUserAndAssistantHistory_InOrder` são removidos no commit que introduz esse `400`
+- **C26** — a mensagem já não fica no histórico num `429`: sai da lista e volta ao campo (`conversas-agente` AC 30). O teste `429 mostra o detail e mantem a mensagem` passa a asserir isso; o `detail` continua na área de erro
+

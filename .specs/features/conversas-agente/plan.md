@@ -2,7 +2,7 @@
 
 tlc-spec-lean · profile **ui** · budget 150k · plano apenas — sem `checks.md` e sem código.
 
-Grounding: `origin/main` `113d893` (#2, #3, #4 fundidos).
+Grounding: `origin/main` `113d893` (#2, #3, #4 fundidos). **Rebase 2026-09-22** sobre `feat/comparar-modelos` `9b0db04` (depois de `comparar-modelos` e `guardrails-agente`): ver `## Rebase` no fim.
 
 ## Sources
 
@@ -75,6 +75,10 @@ as tabelas; S3 não compila contra um contrato que S1 não mudou; S4 é o que to
 | Prova da door 4 (unicidade de `sequence`) | O índice único fica; a prova InMemory é da tradução do erro em `409`, não da BD | `Api.Tests` e `E2ETests` correm InMemory (`Database:UseInMemory=true`), que não aplica índices únicos. É o mesmo tipo de buraco que `paridade-foundry.md` assinala em W4 — declarado, não escondido | n |
 | Rotas do front | `/ai` (conversa nova), `/ai/conversations` (lista), `/ai/conversations/:conversationId` (conversa aberta) | Espelha `users/:userId/edit` a montar o mesmo componente com um id. Mantém `/ai` como está para quem tem o link | n |
 | Copy da UI | pt-PT, análoga a `agents-list` e ao `chat` actual (literal nas ACs de S3) | profile ui, sem ficheiro de design | n |
+| Mensagem num POST falhado (rebase) | Sai da lista e volta ao campo de entrada (AC 30) — substitui o "mantém no histórico" de `guardrails-agente` AC 24 | O servidor não gravou nada; mostrá-la no histórico seria mentira, e ao recarregar desapareceria | y |
+| Conteúdo gravado nos itens `tool` (rebase) | Exactamente o que o `AgentLoop` entregou ao modelo: delimitado em `<tool_output>`, truncado, e já substituído quando o guard bloqueou | A auditoria reproduz o prompt tal como foi; conteúdo bloqueado nunca chega à base | y |
+| Itens `assistant` só com tool calls na janela (rebase) | Ficam gravados (AC 10) mas a janela de histórico salta os `assistant` de conteúdo vazio | Sem os `tool` que lhes respondem, um `assistant` vazio é um turno sem nada; os providers OpenAI-compatíveis rejeitam `assistant` sem conteúdo nem tool calls | n |
+| Mensagem bloqueada, quota ou rate limit (rebase) | Nada é persistido — nem conversa nova nem item — tal como na AC 9 | São recusas antes de o turno existir; um item `user` órfão seria reenviado ao modelo no turno seguinte | n |
 
 **Open questions**
 
@@ -105,6 +109,9 @@ as tabelas; S3 não compila contra um contrato que S1 não mudou; S4 é o que to
 14. IF dois pedidos concorrentes calcularem o mesmo `sequence` na mesma conversa THEN the system SHALL falhar o segundo write com `409` title `Business rule violation` e não sobrescrever o item já gravado.
 15. WHERE `FeatureFlags:EnableAI` é `false` the system SHALL responder `404` com title `Feature disabled` em `POST /api/v1/ai/chat` e em todas as rotas `/api/v1/ai/conversations`.
 16. WHEN um pedido de chat termina, com sucesso ou com erro, THEN the system SHALL escrever uma linha de log que nomeia `tenantId`, `agentId` e `conversationId`.
+42. IF o `IContentGuard` bloquear a mensagem (`400`, chave `Message`) ou a quota diária responder `429` THEN the system SHALL não criar conversa nem acrescentar item nenhum. *(rebase)*
+43. WHEN o loop executa uma tool THEN the system SHALL gravar no item `tool` o conteúdo exacto entregue ao LLM — começa por `<tool_output>\n` e termina em `\n</tool_output>`. *(rebase)*
+44. WHEN a janela de histórico é construída THEN the system SHALL excluir os itens `assistant` cujo `content` é vazio. *(rebase)*
 
 **Independent test:** `POST /ai/chat` sem `conversationId`, depois um segundo POST com o id devolvido; o repositório mostra quatro itens pela ordem do loop, e um terceiro POST com `history` no corpo responde `400` sem tocar no `ILlmService`.
 
@@ -163,7 +170,7 @@ primária à direita, `mat-form-field` Pesquisar, `app-list-state`, `mat-table` 
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| CONV-01 | S1 | 1–16 | Pending |
+| CONV-01 | S1 | 1–16, 42–44 | Pending |
 | CONV-02 | S2 | 17–24 | Pending |
 | CONV-03 | S3 | 25–36 | Pending |
 | CONV-04 | S4 | 37–41 | Pending |
@@ -190,7 +197,7 @@ primária à direita, `mat-form-field` Pesquisar, `app-list-state`, `mat-table` 
 | API `POST /api/v1/ai/chat` | error shape and codes | AC 5, 6, 7, 8, 9, 13, 14, 15 |
 | API `POST /api/v1/ai/chat` | who may call | AC 23 - `Authenticated`; a posse é por linha (AC 22) |
 | API `POST /api/v1/ai/chat` | versioning | AC 5 - a rota fica em `/api/v1` e a quebra é explícita com `400`; ver door 2 |
-| API `POST /api/v1/ai/chat` | rate limit | n/a - nenhuma rota Ai tem `RequireRateLimiting` hoje; quota é W7 e fica fora |
+| API `POST /api/v1/ai/chat` | rate limit | existing - policy `ai` por tenant e quota diária (`guardrails-agente` C18, C21); AC 42 garante que um `429` da quota não persiste nada *(rebase)* |
 | API `GET /api/v1/ai/conversations` | response shape | AC 17 - página de `conversationId` · `title` · `agentId` · `lastActivityAt` · `itemCount` |
 | API `GET /api/v1/ai/conversations` | error shape and codes | AC 15, 24 |
 | API `GET /api/v1/ai/conversations` | who may call | AC 22, 23 |
@@ -238,7 +245,7 @@ sítio que decide posse — o repositório é esse sítio.
 2. `Ai` (exists) — `ChatAiValidator` recusa `history` (door 2) antes de qualquer trabalho
 3. `Ai` (exists) — `ChatAiHandler` resolve o agente e a `Conversation` (door 1) pelo `IConversationRepository` (door 3), ou cria uma conversa nova fixada no agente pedido (door 7)
 4. `Ai` (exists) — reconstrói a janela de histórico a partir de `ConversationItem` (door 1), por `sequence` (door 4)
-5. `AgentLoop` (exists) -> `ILlmService` (exists) + `ToolRegistry` (exists) — sem alterações ao loop
+5. `AgentLoop` (exists, **alterado no rebase**) -> `ILlmService` (exists) + `ToolRegistry` (exists) — o `AgentResult` passa a trazer as mensagens que o turno produziu (`assistant` com tool calls, `tool` delimitados), pela ordem; nada mais muda no loop
 6. `Ai` (exists) — acrescenta os itens do turno e `lastActivityAt` num `SaveChangesAsync` do `IUnitOfWork` (exists)
 7. out: `200 { conversationId, reply, iterationsUsed }`; `chat.ts` (exists) guarda só o `conversationId` e navega
 8. `GET`/`DELETE` de `/api/v1/ai/conversations` -> `Ai` (exists) — slices novos sobre o mesmo repositório com filtro de dono (door 3); apagar leva os itens em cascata (door 5)
@@ -262,7 +269,7 @@ conversa, em cascata (door 5); o agente da conversa não muda (door 7). Sem colu
 
 | Route | In | Out | Status |
 | --- | --- | --- | --- |
-| `POST /api/v1/ai/chat` | `message`, `conversationId` (opcional), `agentId` (opcional); `history` passa a recusado | `conversationId` · `reply` · `iterationsUsed` | `200`, `400`, `401`, `404`, `409`, `500` |
+| `POST /api/v1/ai/chat` | `message`, `conversationId` (opcional), `agentId` (opcional); `history` passa a recusado | `conversationId` · `reply` · `iterationsUsed` | `200`, `400`, `401`, `404`, `409`, `429`, `500` |
 | `GET /api/v1/ai/conversations` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | página de `conversationId` · `title` · `agentId` · `lastActivityAt` · `itemCount` | `200`, `401`, `404` |
 | `GET /api/v1/ai/conversations/{conversationId}` | `conversationId`, `includeToolItems` (default `false`) | `conversationId` · `title` · `agentId` · `createdAt` · `lastActivityAt` · itens (`itemId` · `role` · `content` · `sequence` · `createdAt`) | `200`, `401`, `404` |
 | `DELETE /api/v1/ai/conversations/{conversationId}` | `conversationId` | vazio | `204`, `401`, `404` |
@@ -303,3 +310,17 @@ nenhuma delas, e nenhuma permissão nova entra no `PermissionCatalog`. Flag `Ena
 | config | bloco `Ai:Conversations` novo em `appsettings.json` (`HistoryWindow`, `MaxItems`, `RetentionDays`, `PurgeIntervalHours`). Nenhum segredo, logo nada em `compose.env.example` |
 | docs | `src/Api/Features/Ai/AGENTS.md` (agregados, slices, gotchas de posse e de purge), `docs/security/RBAC_MATRIX.md` (três rotas + a nota de que a posse não é uma policy) e `docs/guides/getting-started.md` (retenção) |
 | tests | `Api.Tests` e `E2ETests` correm InMemory, que não aplica índices únicos: a door 4 fica provada ao nível da tradução do erro, não ao nível da base de dados |
+
+## Rebase
+
+2026-09-22, sobre `9b0db04`. O plano original foi escrito antes de `comparar-modelos` (AD-009) e de
+`guardrails-agente` (AD-010). O que mudou no código e como o plano o absorve:
+
+| Mudança no código desde `113d893` | Efeito aqui |
+| --- | --- |
+| `ChatAiValidator` valida o `history` item a item (`guardrails-agente` S1) | AC 5 substitui-o: o `history` inteiro é recusado. Os checks C1–C5 de `guardrails-agente` e os seus testes saem — o `Impact` desse plano já o previa |
+| `chat.ts` mantém a mensagem no histórico num `429` (`guardrails-agente` AC 24, C26) | AC 30 manda tirá-la e repô-la no campo — decisão do utilizador neste rebase; o teste de C26 muda de expectativa |
+| `AgentLoop` delimita, trunca e filtra saídas de tool | AC 43: o item `tool` guarda o que o modelo viu |
+| `ChatAiHandler` grava `AiUsageEntry`, aplica quota e guard antes do loop | AC 42; o log de AC 16 soma-se à linha de usage, não a substitui |
+| Chat com `RequireRateLimiting` e `429` | Surface e Observable actualizados |
+| `AgentLoop` construía o histórico só em memória | Flow hop 5: o `AgentResult` expõe as mensagens do turno |

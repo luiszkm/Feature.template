@@ -5,7 +5,7 @@ Plan: `.specs/features/conversas-agente/plan.md`
 
 ## Intent
 
-41 checks in 4 slices · 7 one-way doors · 2 open, of which 1 blocks
+45 checks in 4 slices · 7 one-way doors · 2 open, of which 1 blocks
 
 ## Checks
 
@@ -74,6 +74,20 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversati
 **C16** - Quando um pedido de chat termina, com sucesso ou com erro, é escrita uma linha de log que nomeia `tenantId`, `agentId` e `conversationId` (CONV-01, AC 16)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_OnCompletion`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenAgentLoopThrows`
+
+**C42** - Com um guard que bloqueia a mensagem, `POST /api/v1/ai/chat` sem `conversationId` responde `400` e nenhuma `Conversation` nem `ConversationItem` existe depois; com a quota esgotada, `429` e o mesmo resultado (CONV-01, AC 42)
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldPersistNothing_WhenGuardBlocksMessage`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldPersistNothing_WhenQuotaIsExhausted`
+
+**C43** - O `content` do item `tool` gravado é igual ao `content` da mensagem `tool` entregue ao LLM, e começa por `<tool_output>\n` e termina em `\n</tool_output>` (CONV-01, AC 43)
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldPersistToolItem_AsDeliveredToLlm`
+
+**C44** - A janela de histórico entregue ao `AgentLoop` não contém nenhum item `assistant` de `content` vazio, mesmo quando a conversa os tem gravados (CONV-01, AC 44)
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldSkipEmptyAssistantItems_InHistoryWindow`
+
+**C45** - Regressão dos `429` do chat depois do rebase: rate limit e quota continuam a responder com os `ProblemDetails` de `guardrails-agente` (CONV-01, Surface)
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AiRateLimitTests.Chat_ShouldReturn429_WhenTenantExceedsRateLimit`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AiRateLimitTests.Chat_ShouldReturn429_WhenDailyTokenQuotaReached`
 
 ### S2 - Cada utilizador vê e apaga só as suas conversas · CONV-02 · ~14k
 
@@ -174,7 +188,8 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ConversationRete
 
 | Set (size) | Member -> proof | Unproven |
 | --- | --- | --- |
-| `POST /api/v1/ai/chat` statuses (6) | 200 C1,C3 · 400 C5 · 401 C24 · 404 C6,C8,C15 · 409 C7,C13,C14 · 500 C9 | - |
+| `POST /api/v1/ai/chat` statuses (7) | 200 C1,C3 · 400 C5,C42 · 401 C24 · 404 C6,C8,C15 · 409 C7,C13,C14 · 429 C42,C45 · 500 C9 | - |
+| recusas antes do turno que não persistem (3) | loop lança C9 · guard bloqueia C42 · quota esgotada C42 | - |
 | `GET /api/v1/ai/conversations` statuses (3) | 200 C17 · 401 C24 · 404 C15 | - |
 | `GET /api/v1/ai/conversations/{conversationId}` statuses (3) | 200 C18,C19 · 401 C24 · 404 C15,C20,C22 | - |
 | `DELETE /api/v1/ai/conversations/{conversationId}` statuses (3) | 204 C21 · 401 C24 · 404 C15,C20,C22 | - |
@@ -222,7 +237,7 @@ acaso as atravessa, e uma segunda ramificação errada passaria verde.
 - validation and bounds: C5, C12, C13
 - failure and partial failure: C2, C9, C40
 - idempotency, retry, duplicates: n/a - sem chave de deduplicação nesta ronda (ver `Out of scope` do plano); um `POST` repetido cria um turno novo, como um `Create*` repetido cria uma linha nova; a colisão de `sequence` é concorrência (C14), não retry
-- authorization and rate limits: C20, C22, C23, C24; rate limit n/a - nenhuma rota Ai tem `RequireRateLimiting` hoje, e quota é W7
+- authorization and rate limits: C20, C22, C23, C24; rate limit e quota: C42, C45 (rebase — `guardrails-agente` trouxe-os)
 - concurrency and ordering: C10, C14
 - data lifecycle: C21, C37, C38, C39, C41
 - external-dependency failure: C9 - falha do `ILlmService` responde `500` pelo handler de exceções existente, sem persistir nada
