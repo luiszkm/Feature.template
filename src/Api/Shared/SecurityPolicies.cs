@@ -20,4 +20,5 @@ public static class SecurityPolicies
 public static class RateLimitPolicies
 {
     public const string AuthRateLimitPolicy = "auth";
+    public const string AiRateLimitPolicy = "ai";
 }

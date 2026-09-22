@@ -25,6 +25,18 @@ internal sealed class ScriptedLlmService(Func<LlmRequest, CancellationToken, Tas
         new((_, _) => Task.FromResult(new LlmResponse(text, input + output, InputTokens: input, OutputTokens: output, Cost: cost)));
 }
 
+/// <summary>Content guard that blocks every input of the given subjects and counts what it saw.</summary>
+internal sealed class BlockingContentGuard(params GuardSubject[] blocked) : IContentGuard
+{
+    public ConcurrentQueue<GuardInput> Inputs { get; } = new();
+
+    public Task<GuardVerdict> EvaluateAsync(GuardInput input, CancellationToken cancellationToken = default)
+    {
+        Inputs.Enqueue(input);
+        return Task.FromResult(new GuardVerdict(blocked.Contains(input.Subject), "test"));
+    }
+}
+
 internal sealed class FakeModelCatalog(params string[] ids) : IModelCatalog
 {
     public Task<IReadOnlyList<ModelOutput>> ListAsync(CancellationToken cancellationToken = default) =>

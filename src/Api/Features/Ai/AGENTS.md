@@ -45,6 +45,8 @@ Ver `features.json` com `"m": "Ai"`.
 | `OpenRouterLlmService.cs` | Provider `OpenRouter` |
 | `MicrosoftAgentFrameworkLlmService.cs` | Provider `MicrosoftAgentFramework` |
 | `AgentSystemPrompt.cs` | Texto do seed default |
+| `ContentGuard.cs` | `IContentGuard` (default `AllowAllContentGuard`), `GuardrailOptions`, `AgentGuardrails` (sufixo, delimitador, erros de tool) |
+| `AiRateLimit.cs` | Policy `ai` (`IRateLimiterPolicy`, partição por tenant), `AiQuota` (tokens/dia), opções |
 | `ModelCatalog.cs` | `IModelCatalog`: OpenRouter `/models` (só com `tools`, cache 1h), `ConfiguredModelCatalog` (MAF), `StubModelCatalog` |
 
 ## Tools
@@ -73,6 +75,10 @@ Ver `features.json` com `"m": "Ai"`.
 - MAF prende o cliente a `Ai:Llm:Model` na construção: ignora `LlmRequest.Model`, o catálogo só oferece os modelos configurados, e `POST /comparisons` responde `409`
 - Uso já não é no-op: cada chat e cada modelo de uma comparação grava um `AiUsageEntry` (metadados, nunca conteúdo); falha a gravar só faz `LogError`
 - Comparação corre o agente uma vez por modelo, em paralelo, num scope DI próprio: **tools correm N vezes** — uma tool com efeito colateral não pode entrar num agente comparado
+- Guardrails no `AgentLoop` (valem para chat e comparação): system prompt = instruções + `AgentGuardrails.SystemSuffix`; toda a saída de tool é truncada, passa pelo `IContentGuard` e vai delimitada em `<tool_output>`; uma tool que lança vira `{"error":"permission_denied"|"tool_failed",...}` para o modelo — nunca `401`/`500`
+- `history` do chat só aceita texto `user`/`assistant` (≤ 50, ≤ 4000 chars); `tool`/`system`/tool calls → `400`. Temporário até W2 (`conversas-agente`)
+- Chat e comparações: `.RequireRateLimiting(RateLimitPolicies.AiRateLimitPolicy)` + `429` declarado; quota via `AiQuota.EnsureWithinAsync` antes do guard
+- Testes de quota por HTTP precisam de ledger isolado: a InMemory do host é `AppDb` para o processo inteiro (`AiRateLimitTests.IsolatedLedgerFactory`)
 - Catálogo inacessível → `ServiceUnavailableException` → `503`
 
 - Features ↛ Features/Host: seed em `CreateTenant` via `IDefaultAgentProvisioner` (Shared)
@@ -94,5 +100,7 @@ tests/Api.Tests/Ai/
   AiUsageTests.cs
   ListModelsTests.cs
   CompareModelsTests.cs
+  AgentLoopGuardrailTests.cs
+  AiRateLimitTests.cs
   AiTestDoubles.cs
 ```

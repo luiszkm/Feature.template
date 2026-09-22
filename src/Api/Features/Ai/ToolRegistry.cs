@@ -25,11 +25,11 @@ public sealed class ToolRegistry(IEnumerable<ITool> tools)
         if (allowlist is not null
             && !allowlist.Contains(toolCall.Name, StringComparer.Ordinal))
         {
-            return Task.FromResult($"{{\"error\":\"Tool '{toolCall.Name}' not found.\"}}");
+            return Task.FromResult(AgentGuardrails.ToolError(AgentGuardrails.ToolNotFound, toolCall.Name));
         }
 
         return _tools.TryGetValue(toolCall.Name, out var tool)
             ? tool.ExecuteAsync(toolCall, cancellationToken)
-            : Task.FromResult($"{{\"error\":\"Tool '{toolCall.Name}' not found.\"}}");
+            : Task.FromResult(AgentGuardrails.ToolError(AgentGuardrails.ToolNotFound, toolCall.Name));
     }
 }

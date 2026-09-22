@@ -52,6 +52,7 @@ public interface IAiUsageRepository
 {
     Task AddAsync(AiUsageEntry entry, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AiUsageEntry>> ListAsync(CancellationToken cancellationToken = default);
+    Task<long> SumTokensSinceAsync(DateTime since, CancellationToken cancellationToken = default);
 }
 
 internal sealed class AiUsageRepository(AppDbContext db) : IAiUsageRepository
@@ -61,6 +62,11 @@ internal sealed class AiUsageRepository(AppDbContext db) : IAiUsageRepository
 
     public async Task<IReadOnlyList<AiUsageEntry>> ListAsync(CancellationToken cancellationToken = default) =>
         await db.Set<AiUsageEntry>().AsNoTracking().OrderBy(e => e.CreatedAt).ToListAsync(cancellationToken);
+
+    public async Task<long> SumTokensSinceAsync(DateTime since, CancellationToken cancellationToken = default) =>
+        await db.Set<AiUsageEntry>()
+            .Where(e => e.CreatedAt >= since)
+            .SumAsync(e => (long)e.InputTokens + e.OutputTokens, cancellationToken);
 }
 
 internal sealed class AiUsageTracker(

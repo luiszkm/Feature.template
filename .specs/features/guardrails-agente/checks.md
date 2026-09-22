@@ -193,3 +193,7 @@ Aritmética antes de código (`wc -c` dos ficheiros tocados ÷ 4):
 - S4 `HostApplicationExtensions.cs` 1.7k + `SecurityConfiguration.cs` ~7k + `ExceptionHandlerExtensions.cs` 3k + `SecurityPolicies.cs` + `AiUsageEntry.cs` 3.7k + `OpenApiContractTests.cs` ~6k + `openapi.json` (só secção Ai) + teste novo ≈ 45k chars → ~30k total
 - S5 `chat.ts` 5k + `chat.spec.ts` 6.5k → ~6k
 - Total ~92k < 150k → um builder, sem handoff
+
+- **Boundary:** C1-C30 fechados num só builder (sem handoff)
+- **Settled mid-build:** (1) `IAiUsageRepository` ganhou `SumTokensSinceAsync`; `AiUsageTests.UsageRepository_ShouldExposeNoUpdateOrDelete` compara o conjunto exacto de métodos e passou a incluir essa leitura — continua a recusar update/delete. (2) A InMemory do host chama-se `AppDb` para o processo todo, logo os testes de quota por HTTP usam `ConfigureDbContext` com base própria. (3) As proofs `npx ng test` exigem Node ≥ 24.15; nesta máquina (24.11.1) correm com `npx -y node@24.15.0 node_modules/@angular/cli/bin/ng.js test ...` a partir de `src/web`
+- **Abandoned:** nada

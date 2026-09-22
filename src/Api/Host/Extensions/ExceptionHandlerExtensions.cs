@@ -64,6 +64,15 @@ public static class ExceptionHandlerExtensions
                             Status = StatusCodes.Status503ServiceUnavailable
                         });
                         break;
+                    case TooManyRequestsException tooMany:
+                        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                        await context.Response.WriteAsJsonAsync(new ProblemDetails
+                        {
+                            Title = tooMany.Title,
+                            Detail = tooMany.Message,
+                            Status = StatusCodes.Status429TooManyRequests
+                        });
+                        break;
                     default:
                         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                         await context.Response.WriteAsJsonAsync(new ProblemDetails

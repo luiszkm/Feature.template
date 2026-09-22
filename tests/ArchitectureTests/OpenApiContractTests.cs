@@ -97,6 +97,21 @@ public sealed class OpenApiContractTests
     }
 
     /// <summary>
+    /// The `ai` policy partitions by the resolved tenant, so the limiter has to run after the
+    /// tenant middleware and authentication; before them every request lands in one bucket.
+    /// </summary>
+    [Fact]
+    public void RateLimiter_ShouldRunAfterTenantAndAuthorization()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoRoot, "src", "Api", "Host", "HostApplicationExtensions.cs"));
+
+        var limiter = source.IndexOf("app.UseRateLimiter()", StringComparison.Ordinal);
+        Assert.True(limiter >= 0, "UseRateLimiter() not found in UseHostApplication.");
+        Assert.True(limiter > source.IndexOf("app.UseHostPipeline()", StringComparison.Ordinal), "UseRateLimiter must follow UseHostPipeline.");
+        Assert.True(limiter > source.IndexOf("app.UseAuthorization()", StringComparison.Ordinal), "UseRateLimiter must follow UseAuthorization.");
+    }
+
+    /// <summary>
     /// The rate limiter is shared configuration, so a route joining the `auth` policy inherits a
     /// `429` that nobody remembers to declare. The route-level guards above compare paths and
     /// methods, so a missing status is exactly what they cannot see.
@@ -109,7 +124,8 @@ public sealed class OpenApiContractTests
         var rateLimited = Directory
             .EnumerateFiles(featuresRoot, "*.cs", SearchOption.AllDirectories)
             .Select(File.ReadAllText)
-            .Where(text => text.Contains("AuthRateLimitPolicy", StringComparison.Ordinal))
+            .Where(text => text.Contains("AuthRateLimitPolicy", StringComparison.Ordinal)
+                || text.Contains("AiRateLimitPolicy", StringComparison.Ordinal))
             .SelectMany(text => Regex
                 .Matches(text, @"Map(Get|Post|Put|Delete)\(""(/api/v1/[^""]+)""")
                 .Select(match => new

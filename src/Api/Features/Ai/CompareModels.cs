@@ -55,6 +55,8 @@ public sealed class CompareModelsHandler(
     IAgentRepository agents,
     IModelComparisonRepository comparisons,
     IServiceScopeFactory scopeFactory,
+    IContentGuard contentGuard,
+    AiQuota quota,
     ITenantContext tenantContext,
     ICurrentUserAccessor currentUser,
     IUnitOfWork unitOfWork,
@@ -82,6 +84,9 @@ public sealed class CompareModelsHandler(
             .Select(item => new ComparisonAttachment(item.Name.Trim(), item.Content))
             .ToList();
         var userPrompt = BuildUserPrompt(request.Prompt, attachments);
+
+        await quota.EnsureWithinAsync(cancellationToken);
+        await contentGuard.EnsureMessageAllowedAsync(userPrompt, cancellationToken);
 
         // Runs are deliberately detached from the caller's token: a closed tab must not waste
         // the tokens already paid for, and the result stays visible in the history.
@@ -192,11 +197,14 @@ public sealed class CompareModelsEndpoint : IEndpoint
         .WithName("CompareModels")
         .WithTags("Ai")
         .RequireAuthorization(SecurityPolicies.AiAgentsManage)
+        .RequireRateLimiting(RateLimitPolicies.AiRateLimitPolicy)
         .Produces<ComparisonOutput>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status403Forbidden)
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status429TooManyRequests)
         .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 }

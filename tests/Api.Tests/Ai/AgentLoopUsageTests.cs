@@ -16,7 +16,7 @@ public sealed class AgentLoopUsageTests
                 ? new LlmResponse(string.Empty, 15, [new ToolCall("c1", "unknown_tool", [])], InputTokens: 10, OutputTokens: 5, Cost: 0.001m)
                 : new LlmResponse("done", 27, InputTokens: 20, OutputTokens: 7, Cost: 0.0025m));
         });
-        var loop = new AgentLoop(llm, new ToolRegistry([]), NullLogger<AgentLoop>.Instance);
+        var loop = new AgentLoop(llm, new ToolRegistry([]), new AllowAllContentGuard(), Microsoft.Extensions.Options.Options.Create(new GuardrailOptions()), NullLogger<AgentLoop>.Instance);
 
         var result = await loop.RunAsync("go", "system", null, ["unknown_tool"]);
 
@@ -37,7 +37,7 @@ public sealed class AgentLoopUsageTests
                 ? new LlmResponse(string.Empty, 2, [new ToolCall("c1", "unknown_tool", [])], InputTokens: 1, OutputTokens: 1, Cost: 0.001m)
                 : new LlmResponse("done", 2, InputTokens: 1, OutputTokens: 1, Cost: null));
         });
-        var loop = new AgentLoop(llm, new ToolRegistry([]), NullLogger<AgentLoop>.Instance);
+        var loop = new AgentLoop(llm, new ToolRegistry([]), new AllowAllContentGuard(), Microsoft.Extensions.Options.Options.Create(new GuardrailOptions()), NullLogger<AgentLoop>.Instance);
 
         var result = await loop.RunAsync("go", "system", null, ["unknown_tool"]);
 

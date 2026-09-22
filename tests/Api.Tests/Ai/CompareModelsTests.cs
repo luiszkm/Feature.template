@@ -245,6 +245,49 @@ public sealed class CompareModelsTests
     }
 
     [Fact]
+    public async Task Post_ShouldReturn401_WhenNotAuthenticated()
+    {
+        await using var factory = WithLlm(ScriptedLlmService.Replying());
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Tenant", "dev");
+
+        var response = await client.PostAsJsonAsync("/api/v1/ai/comparisons", new
+        {
+            agentId = Guid.NewGuid(),
+            prompt = "hello",
+            models = TwoModels
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_ShouldReturn400_WhenGuardBlocksMessage()
+    {
+        var llm = ScriptedLlmService.Replying();
+        await using var factory = AiHttp.Factory().WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddSingleton<ILlmService>(llm);
+                services.AddSingleton<IContentGuard>(new BlockingContentGuard(GuardSubject.UserMessage));
+            }));
+        using var client = await AiHttp.AdminClientAsync(factory);
+        var agent = await AiHttp.CreateAgentAsync(client);
+
+        var response = await client.PostAsJsonAsync("/api/v1/ai/comparisons", new
+        {
+            agentId = agent.AgentId,
+            prompt = "hello",
+            models = TwoModels
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        Assert.Equal(["A mensagem foi bloqueada pela política de conteúdo."], problem!.Errors["Message"]);
+        Assert.Empty(llm.Requests);
+    }
+
+    [Fact]
     public async Task Post_ShouldReturn403_WithoutAgentManage()
     {
         await using var factory = WithLlm(ScriptedLlmService.Replying());
@@ -306,7 +349,7 @@ public sealed class CompareModelsTests
         Assert.Equal(TwoModels.Order(), requests.Select(r => r.Model!).Order());
         Assert.All(requests, r =>
         {
-            Assert.Equal("Be terse.", r.SystemPrompt);
+            Assert.Equal("Be terse.\n\n" + AgentGuardrails.SystemSuffix, r.SystemPrompt);
             Assert.Equal(new[] { AgentToolNames.GetTenantInfo }, r.Tools?.Select(t => t.Name).ToArray());
             Assert.Equal(0.2f, r.Temperature);
         });

@@ -26,6 +26,11 @@ public sealed class NotFoundException(string message) : Exception(message);
 
 public sealed class ServiceUnavailableException(string message, Exception? inner = null) : Exception(message, inner);
 
+public sealed class TooManyRequestsException(string title, string detail) : Exception(detail)
+{
+    public string Title { get; } = title;
+}
+
 public sealed record Email
 {
     private static readonly Regex EmailRegex = new(

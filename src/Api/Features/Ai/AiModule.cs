@@ -1,5 +1,6 @@
 using Api.Shared;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,6 +15,11 @@ public static class AiModule
         services.AddOptions<LlmOptions>()
             .BindConfiguration(LlmOptions.SectionName);
         services.AddHostedService<LlmStartupGuard>();
+        services.AddOptions<GuardrailOptions>().BindConfiguration(GuardrailOptions.SectionName);
+        services.AddOptions<AiRateLimitOptions>().BindConfiguration(AiRateLimitOptions.SectionName);
+        services.AddOptions<AiQuotaOptions>().BindConfiguration(AiQuotaOptions.SectionName);
+        services.AddRateLimiter(options =>
+            options.AddPolicy<string, AiRateLimitPolicy>(RateLimitPolicies.AiRateLimitPolicy));
 
         services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
         services.AddScoped<IAgentRepository, AgentRepository>();
@@ -23,6 +29,8 @@ public static class AiModule
         services.AddSingleton<ITenantQueryFilterConfigurator, AiTenantQueryFilters>();
         services.AddScoped<ToolRegistry>();
         services.AddScoped<AgentLoop>();
+        services.AddSingleton<IContentGuard, AllowAllContentGuard>();
+        services.AddScoped<AiQuota>();
         services.AddScoped<IAiUsageRepository, AiUsageRepository>();
         services.AddScoped<IAiUsageTracker, AiUsageTracker>();
         services.AddScoped<IModelComparisonRepository, ModelComparisonRepository>();

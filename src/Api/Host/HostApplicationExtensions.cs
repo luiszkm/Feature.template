@@ -30,10 +30,11 @@ public static class HostApplicationExtensions
         app.UseSerilogRequestLogging();
         app.UseExceptionHandling();
         app.UseCors(SecurityConfiguration.DefaultCorsPolicyName);
-        app.UseRateLimiter();
         app.UseHostPipeline();
         app.UseAuthentication();
         app.UseAuthorization();
+        // After tenant and auth: the `ai` policy partitions by the resolved tenant.
+        app.UseRateLimiter();
         app.UseHealthChecksHost();
         app.MapOpenApiHost();
         app.MapEndpointsFromAssembly();
