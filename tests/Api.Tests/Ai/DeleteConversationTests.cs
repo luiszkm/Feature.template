@@ -62,6 +62,35 @@ public sealed class DeleteConversationTests
     }
 
     [Fact]
+    public async Task Delete_ShouldReturn404_ForAnotherUsersConversation_EvenForAdmin_OverHttp()
+    {
+        await using var factory = ConversationHttp.Factory();
+        using var owner = await AiHttp.PlainUserClientAsync(factory);
+        using var stranger = await AiHttp.PlainUserClientAsync(factory);
+        using var admin = await AiHttp.AdminClientAsync(factory);
+        var conversationId = await ConversationHttp.StartConversationAsync(owner);
+
+        var byStranger = await stranger.DeleteAsync($"/api/v1/ai/conversations/{conversationId}");
+        var byAdmin = await admin.DeleteAsync($"/api/v1/ai/conversations/{conversationId}");
+
+        Assert.Equal(HttpStatusCode.NotFound, byStranger.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, byAdmin.StatusCode);
+        Assert.Equal("Not found", (await byStranger.Content.ReadFromJsonAsync<ProblemDetails>())!.Title);
+        Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync($"/api/v1/ai/conversations/{conversationId}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_ShouldReturn400_WhenConversationIdIsEmpty()
+    {
+        await using var factory = ConversationHttp.Factory();
+        using var client = await AiHttp.PlainUserClientAsync(factory);
+
+        var response = await client.DeleteAsync($"/api/v1/ai/conversations/{Guid.Empty}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Delete_ShouldReturn404_WhenEnableAiIsFalse()
     {
         await using var factory = ConversationHttp.Factory(enableAi: false);

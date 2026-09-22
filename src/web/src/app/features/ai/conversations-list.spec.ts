@@ -94,4 +94,36 @@ describe('ConversationsList', () => {
     expect(requests).toHaveLength(0);
     expect(maybeEl(fixture, 'row-conv-1')).not.toBeNull();
   });
+  it('arranjo e copy: cabecalho, pesquisa, tabela e paginador', async () => {
+    server.use(api.get(CONVERSATIONS, () => HttpResponse.json(PAGE)));
+    provideRouteStub();
+    authenticate();
+
+    const fixture = TestBed.createComponent(ConversationsList);
+    await settle(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    const regions = [...root.children].map((child) => child.tagName.toLowerCase());
+    expect(regions).toEqual(['header', 'mat-form-field', 'app-list-state', 'mat-paginator']);
+
+    const header = root.querySelector('header') as HTMLElement;
+    expect([...header.children].map((child) => child.tagName.toLowerCase())).toEqual(['h1', 'a']);
+    expect(header.querySelector('h1')?.textContent?.trim()).toBe('Conversas');
+    expect(el(fixture, 'new-conversation').textContent?.trim()).toBe('Nova conversa');
+    expect(el(fixture, 'new-conversation').getAttribute('href')).toBe('/ai');
+    expect(getComputedStyle(header).justifyContent).toBe('space-between');
+
+    expect(root.querySelector('mat-form-field mat-label')?.textContent?.trim()).toBe('Pesquisar');
+    expect(root.querySelector('app-list-state table')).not.toBeNull();
+
+    const headers = [...root.querySelectorAll('th')].map((th) => th.textContent?.trim());
+    expect(headers).toEqual(['Título', 'Atualizada', '']);
+    const sortable = [...root.querySelectorAll('th[mat-sort-header]')].map((th) => th.getAttribute('mat-sort-header'));
+    expect(sortable).toEqual(['title', 'lastActivityAt']);
+
+    expect(el(fixture, 'delete-conv-1').textContent?.trim()).toBe('Apagar');
+    expect(el<HTMLAnchorElement>(fixture, 'row-conv-1').querySelector('a')?.getAttribute('href')).toBe(
+      '/ai/conversations/conv-1',
+    );
+  });
 });

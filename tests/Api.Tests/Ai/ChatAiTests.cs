@@ -269,6 +269,78 @@ public sealed class ChatAiTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task ChatAi_ShouldReturn404_WithSameBody_WhenConversationIsUnknownOrAnotherUsers()
+    {
+        await using var factory = WithServices(services => services.AddSingleton<ILlmService>(ScriptedLlmService.Replying()));
+        using var owner = await AiHttp.PlainUserClientAsync(factory);
+        using var admin = await AiHttp.AdminClientAsync(factory);
+        var foreignId = await ConversationHttp.StartConversationAsync(owner);
+        var unknownId = Guid.NewGuid();
+
+        var foreign = await admin.PostAsJsonAsync("/api/v1/ai/chat", new { message = "hi", conversationId = foreignId });
+        var unknown = await admin.PostAsJsonAsync("/api/v1/ai/chat", new { message = "hi", conversationId = unknownId });
+
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        var foreignBody = (await foreign.Content.ReadAsStringAsync()).Replace(foreignId.ToString(), "{id}");
+        var unknownBody = (await unknown.Content.ReadAsStringAsync()).Replace(unknownId.ToString(), "{id}");
+        Assert.Equal(unknownBody, foreignBody);
+        Assert.Equal("Not found", JsonDocument.Parse(foreignBody).RootElement.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task ChatAi_ShouldReturn404_WhenConversationsAgentIsInactive()
+    {
+        var llm = ScriptedLlmService.Replying();
+        await using var factory = WithServices(services => services.AddSingleton<ILlmService>(llm));
+        using var client = await AiHttp.AdminClientAsync(factory);
+        var agent = await AiHttp.CreateAgentAsync(client);
+        var first = await (await client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "one", agentId = agent.AgentId }))
+            .Content.ReadFromJsonAsync<ChatAiResponse>();
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/v1/ai/agents/{agent.AgentId}")).StatusCode);
+        var before = llm.Requests.Count;
+
+        var response = await client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "two", conversationId = first!.ConversationId });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("Not found", (await response.Content.ReadFromJsonAsync<ProblemDetails>())!.Title);
+        Assert.Equal(before, llm.Requests.Count);
+    }
+
+    [Fact]
+    public async Task ChatAi_ShouldReturn409_WhenConcurrentAppendsCollide()
+    {
+        var bothArrived = new TaskCompletionSource();
+        var arrivals = 0;
+        var llm = new ScriptedLlmService(async (_, _) =>
+        {
+            // The first call starts the conversation; the next two are the concurrent turns.
+            if (Interlocked.Increment(ref arrivals) >= 2)
+            {
+                if (arrivals == 3)
+                    bothArrived.TrySetResult();
+                await bothArrived.Task;
+            }
+            return new LlmResponse("reply", 1);
+        });
+        await using var factory = WithServices(services => services.AddSingleton<ILlmService>(llm));
+        using var client = await AiHttp.AdminClientAsync(factory);
+        var conversationId = await ConversationHttp.StartConversationAsync(client);
+
+        var responses = await Task.WhenAll(
+            client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "a", conversationId }),
+            client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "b", conversationId }));
+
+        Assert.Equal(
+            new[] { HttpStatusCode.OK, HttpStatusCode.Conflict },
+            responses.Select(r => r.StatusCode).OrderBy(s => (int)s).ToArray());
+        var conflict = responses.Single(r => r.StatusCode == HttpStatusCode.Conflict);
+        var problem = await conflict.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.Equal("Business rule violation", problem!.Title);
+        Assert.Equal(ChatAiHandler.ConcurrentAppendMessage, problem.Detail);
+    }
+
     private static async Task<int> ConversationCountAsync(HttpClient client)
     {
         var page = await client.GetFromJsonAsync<JsonElement>("/api/v1/ai/conversations?pageSize=100");

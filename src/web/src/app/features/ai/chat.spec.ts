@@ -249,7 +249,7 @@ describe('Chat', () => {
     expect(text(fixture, 'chat-history')).toContain('renovado');
     expect(maybeEl(fixture, 'chat-error')).toBeNull();
   });
-  it('429 mostra o detail e mantem a mensagem', async () => {
+  it('429 mostra o detail e repoe a mensagem no campo', async () => {
     stubAgents();
     server.use(
       api.post(CHAT, () =>
@@ -445,5 +445,23 @@ describe('Chat', () => {
     expect(bodies).toHaveLength(2);
     expect(bodies.every((body) => !('history' in body))).toBe(true);
     expect(bodies[1]).toEqual({ message: 'dois', conversationId: CONV_ID, agentId: SEED_ID });
+  });
+  it('arranjo: picker e nova conversa na mesma linha acima do historico', async () => {
+    stubAgents();
+    authenticate();
+
+    const fixture = TestBed.createComponent(Chat);
+    await settle(fixture, 2);
+
+    const root = fixture.nativeElement as HTMLElement;
+    const toolbar = root.querySelector('.toolbar') as HTMLElement;
+    const children = [...toolbar.children];
+    expect(children).toHaveLength(2);
+    expect(children[0].classList.contains('agent-picker')).toBe(true);
+    expect(children[1]).toBe(el(fixture, 'chat-new'));
+    expect(getComputedStyle(toolbar).display).toBe('flex');
+    expect(getComputedStyle(toolbar).justifyContent).toBe('space-between');
+    expect(toolbar.compareDocumentPosition(el(fixture, 'chat-history')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(toolbar.parentElement?.tagName.toLowerCase()).toBe('mat-card');
   });
 });

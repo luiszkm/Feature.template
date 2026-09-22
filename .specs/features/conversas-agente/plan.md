@@ -270,9 +270,9 @@ conversa, em cascata (door 5); o agente da conversa não muda (door 7). Sem colu
 | Route | In | Out | Status |
 | --- | --- | --- | --- |
 | `POST /api/v1/ai/chat` | `message`, `conversationId` (opcional), `agentId` (opcional); `history` passa a recusado | `conversationId` · `reply` · `iterationsUsed` | `200`, `400`, `401`, `404`, `409`, `429`, `500` |
-| `GET /api/v1/ai/conversations` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | página de `conversationId` · `title` · `agentId` · `lastActivityAt` · `itemCount` | `200`, `401`, `404` |
-| `GET /api/v1/ai/conversations/{conversationId}` | `conversationId`, `includeToolItems` (default `false`) | `conversationId` · `title` · `agentId` · `createdAt` · `lastActivityAt` · itens (`itemId` · `role` · `content` · `sequence` · `createdAt`) | `200`, `401`, `404` |
-| `DELETE /api/v1/ai/conversations/{conversationId}` | `conversationId` | vazio | `204`, `401`, `404` |
+| `GET /api/v1/ai/conversations` | `pageNumber`, `pageSize`, `searchTerm`, `sortBy`, `sortDirection` | página de `conversationId` · `title` · `agentId` · `lastActivityAt` · `itemCount` | `200`, `400`, `401`, `404` |
+| `GET /api/v1/ai/conversations/{conversationId}` | `conversationId`, `includeToolItems` (default `false`) | `conversationId` · `title` · `agentId` · `createdAt` · `lastActivityAt` · itens (`itemId` · `role` · `content` · `sequence` · `createdAt`) | `200`, `400`, `401`, `404` |
+| `DELETE /api/v1/ai/conversations/{conversationId}` | `conversationId` | vazio | `204`, `400`, `401`, `404` |
 
 Policies: as quatro rotas ficam em `Authenticated`, com a posse decidida por linha — não há `403` em
 nenhuma delas, e nenhuma permissão nova entra no `PermissionCatalog`. Flag `EnableAI` em todas, com o

@@ -2,6 +2,7 @@ using Api.Features.Ai;
 using Api.Shared;
 using Api.Tests.Common;
 using FluentValidation.TestHelper;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -421,6 +422,95 @@ public sealed class ChatAiHandlerTests
             e.Message.Contains(TenantId.ToString()) &&
             e.Message.Contains(seeded.AgentId.ToString()) &&
             e.Message.Contains(seeded.Id.ToString()));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldLogTenantAgentAndConversationId_WhenTurnIsRefusedBeforeTheLoop()
+    {
+        var logger = new ListLogger<ChatAiHandler>();
+        var provider = ConversationProvider(
+            nameof(Handle_ShouldLogTenantAgentAndConversationId_WhenTurnIsRefusedBeforeTheLoop),
+            ScriptedLlmService.Replying(input: 1, output: 1),
+            services =>
+            {
+                services.AddSingleton<ILogger<ChatAiHandler>>(logger);
+                services.Configure<ConversationOptions>(o => o.MaxItems = 2);
+            });
+        var full = await ConversationTestSupport.SeedAsync(provider, TestServiceFactory.DefaultUserId, DateTime.UtcNow, "t", ("user", "a"), ("assistant", "b"));
+        var other = await CreateAgentAsync(provider, "Other");
+        var unknown = Guid.NewGuid();
+
+        await Assert.ThrowsAsync<BusinessRuleException>(() => ChatAsync(provider, new ChatAiCommand("hi", ConversationId: full.Id)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => ChatAsync(provider, new ChatAiCommand("hi", AgentId: other, ConversationId: full.Id)));
+        await Assert.ThrowsAsync<NotFoundException>(() => ChatAsync(provider, new ChatAiCommand("hi", ConversationId: unknown)));
+
+        var finished = logger.Entries.Where(e => e.Message.StartsWith("AI chat finished", StringComparison.Ordinal)).ToList();
+        Assert.Equal(3, finished.Count);
+        Assert.All(finished, e => Assert.Contains(TenantId.ToString(), e.Message));
+        Assert.Equal(2, finished.Count(e => e.Message.Contains(full.Id.ToString()) && e.Message.Contains(full.AgentId.ToString())));
+        Assert.Single(finished, e => e.Message.Contains(unknown.ToString()));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldLogTenantAgentAndConversationId_WhenQuotaRefusesTheTurn()
+    {
+        var logger = new ListLogger<ChatAiHandler>();
+        var provider = ConversationProvider(
+            nameof(Handle_ShouldLogTenantAgentAndConversationId_WhenQuotaRefusesTheTurn),
+            ScriptedLlmService.Replying(input: 1, output: 1),
+            services =>
+            {
+                services.AddSingleton<ILogger<ChatAiHandler>>(logger);
+                services.Configure<AiQuotaOptions>(o => o.DailyTokensPerTenant = 2);
+            });
+        var conversationId = (await ChatAsync(provider, new ChatAiCommand("spends"))).ConversationId;
+        var agentId = Assert.Single(await ConversationTestSupport.AllConversationsAsync(provider)).AgentId;
+
+        await Assert.ThrowsAsync<TooManyRequestsException>(() => ChatAsync(provider, new ChatAiCommand("hi", ConversationId: conversationId)));
+
+        var refused = logger.Entries.Last(e => e.Message.StartsWith("AI chat finished", StringComparison.Ordinal));
+        Assert.Contains(TenantId.ToString(), refused.Message);
+        Assert.Contains(agentId.ToString(), refused.Message);
+        Assert.Contains(conversationId.ToString(), refused.Message);
+        Assert.Contains("success False", refused.Message);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldThrow_WhenConversationBelongsToAnotherTenant()
+    {
+        var llm = ScriptedLlmService.Replying();
+        var provider = ConversationProvider(nameof(Handle_ShouldThrow_WhenConversationBelongsToAnotherTenant), llm);
+        Guid foreignId;
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var agentId = (await db.Set<Agent>().IgnoreQueryFilters().FirstAsync()).Id;
+            // Same user id, another tenant: the tenant filter alone must hide it.
+            var foreign = Conversation.Create(Guid.NewGuid(), TestServiceFactory.DefaultUserId, agentId, "elsewhere", DateTime.UtcNow);
+            foreign.Append(ConversationRoles.User, "x", DateTime.UtcNow);
+            db.Add(foreign);
+            await db.SaveChangesAsync();
+            foreignId = foreign.Id;
+        }
+
+        var error = await Assert.ThrowsAsync<NotFoundException>(() => ChatAsync(provider, new ChatAiCommand("hi", ConversationId: foreignId)));
+
+        Assert.Equal($"Conversation '{foreignId}' was not found.", error.Message);
+        Assert.Empty(llm.Requests);
+    }
+
+    [Fact]
+    public void ConversationItem_ShouldHaveUniqueIndex_OnConversationIdAndSequence()
+    {
+        var provider = TestServiceFactory.CreateWithAi(nameof(ConversationItem_ShouldHaveUniqueIndex_OnConversationIdAndSequence));
+        using var scope = provider.CreateScope();
+        var entity = scope.ServiceProvider.GetRequiredService<AppDbContext>().Model.FindEntityType(typeof(ConversationItem))!;
+
+        var index = Assert.Single(entity.GetIndexes(), i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(new[] { "ConversationId", "Sequence" }));
+        Assert.True(index.IsUnique);
+        Assert.True(scope.ServiceProvider.GetRequiredService<AppDbContext>().Model
+            .FindEntityType(typeof(Conversation))!.FindProperty(nameof(Conversation.LastActivityAt))!.IsConcurrencyToken);
     }
 
     private static IServiceProvider ConversationProvider(string name, ILlmService llm, Action<IServiceCollection>? configure = null) =>

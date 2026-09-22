@@ -5,7 +5,7 @@ Plan: `.specs/features/conversas-agente/plan.md`
 
 ## Intent
 
-45 checks in 4 slices · 7 one-way doors · 2 open, of which 1 blocks
+48 checks in 4 slices · 7 one-way doors · 2 open, of which 1 blocks
 
 ## Checks
 
@@ -36,6 +36,8 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.Chat
 **C6** - Um `conversationId` que não existe no tenant corrente, ou que pertence a outro utilizador, responde `404` com título `Not found` e o mesmo corpo nos dois casos (CONV-01, AC 6)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldThrow_WhenConversationIdIsUnknown`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldThrow_WhenConversationIdBelongsToAnotherUser`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.ChatAi_ShouldReturn404_WithSameBody_WhenConversationIsUnknownOrAnotherUsers`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldThrow_WhenConversationBelongsToAnotherTenant`
 
 **C7** - Um `agentId` de pedido diferente do agente fixado na conversa responde `409` com título `Business rule violation` e não acrescenta itens (CONV-01, AC 7)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldThrow_WhenAgentIdDiffersFromConversationsFixedAgent`
@@ -43,6 +45,7 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.Chat
 
 **C8** - Um pedido sobre uma conversa cujo agente fixado tem `isActive: false` responde `404` com título `Not found` e não corre o loop (CONV-01, AC 8)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldThrow_WhenConversationsAgentIsInactive`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.ChatAi_ShouldReturn404_WhenConversationsAgentIsInactive`
 
 **C9** - Quando o `AgentLoop` lança, a contagem de itens da conversa fica igual à de antes do pedido, nenhuma conversa é criada se o `conversationId` vinha omitido, e o handler de exceções responde `500` com título `Unexpected error` (CONV-01, AC 9)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLeaveItemCountUnchanged_WhenAgentLoopThrows`
@@ -64,6 +67,8 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.Chat
 
 **C14** - Dois pedidos concorrentes que calculam o mesmo `sequence` na mesma conversa deixam o segundo write falhar com `409` título `Business rule violation` e não sobrescrevem o item já gravado (CONV-01, AC 14)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldFailSecondWriter_WhenConcurrentAppendsCollideOnSequence`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.ChatAi_ShouldReturn409_WhenConcurrentAppendsCollide`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.ConversationItem_ShouldHaveUniqueIndex_OnConversationIdAndSequence`
 
 **C15** - Com `FeatureFlags:EnableAI` a `false`, `POST /api/v1/ai/chat` e as três rotas `/api/v1/ai/conversations` respondem `404` com título `Feature disabled` (CONV-01, AC 15)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.ChatAi_ShouldReturn404_WhenEnableAiIsFalse`
@@ -74,6 +79,8 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversati
 **C16** - Quando um pedido de chat termina, com sucesso ou com erro, é escrita uma linha de log que nomeia `tenantId`, `agentId` e `conversationId` (CONV-01, AC 16)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_OnCompletion`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenAgentLoopThrows`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenTurnIsRefusedBeforeTheLoop`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenQuotaRefusesTheTurn`
 
 **C42** - Com um guard que bloqueia a mensagem, `POST /api/v1/ai/chat` sem `conversationId` responde `400` e nenhuma `Conversation` nem `ConversationItem` existe depois; com a quota esgotada, `429` e o mesmo resultado (CONV-01, AC 42)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiHandlerTests.Handle_ShouldPersistNothing_WhenGuardBlocksMessage`
@@ -93,16 +100,21 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AiRateLimitTests
 
 **C17** - `GET /api/v1/ai/conversations` devolve a página (`pageNumber` default `1`, `pageSize` default `20`) só das conversas do tenant corrente cujo dono é o caller, ordenada por `lastActivityAt` desc e `Id` na ausência de `sortBy` (CONV-02, AC 17)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListConversationsTests.Handle_ShouldReturnOnlyCallersConversations_OrderedByLastActivityAtDesc`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListConversationsTests.List_ShouldReturnOnlyCallersConversations_OverHttp`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListConversationsTests.Handle_ShouldFilterBySearchTerm_AndSortByTitleOrLastActivityAt`
 
 **C18** - `GET /api/v1/ai/conversations/{conversationId}` sobre uma conversa do caller devolve os itens de role `user` e `assistant` por `sequence` crescente (CONV-02, AC 18)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Handle_ShouldReturnUserAndAssistantItems_OrderedBySequence`
 
 **C19** - Com `includeToolItems=true`, a resposta inclui também os itens de role `tool`, com o `content` tal como foi gravado (CONV-02, AC 19)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Handle_ShouldIncludeToolItems_WhenIncludeToolItemsIsTrue`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Get_ShouldIncludeToolItems_OnlyWhenQueryParameterIsTrue`
 
 **C20** - Uma conversa de outro utilizador do mesmo tenant faz `GET` e `DELETE` responderem `404` com título `Not found`, nunca `403` (CONV-02, AC 20)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Handle_ShouldThrow_WhenConversationBelongsToAnotherUser`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversationTests.Handle_ShouldThrow_WhenConversationBelongsToAnotherUser`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Get_ShouldReturn404_ForAnotherUsersConversation_EvenForAdmin_OverHttp`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversationTests.Delete_ShouldReturn404_ForAnotherUsersConversation_EvenForAdmin_OverHttp`
 
 **C21** - `DELETE /api/v1/ai/conversations/{conversationId}` sobre uma conversa do caller apaga a linha e todos os seus itens e responde `204`; um `GET` seguinte do mesmo id responde `404` (CONV-02, AC 21)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversationTests.Handle_ShouldRemoveConversationAndAllItems_WhenCallerIsOwner`
@@ -111,6 +123,8 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversati
 **C22** - A leitura e a escrita de conversas filtram sempre por `TenantId` e por `UserId`, sem exceção para o role `Admin` - um caller `Admin` que não é dono também recebe `404` (CONV-02, AC 22)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Handle_ShouldThrow_WhenCallerIsAdminButNotOwner`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversationTests.Handle_ShouldThrow_WhenCallerIsAdminButNotOwner`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Get_ShouldReturn404_ForAnotherUsersConversation_EvenForAdmin_OverHttp`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversationTests.Delete_ShouldReturn404_ForAnotherUsersConversation_EvenForAdmin_OverHttp`
 
 **C23** - `POST /api/v1/ai/chat` e as três rotas de conversas ficam na policy `Authenticated` e respondem sem exigir `ai.agent.read` nem `ai.agent.manage` (CONV-02, AC 23)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiTests.ChatAi_ShouldReturn200_WithoutAiAgentReadOrManagePermission`
@@ -167,6 +181,17 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec
 Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "sem pastas de camada"`
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "deixa de enviar history no pedido"`
 
+**C46** - `conversations-list` tem quatro regiões por esta ordem — `header` (`h1` `Conversas` à esquerda, `Nova conversa` → `/ai` à direita), `mat-form-field` `Pesquisar`, `app-list-state` com a tabela dentro, `mat-paginator` —, colunas `Título`, `Atualizada`, acções, com `mat-sort-header` só em `title` e `lastActivityAt`, botão `Apagar` por linha e o título a ligar a `/ai/conversations/{conversationId}` (CONV-03, binding `agents-list`) *(ronda 1)*
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/conversations-list.spec.ts --filter "arranjo e copy: cabecalho, pesquisa, tabela e paginador"`
+
+**C47** - No `chat`, o picker `Agente` (à esquerda) e `Nova conversa` (à direita) partilham uma linha `display: flex; justify-content: space-between` dentro do `mat-card`, acima do histórico (CONV-03, plan S3) *(ronda 1)*
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "arranjo: picker e nova conversa na mesma linha acima do historico"`
+
+**C48** - As rotas de conversas respondem `400`: `pageSize` `0` ou `101` na lista, e `conversationId` `00000000-0000-0000-0000-000000000000` em `GET` e `DELETE` (CONV-02, Surface) *(ronda 1)*
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ListConversationsTests.List_ShouldReturn400_WhenPageSizeIsOutOfRange`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetConversationTests.Get_ShouldReturn400_WhenConversationIdIsEmpty`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~DeleteConversationTests.Delete_ShouldReturn400_WhenConversationIdIsEmpty`
+
 ### S4 - Retenção e apagamento configuráveis · CONV-04 · ~8k
 
 **C37** - Com `Ai:Conversations:RetentionDays` maior que `0`, cada passagem do purge apaga as conversas cujo `lastActivityAt` é anterior a `now - RetentionDays`, e com elas todos os seus itens (CONV-04, AC 37)
@@ -190,12 +215,15 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ConversationRete
 | --- | --- | --- |
 | `POST /api/v1/ai/chat` statuses (7) | 200 C1,C3 · 400 C5,C42 · 401 C24 · 404 C6,C8,C15 · 409 C7,C13,C14 · 429 C42,C45 · 500 C9 | - |
 | recusas antes do turno que não persistem (3) | loop lança C9 · guard bloqueia C42 · quota esgotada C42 | - |
-| `GET /api/v1/ai/conversations` statuses (3) | 200 C17 · 401 C24 · 404 C15 | - |
-| `GET /api/v1/ai/conversations/{conversationId}` statuses (3) | 200 C18,C19 · 401 C24 · 404 C15,C20,C22 | - |
-| `DELETE /api/v1/ai/conversations/{conversationId}` statuses (3) | 204 C21 · 401 C24 · 404 C15,C20,C22 | - |
+| `GET /api/v1/ai/conversations` statuses (4) | 200 C17 · 400 C48 · 401 C24 · 404 C15 | - |
+| `GET /api/v1/ai/conversations/{conversationId}` statuses (4) | 200 C18,C19 · 400 C48 · 401 C24 · 404 C15,C20,C22 | - |
+| `DELETE /api/v1/ai/conversations/{conversationId}` statuses (4) | 204 C21 · 400 C48 · 401 C24 · 404 C15,C20,C22 | - |
 | one-way doors (7) | 1 transcript persistido C1,C2 · 2 contrato do chat quebra C5 · 3 posse por linha C6,C17,C20,C22 · 4 ordem do transcript C10,C14 · 5 apagar apaga C21 · 6 retenção ligada por omissão C37,C38,C39,C40,C41 · 7 um agente por conversa C7 | - |
 | Relations entities (2) | Conversation C1 · ConversationItem C2 | - |
-| screens (2) | chat C25,C26,C27,C28,C29,C30 · conversations-list C31,C32,C33,C34 | - |
+| screens (2) | chat C25,C26,C27,C28,C29,C30,C47 · conversations-list C31,C32,C33,C34,C46 | - |
+| lista: pesquisa e ordenação (4) | `searchTerm` C17 · `title` asc C17 · `title` desc C17 · `lastActivityAt` asc C17 (desc por omissão C17) | - |
+| conversa inexistente para o caller (3) | id aleatório C6 · outro utilizador C6 · outro tenant C6 | - |
+| saídas do chat com linha de log (4) | sucesso C16 · loop lança C16 · recusa antes do loop (404, 409) C16 · quota 429 C16 | - |
 | chat copy (2) | `Nova conversa` desativado inicialmente C25 · `Conversa não encontrada` C27 | - |
 | conversations-list copy (2) | vazio `Nenhuma conversa` C31 · confirm `Apagar conversa` / `Apagar {título}? Esta ação não pode ser anulada.` C34 | - |
 | startup config: bloco `Ai:Conversations` (1 assembly) | `appsettings.json`, partilhado com o `TestWebApplicationFactory` C41 | - |
@@ -263,3 +291,5 @@ feature.
 - **Boundary:** C1–C45 fechados num só builder, sobre `9b0db04` (rebase em `b8010ee`)
 - **Settled mid-build:** (1) rebase: a mensagem de um POST falhado sai da lista e volta ao campo; itens `tool` guardam o que o modelo viu (decisões do utilizador). (2) `LastActivityAt` é concurrency token da `Conversation` — é o mecanismo do AC 14; no InMemory o perdedor recebe `409` mas, sem transacções, as suas linhas podem ficar; no Postgres o `SaveChanges` é transaccional e o índice único `(ConversationId, Sequence)` rejeita-as. `Handle_ShouldFailSecondWriter_*` assere o que o InMemory consegue provar. (3) As proofs C32/C33 citam `'conversations'` entre aspas: o `it.each($name)` do vitest interpola assim, e o filtro sem aspas seleccionava zero testes (mesmo achado 11 de `agentes`). (4) `chat.ts` muda o endereço com `Location.replaceState` depois da primeira resposta, para não recriar o componente nem recarregar o histórico (AC 28). (5) Handler tests passam a chamar `TestServiceFactory.SetUser`: o chat exige dono
 - **Abandoned:** nada
+
+Ronda 1 do Verifier (FAIL, 36/45): fechado acrescentando proofs — nenhuma claim mudou de valor. C16 era lacuna de código (seis saídas antes do `try` sem log) e foi corrigido no handler. C6, C8, C14, C17, C19, C20 e C22 ganharam proof por HTTP; C14 ganhou também a prova de modelo do índice único e do concurrency token — o rollback do perdedor continua só garantido pelo Postgres (declarado no plano, `Impact` › tests). C33 passa a asserir `Tentar de novo`. C46–C48 cobrem o arranjo dos dois ecrãs e os `400` das rotas de conversas, que o `Surface` não listava.

@@ -68,6 +68,7 @@ public sealed class GetConversationEndpoint : IEndpoint
         .WithTags("Ai")
         .RequireAuthorization(SecurityPolicies.Authenticated)
         .Produces<ConversationOutput>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status404NotFound);
     }

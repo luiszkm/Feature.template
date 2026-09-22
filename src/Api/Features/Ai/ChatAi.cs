@@ -58,8 +58,38 @@ public sealed class ChatAiHandler(
 
         logger.LogInformation("AI chat request for tenant {TenantId}", tenantId);
 
+        // Every exit - 404, 409, 429, 400, 500 or success - leaves one line naming the turn.
+        var log = new TurnLog(request.AgentId, request.ConversationId);
+        try
+        {
+            var output = await RunTurnAsync(request, tenantId, userId, log, cancellationToken);
+            log.ConversationId = output.ConversationId;
+            log.Success = true;
+            return output;
+        }
+        finally
+        {
+            logger.LogInformation(
+                "AI chat finished for tenant {TenantId}, agent {AgentId}, conversation {ConversationId}, success {Success}",
+                tenantId,
+                log.AgentId,
+                log.ConversationId,
+                log.Success);
+        }
+    }
+
+    private async Task<ChatAiOutput> RunTurnAsync(
+        ChatAiCommand request,
+        Guid tenantId,
+        Guid userId,
+        TurnLog log,
+        CancellationToken cancellationToken)
+    {
         var conversation = await ResolveConversationAsync(request.ConversationId, cancellationToken);
+        if (conversation is not null)
+            log.AgentId = conversation.AgentId;
         var agent = await ResolveAgentAsync(request.AgentId, conversation, cancellationToken);
+        log.AgentId = agent.Id;
         var options = conversationOptions.Value;
         if (conversation is not null && conversation.Items.Count >= options.MaxItems)
             throw new BusinessRuleException(MaxItemsMessage);
@@ -100,13 +130,6 @@ public sealed class ChatAiHandler(
         }
         finally
         {
-            logger.LogInformation(
-                "AI chat finished for tenant {TenantId}, agent {AgentId}, conversation {ConversationId}, success {Success}",
-                tenantId,
-                agent.Id,
-                conversation?.Id ?? request.ConversationId,
-                errorCode is null);
-
             await usageTracker.TrackAsync(
                 new AiUsageRecord(
                     Service: "llm",
@@ -124,6 +147,13 @@ public sealed class ChatAiHandler(
                     ErrorCode: errorCode),
                 cancellationToken);
         }
+    }
+
+    private sealed class TurnLog(Guid? agentId, Guid? conversationId)
+    {
+        public Guid? AgentId { get; set; } = agentId;
+        public Guid? ConversationId { get; set; } = conversationId;
+        public bool Success { get; set; }
     }
 
     /// <summary>User turn, every message the loop produced, then the reply — one SaveChanges.</summary>

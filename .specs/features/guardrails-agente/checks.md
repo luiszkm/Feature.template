@@ -127,7 +127,7 @@ Proof: `dotnet test tests/Api.Tests --filter "FullyQualifiedName~CompareModelsTe
 ### S5 - O ecrã de chat explica o bloqueio · GUARD-05 · ~6k
 
 **C26** - No ecrã `chat`, um `429` com `detail` `Limite de pedidos de IA do tenant atingido. Tente novamente dentro de instantes.` mostra esse texto na área de erro e a mensagem enviada continua na lista do histórico (GUARD-05, AC 24)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "429 mostra o detail e mantem a mensagem"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "429 mostra o detail e repoe a mensagem no campo"`
 
 **C27** - No ecrã `chat`, um `400` com `errors.Message` `["A mensagem foi bloqueada pela política de conteúdo."]` mostra esse texto e não `Validation failed` (GUARD-05, AC 25)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/chat.spec.ts --filter "400 mostra o erro de message"`
@@ -206,6 +206,6 @@ Ronda 1 do Verifier (FAIL): a janela diária da quota (00:00 UTC) não tinha pro
 
 Pelo rebase de `conversas-agente` (2026-09-22, decisão do utilizador):
 
-- **C1–C5** — o validador item a item do `history` sai; `conversas-agente` C5 recusa o `history` inteiro com `400`. Os testes `Validator_ShouldFail_WhenHistoryRoleIsNotUserOrAssistant`, `Validator_ShouldPass_WhenHistoryRoleIsUserOrAssistant`, `Validator_ShouldFail_WhenHistoryItemHasToolCalls`, `Validator_ShouldFail_WhenHistoryItemHasToolCallId`, `Validator_ShouldBoundHistory_At50Items`, `Validator_ShouldBoundHistoryContent_At4000Chars`, `ChatAi_ShouldReturn400_WhenHistoryRoleIsForgeable` `ChatAi_ShouldPassUserAndAssistantHistory_InOrder` e `Handle_ShouldAcceptHistory_WithoutPersistingThreads` (pré-existente, `agentes`) são removidos no commit que introduz esse `400`
-- **C26** — a mensagem já não fica no histórico num `429`: sai da lista e volta ao campo (`conversas-agente` AC 30). O teste `429 mostra o detail e mantem a mensagem` passa a asserir isso; o `detail` continua na área de erro
+- **C1–C5** — o validador item a item do `history` sai; `conversas-agente` C5 recusa o `history` inteiro com `400`. Os testes `Validator_ShouldFail_WhenHistoryRoleIsNotUserOrAssistant`, `Validator_ShouldPass_WhenHistoryRoleIsUserOrAssistant`, `Validator_ShouldFail_WhenHistoryItemHasToolCalls`, `Validator_ShouldFail_WhenHistoryItemHasToolCallId`, `Validator_ShouldBoundHistory_At50Items`, `Validator_ShouldBoundHistoryContent_At4000Chars`, `ChatAi_ShouldReturn400_WhenHistoryRoleIsForgeable` `ChatAi_ShouldPassUserAndAssistantHistory_InOrder` e `Handle_ShouldAcceptHistory_WithoutPersistingThreads` (pré-existente, `agentes`) são removidos; `ChatAi_ShouldReturnOnlyReplyAndIterations` é renomeado `ChatAi_ShouldReturnConversationIdReplyAndIterations` e passa a esperar também `conversationId` no commit que introduz esse `400`
+- **C26** — a mensagem já não fica no histórico num `429`: sai da lista e volta ao campo (`conversas-agente` AC 30). O teste passa a chamar-se `429 mostra o detail e repoe a mensagem no campo` e assere isso; o `detail` continua na área de erro
 

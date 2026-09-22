@@ -113,6 +113,7 @@ describe('estados partilhados das listas', () => {
     await settle(fixture);
 
     expect(text(fixture, 'list-error-title')).toBe('Unexpected error');
+    expect(text(fixture, 'list-retry')).toBe('Tentar de novo');
 
     el(fixture, 'list-retry').click();
     await settle(fixture);

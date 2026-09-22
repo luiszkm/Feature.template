@@ -31,6 +31,55 @@ public sealed class ListConversationsTests
     }
 
     [Fact]
+    public async Task List_ShouldReturnOnlyCallersConversations_OverHttp()
+    {
+        await using var factory = ConversationHttp.Factory();
+        using var alice = await AiHttp.PlainUserClientAsync(factory);
+        using var bob = await AiHttp.PlainUserClientAsync(factory);
+        var alicesFirst = await ConversationHttp.StartConversationAsync(alice, "primeira");
+        var alicesSecond = await ConversationHttp.StartConversationAsync(alice, "segunda");
+        var bobs = await ConversationHttp.StartConversationAsync(bob);
+
+        var page = await alice.GetFromJsonAsync<PaginatedListOutput<ConversationSummary>>("/api/v1/ai/conversations");
+
+        Assert.Equal(2, page!.TotalCount);
+        Assert.Equal(new[] { alicesSecond, alicesFirst }, page.Data.Select(c => c.ConversationId).ToArray());
+        Assert.DoesNotContain(page.Data, c => c.ConversationId == bobs);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldFilterBySearchTerm_AndSortByTitleOrLastActivityAt()
+    {
+        var provider = ConversationHandlers.Provider(nameof(Handle_ShouldFilterBySearchTerm_AndSortByTitleOrLastActivityAt));
+        var now = DateTime.UtcNow;
+        var banana = await ConversationTestSupport.SeedAsync(provider, TestServiceFactory.DefaultUserId, now.AddHours(-3), "banana split", ("user", "a"));
+        var apple = await ConversationTestSupport.SeedAsync(provider, TestServiceFactory.DefaultUserId, now.AddHours(-1), "apple pie", ("user", "a"));
+        var cherry = await ConversationTestSupport.SeedAsync(provider, TestServiceFactory.DefaultUserId, now.AddHours(-2), "cherry pie", ("user", "a"));
+
+        Task<PaginatedListOutput<ConversationSummary>> List(ListConversationsQuery query) =>
+            ConversationHandlers.RunAsync(provider, TestServiceFactory.DefaultUserId, sp =>
+                sp.GetRequiredService<ListConversationsHandler>().Handle(query, CancellationToken.None));
+
+        Assert.Equal(new[] { apple.Id, cherry.Id }, (await List(new ListConversationsQuery(SearchTerm: "pie"))).Data.Select(c => c.ConversationId).ToArray());
+        Assert.Equal(new[] { apple.Id, banana.Id, cherry.Id }, (await List(new ListConversationsQuery(SortBy: "title"))).Data.Select(c => c.ConversationId).ToArray());
+        Assert.Equal(new[] { cherry.Id, banana.Id, apple.Id }, (await List(new ListConversationsQuery(SortBy: "title", SortDirection: "desc"))).Data.Select(c => c.ConversationId).ToArray());
+        Assert.Equal(new[] { banana.Id, cherry.Id, apple.Id }, (await List(new ListConversationsQuery(SortBy: "lastActivityAt", SortDirection: "asc"))).Data.Select(c => c.ConversationId).ToArray());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(101)]
+    public async Task List_ShouldReturn400_WhenPageSizeIsOutOfRange(int pageSize)
+    {
+        await using var factory = ConversationHttp.Factory();
+        using var client = await AiHttp.PlainUserClientAsync(factory);
+
+        var response = await client.GetAsync($"/api/v1/ai/conversations?pageSize={pageSize}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task List_ShouldReturn404_WhenEnableAiIsFalse()
     {
         await using var factory = ConversationHttp.Factory(enableAi: false);
