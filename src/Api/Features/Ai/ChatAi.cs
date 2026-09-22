@@ -49,7 +49,8 @@ public sealed class ChatAiHandler(
                 agent.Instructions,
                 request.History,
                 agent.ToolNames,
-                cancellationToken);
+                cancellationToken,
+                agent.Model);
 
             return new ChatAiOutput(result.Reply, result.IterationsUsed);
         }
@@ -61,16 +62,18 @@ public sealed class ChatAiHandler(
         }
         finally
         {
-            var (provider, model) = LlmServiceResolver.UsageLabels(environment, llmOptions.Value);
             await usageTracker.TrackAsync(
                 new AiUsageRecord(
                     Service: "llm",
-                    Provider: provider,
-                    Model: model,
+                    Provider: LlmServiceResolver.ProviderLabel(environment, llmOptions.Value),
+                    Model: agent.Model ?? llmOptions.Value.Model,
                     Module: "ai",
-                    Operation: "chat",
+                    Operation: AiUsageOperations.Chat,
                     TenantId: tenantId,
-                    TokensUsed: result?.TotalTokens,
+                    AgentId: agent.Id,
+                    InputTokens: result?.InputTokens ?? 0,
+                    OutputTokens: result?.OutputTokens ?? 0,
+                    Cost: result?.Cost,
                     Latency: DateTime.UtcNow - started,
                     Success: errorCode is null,
                     ErrorCode: errorCode),

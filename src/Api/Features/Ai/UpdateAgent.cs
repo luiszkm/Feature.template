@@ -8,11 +8,12 @@ public sealed record UpdateAgentCommand(
     Guid AgentId,
     string Name,
     string Instructions,
-    IReadOnlyList<string> ToolNames) : ICommand<AgentOutput>;
+    IReadOnlyList<string> ToolNames,
+    string? Model = null) : ICommand<AgentOutput>;
 
 public sealed class UpdateAgentValidator : AbstractValidator<UpdateAgentCommand>
 {
-    public UpdateAgentValidator(ToolRegistry tools)
+    public UpdateAgentValidator(ToolRegistry tools, IModelCatalog catalog)
     {
         RuleFor(x => x.AgentId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
@@ -21,6 +22,12 @@ public sealed class UpdateAgentValidator : AbstractValidator<UpdateAgentCommand>
         RuleForEach(x => x.ToolNames)
             .Must(tools.IsKnown)
             .WithMessage("Unknown tool '{PropertyValue}'.");
+        RuleFor(x => x.Model)
+            .MaximumLength(200)
+            .MustAsync(async (model, cancellationToken) =>
+                string.IsNullOrWhiteSpace(model) || await catalog.ContainsAsync(model.Trim(), cancellationToken))
+            .WithMessage("Model '{PropertyValue}' is not in the model catalog.")
+            .When(x => x.Model is not null);
     }
 }
 
@@ -37,7 +44,7 @@ public sealed class UpdateAgentHandler(
         if (clash is not null && clash.Id != agent.Id)
             throw new BusinessRuleException($"Agent with name '{request.Name}' already exists.");
 
-        agent.Update(request.Name, request.Instructions, request.ToolNames);
+        agent.Update(request.Name, request.Instructions, request.ToolNames, request.Model);
         await agents.UpdateAsync(agent, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return AgentMapper.ToOutput(agent);
@@ -55,7 +62,7 @@ public sealed class UpdateAgentEndpoint : IEndpoint
             CancellationToken cancellationToken) =>
         {
             var result = await mediator.Send(
-                new UpdateAgentCommand(agentId, body.Name, body.Instructions, body.ToolNames),
+                new UpdateAgentCommand(agentId, body.Name, body.Instructions, body.ToolNames, body.Model),
                 cancellationToken);
             return Results.Ok(result);
         })
@@ -66,8 +73,13 @@ public sealed class UpdateAgentEndpoint : IEndpoint
         .Produces<AgentOutput>(StatusCodes.Status200OK)
         .ProducesProblem(StatusCodes.Status400BadRequest)
         .ProducesProblem(StatusCodes.Status404NotFound)
-        .ProducesProblem(StatusCodes.Status409Conflict);
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 }
 
-public sealed record UpdateAgentRequest(string Name, string Instructions, IReadOnlyList<string> ToolNames);
+public sealed record UpdateAgentRequest(
+    string Name,
+    string Instructions,
+    IReadOnlyList<string> ToolNames,
+    string? Model = null);

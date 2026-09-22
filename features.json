@@ -310,5 +310,37 @@
     "route": "DELETE /api/v1/ai/agents/{agentId}/files/{fileId}",
     "featureFlag": "EnableAI",
     "policy": "AiAgentsManage"
+  },
+  "ListModels": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListModels.cs",
+    "test": "tests/Api.Tests/Ai/ListModelsTests.cs",
+    "route": "GET /api/v1/ai/models",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "CompareModels": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/CompareModels.cs",
+    "test": "tests/Api.Tests/Ai/CompareModelsTests.cs",
+    "route": "POST /api/v1/ai/comparisons",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "ListModelComparisons": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListModelComparisons.cs",
+    "test": "tests/Api.Tests/Ai/CompareModelsTests.cs",
+    "route": "GET /api/v1/ai/comparisons",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "GetModelComparison": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetModelComparison.cs",
+    "test": "tests/Api.Tests/Ai/CompareModelsTests.cs",
+    "route": "GET /api/v1/ai/comparisons/{comparisonId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
   }
 }

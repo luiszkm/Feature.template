@@ -20,20 +20,20 @@ public sealed class CreateAgentTests
     private const string TestPassword = "TestPassword1!";
 
     [Fact]
-    public void Validator_ShouldFail_WhenNameIsEmpty()
+    public async Task Validator_ShouldFail_WhenNameIsEmpty()
     {
         var tools = new ToolRegistry([]);
-        var validator = new CreateAgentValidator(tools);
-        var result = validator.TestValidate(new CreateAgentCommand("", "instr", []));
+        var validator = new CreateAgentValidator(tools, new FakeModelCatalog());
+        var result = await validator.TestValidateAsync(new CreateAgentCommand("", "instr", []));
         result.ShouldHaveValidationErrorFor(x => x.Name);
     }
 
     [Fact]
-    public void Validator_ShouldFail_WhenToolNameIsUnknown()
+    public async Task Validator_ShouldFail_WhenToolNameIsUnknown()
     {
         var tools = new ToolRegistry([]);
-        var validator = new CreateAgentValidator(tools);
-        var result = validator.TestValidate(
+        var validator = new CreateAgentValidator(tools, new FakeModelCatalog());
+        var result = await validator.TestValidateAsync(
             new CreateAgentCommand("Support", "instr", ["not_a_tool"]));
         result.ShouldHaveValidationErrorFor(x => x.ToolNames);
     }

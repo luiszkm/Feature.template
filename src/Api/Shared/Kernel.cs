@@ -24,6 +24,8 @@ public sealed class BusinessRuleException(string message) : Exception(message);
 
 public sealed class NotFoundException(string message) : Exception(message);
 
+public sealed class ServiceUnavailableException(string message, Exception? inner = null) : Exception(message, inner);
+
 public sealed record Email
 {
     private static readonly Regex EmailRegex = new(

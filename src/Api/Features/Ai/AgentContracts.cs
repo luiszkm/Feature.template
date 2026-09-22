@@ -7,7 +7,8 @@ public sealed record AgentOutput(
     IReadOnlyList<string> ToolNames,
     bool IsActive,
     bool IsDefault,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? Model = null);
 
 public sealed record AgentFileOutput(Guid FileId, string Name, string? Content = null);
 
@@ -21,7 +22,8 @@ public static class AgentMapper
             agent.ToolNames,
             agent.IsActive,
             agent.IsDefault,
-            agent.CreatedAt);
+            agent.CreatedAt,
+            agent.Model);
 
     public static AgentFileOutput ToOutput(AgentFile file, bool includeContent) =>
         new(file.Id, file.Name, includeContent ? file.Content : null);
@@ -61,6 +63,8 @@ public sealed class LlmOptions
     public string ApiKey { get; set; } = string.Empty;
     public string Model { get; set; } = "openai/gpt-4o-mini";
     public string BaseUrl { get; set; } = string.Empty;
+    public List<string> AllowedModels { get; set; } = [];
+    public int CompareTimeoutSeconds { get; set; } = 60;
 }
 
 public interface IAgentRuntimeContext

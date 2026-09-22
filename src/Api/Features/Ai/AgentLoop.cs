@@ -12,12 +12,13 @@ public sealed class AgentLoop(
         string systemPrompt,
         IReadOnlyList<LlmMessage>? history,
         IReadOnlyList<string>? allowedToolNames = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? model = null)
     {
         var conversationHistory = history?.ToList() ?? [];
         var toolDefinitions = toolRegistry.GetDefinitions(allowedToolNames);
         var iterations = 0;
-        var totalTokens = 0;
+        var usage = new UsageTotals();
 
         while (iterations < MaxIterations)
         {
@@ -27,13 +28,14 @@ public sealed class AgentLoop(
                 UserPrompt: userMessage,
                 SystemPrompt: systemPrompt,
                 History: conversationHistory.Count > 0 ? conversationHistory : null,
-                Tools: toolDefinitions.Count > 0 ? toolDefinitions : null);
+                Tools: toolDefinitions.Count > 0 ? toolDefinitions : null,
+                Model: model);
 
             var response = await llm.CompleteAsync(request, cancellationToken);
-            totalTokens += response.TotalTokens;
+            usage.Add(response);
 
             if (response.ToolCalls is not { Count: > 0 })
-                return new AgentResult(response.Text, iterations, totalTokens);
+                return usage.ToResult(response.Text, iterations);
 
             conversationHistory.Add(new LlmMessage("assistant", response.Text, ToolCalls: response.ToolCalls));
 
@@ -53,10 +55,34 @@ public sealed class AgentLoop(
             new LlmRequest(
                 UserPrompt: "Resuma o que foi encontrado com base nos dados das ferramentas.",
                 SystemPrompt: systemPrompt,
-                History: conversationHistory),
+                History: conversationHistory,
+                Model: model),
             cancellationToken);
 
-        totalTokens += fallback.TotalTokens;
-        return new AgentResult(fallback.Text, iterations, totalTokens);
+        usage.Add(fallback);
+        return usage.ToResult(fallback.Text, iterations);
+    }
+
+    private sealed class UsageTotals
+    {
+        private int _total;
+        private int _input;
+        private int _output;
+        private decimal _cost;
+        private bool _costUnknown;
+
+        public void Add(LlmResponse response)
+        {
+            _total += response.TotalTokens;
+            _input += response.InputTokens;
+            _output += response.OutputTokens;
+            if (response.Cost is { } cost)
+                _cost += cost;
+            else
+                _costUnknown = true;
+        }
+
+        public AgentResult ToResult(string reply, int iterations) =>
+            new(reply, iterations, _total, _input, _output, _costUnknown ? null : _cost);
     }
 }

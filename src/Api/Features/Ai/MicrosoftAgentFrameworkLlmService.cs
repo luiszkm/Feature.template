@@ -53,7 +53,10 @@ internal sealed class MicrosoftAgentFrameworkLlmService : ILlmService
         return new LlmResponse(
             response.Text ?? string.Empty,
             (int)(response.Usage?.TotalTokenCount ?? 0),
-            toolCalls.Count > 0 ? toolCalls : null);
+            toolCalls.Count > 0 ? toolCalls : null,
+            InputTokens: (int)(response.Usage?.InputTokenCount ?? 0),
+            OutputTokens: (int)(response.Usage?.OutputTokenCount ?? 0),
+            Cost: null);
     }
 
     internal static List<ChatMessage> MapMessages(LlmRequest request)

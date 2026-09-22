@@ -14,6 +14,7 @@ public sealed class Agent : AggregateRoot, IMultiTenantEntity
     public List<string> ToolNames { get; private set; } = [];
     public bool IsActive { get; private set; } = true;
     public bool IsDefault { get; private set; }
+    public string? Model { get; private set; }
 
     private Agent() { }
 
@@ -22,7 +23,8 @@ public sealed class Agent : AggregateRoot, IMultiTenantEntity
         string name,
         string instructions,
         IReadOnlyList<string> toolNames,
-        bool isDefault = false)
+        bool isDefault = false,
+        string? model = null)
     {
         if (tenantId == Guid.Empty)
             throw new BusinessRuleException("TenantId is required.");
@@ -39,11 +41,12 @@ public sealed class Agent : AggregateRoot, IMultiTenantEntity
             ToolNames = [.. toolNames],
             IsActive = true,
             IsDefault = isDefault,
+            Model = NormalizeModel(model),
             CreatedAt = DateTime.UtcNow
         };
     }
 
-    public void Update(string name, string instructions, IReadOnlyList<string> toolNames)
+    public void Update(string name, string instructions, IReadOnlyList<string> toolNames, string? model = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Name cannot be empty.", nameof(name));
@@ -53,9 +56,13 @@ public sealed class Agent : AggregateRoot, IMultiTenantEntity
         Name = name.Trim();
         Instructions = instructions.Trim();
         ToolNames = [.. toolNames];
+        Model = NormalizeModel(model);
     }
 
     public void Deactivate() => IsActive = false;
+
+    private static string? NormalizeModel(string? model) =>
+        string.IsNullOrWhiteSpace(model) ? null : model.Trim();
 }
 
 public interface IAgentRepository
@@ -147,6 +154,7 @@ internal sealed class AgentConfiguration : IEntityTypeConfiguration<Agent>
                     (left, right) => (left ?? new List<string>()).SequenceEqual(right ?? new List<string>()),
                     names => names.Aggregate(0, (hash, name) => HashCode.Combine(hash, name.GetHashCode())),
                     names => names.ToList()));
+        entity.Property(a => a.Model).HasMaxLength(200);
         entity.HasIndex(a => new { a.TenantId, a.Name }).IsUnique();
     }
 }

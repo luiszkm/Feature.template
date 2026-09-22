@@ -55,6 +55,15 @@ public static class ExceptionHandlerExtensions
                             Status = StatusCodes.Status404NotFound
                         });
                         break;
+                    case ServiceUnavailableException unavailable:
+                        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                        await context.Response.WriteAsJsonAsync(new ProblemDetails
+                        {
+                            Title = "Service unavailable",
+                            Detail = unavailable.Message,
+                            Status = StatusCodes.Status503ServiceUnavailable
+                        });
+                        break;
                     default:
                         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
                         await context.Response.WriteAsJsonAsync(new ProblemDetails

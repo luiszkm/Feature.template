@@ -7,7 +7,8 @@ public sealed record LlmRequest(
     string? SystemPrompt = null,
     float Temperature = 0.2f,
     IReadOnlyList<LlmMessage>? History = null,
-    IReadOnlyList<ToolDefinition>? Tools = null);
+    IReadOnlyList<ToolDefinition>? Tools = null,
+    string? Model = null);
 
 public sealed record LlmMessage(
     string Role,
@@ -18,7 +19,10 @@ public sealed record LlmMessage(
 public sealed record LlmResponse(
     string Text,
     int TotalTokens,
-    IReadOnlyList<ToolCall>? ToolCalls = null);
+    IReadOnlyList<ToolCall>? ToolCalls = null,
+    int InputTokens = 0,
+    int OutputTokens = 0,
+    decimal? Cost = null);
 
 public sealed record ToolDefinition(string Name, string Description, JsonObject InputSchema);
 
@@ -42,7 +46,10 @@ public sealed record AiUsageRecord(
     string Module,
     string Operation,
     Guid TenantId,
-    int? TokensUsed,
+    Guid AgentId,
+    int InputTokens,
+    int OutputTokens,
+    decimal? Cost,
     TimeSpan Latency,
     bool Success,
     string? ErrorCode);
@@ -52,12 +59,12 @@ public interface IAiUsageTracker
     Task TrackAsync(AiUsageRecord record, CancellationToken cancellationToken = default);
 }
 
-internal sealed class NoOpAiUsageTracker : IAiUsageTracker
-{
-    public Task TrackAsync(AiUsageRecord record, CancellationToken cancellationToken = default) =>
-        Task.CompletedTask;
-}
-
-public sealed record AgentResult(string Reply, int IterationsUsed, int TotalTokens);
+public sealed record AgentResult(
+    string Reply,
+    int IterationsUsed,
+    int TotalTokens,
+    int InputTokens = 0,
+    int OutputTokens = 0,
+    decimal? Cost = null);
 
 public sealed record ChatAiOutput(string Reply, int IterationsUsed);

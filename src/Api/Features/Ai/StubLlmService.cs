@@ -16,7 +16,10 @@ internal sealed class StubLlmService : ILlmService
         {
             return Task.FromResult(new LlmResponse(
                 "Com base nos dados consultados, aqui está o resumo solicitado.",
-                TotalTokens: 42));
+                TotalTokens: 42,
+                InputTokens: 30,
+                OutputTokens: 12,
+                Cost: 0m));
         }
 
         if (request.Tools is { Count: > 0 } && prompt.Contains("user"))
@@ -30,7 +33,10 @@ internal sealed class StubLlmService : ILlmService
                         "call_users",
                         "get_users_summary",
                         new JsonObject { ["page_size"] = 10 })
-                ]));
+                ],
+                InputTokens: 8,
+                OutputTokens: 2,
+                Cost: 0m));
         }
 
         if (request.Tools is { Count: > 0 } && prompt.Contains("tenant"))
@@ -44,13 +50,16 @@ internal sealed class StubLlmService : ILlmService
                         "call_tenants",
                         "get_tenant_info",
                         new JsonObject { ["page_size"] = 20 })
-                ]));
+                ],
+                InputTokens: 8,
+                OutputTokens: 2,
+                Cost: 0m));
         }
 
         var reply = string.IsNullOrWhiteSpace(request.UserPrompt)
             ? "Não há mais dados para consultar."
             : $"Recebi sua mensagem: {request.UserPrompt}";
 
-        return Task.FromResult(new LlmResponse(reply, TotalTokens: 20));
+        return Task.FromResult(new LlmResponse(reply, TotalTokens: 20, InputTokens: 15, OutputTokens: 5, Cost: 0m));
     }
 }

@@ -175,6 +175,53 @@ public sealed class ChatAiHandlerTests
         Assert.Equal(LlmProviders.OpenRouter, record.Provider);
         Assert.Equal("openai/gpt-4o-mini", record.Model);
     }
+
+    [Fact]
+    public async Task Handle_ShouldSendAgentModel_OnEveryLlmCall_IncludingSummary()
+    {
+        // Always asks for a tool: the loop runs its 5 iterations and then the summary call.
+        var llm = new ScriptedLlmService((request, _) => Task.FromResult(
+            request.Tools is { Count: > 0 }
+                ? new LlmResponse(string.Empty, 1, [new ToolCall("c1", "unknown_tool", [])])
+                : new LlmResponse("summary", 1)));
+        var provider = TestServiceFactory.CreateWithAi(
+            nameof(Handle_ShouldSendAgentModel_OnEveryLlmCall_IncludingSummary),
+            services => services.AddSingleton<ILlmService>(llm));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var create = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+        var agent = await create.Handle(
+            new CreateAgentCommand("Modelled", "x", [AgentToolNames.GetTenantInfo], Model: StubModelCatalog.ModelA),
+            CancellationToken.None);
+
+        var result = await chat.Handle(new ChatAiCommand("go", AgentId: agent.AgentId), CancellationToken.None);
+
+        Assert.Equal("summary", result.Reply);
+        Assert.Equal(6, llm.Requests.Count);
+        Assert.All(llm.Requests, request => Assert.Equal(StubModelCatalog.ModelA, request.Model));
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSendNullModel_WhenAgentHasNoModel()
+    {
+        var llm = ScriptedLlmService.Replying();
+        var provider = TestServiceFactory.CreateWithAi(
+            nameof(Handle_ShouldSendNullModel_WhenAgentHasNoModel),
+            services => services.AddSingleton<ILlmService>(llm));
+
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        var create = scope.ServiceProvider.GetRequiredService<CreateAgentHandler>();
+        var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
+        var agent = await create.Handle(new CreateAgentCommand("Plain", "x", []), CancellationToken.None);
+
+        await chat.Handle(new ChatAiCommand("go", AgentId: agent.AgentId), CancellationToken.None);
+
+        Assert.All(llm.Requests, request => Assert.Null(request.Model));
+    }
+
 }
 
 internal sealed class ThrowingUserDirectory : IUserDirectory

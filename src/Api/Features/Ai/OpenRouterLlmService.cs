@@ -23,7 +23,7 @@ internal sealed class OpenRouterLlmService(
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
         var payload = new OpenRouterRequest(
-            options.Value.Model,
+            request.Model ?? options.Value.Model,
             BuildMessages(request),
             request.Temperature,
             request.Tools is { Count: > 0 } ? request.Tools.Select(ToTool).ToList() : null);
@@ -45,7 +45,10 @@ internal sealed class OpenRouterLlmService(
         return new LlmResponse(
             message?.Content ?? string.Empty,
             body.Usage?.TotalTokens ?? 0,
-            toolCalls is { Count: > 0 } ? toolCalls : null);
+            toolCalls is { Count: > 0 } ? toolCalls : null,
+            InputTokens: body.Usage?.PromptTokens ?? 0,
+            OutputTokens: body.Usage?.CompletionTokens ?? 0,
+            Cost: body.Usage?.Cost);
     }
 
     internal static List<OpenRouterMessage> BuildMessages(LlmRequest request)
@@ -120,5 +123,8 @@ internal sealed class OpenRouterLlmService(
     private sealed record OpenRouterChoice(OpenRouterMessage? Message);
 
     private sealed record OpenRouterUsage(
-        [property: JsonPropertyName("total_tokens")] int TotalTokens);
+        [property: JsonPropertyName("total_tokens")] int TotalTokens,
+        [property: JsonPropertyName("prompt_tokens")] int PromptTokens = 0,
+        [property: JsonPropertyName("completion_tokens")] int CompletionTokens = 0,
+        [property: JsonPropertyName("cost")] decimal? Cost = null);
 }

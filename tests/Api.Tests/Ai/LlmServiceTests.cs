@@ -35,6 +35,76 @@ public sealed class OpenRouterLlmServiceTests
         Assert.StartsWith("https://openrouter.test/api/v1/chat/completions", handler.RequestUri!.ToString());
         Assert.Equal(HttpMethod.Post, handler.Method);
     }
+
+    [Fact]
+    public async Task OpenRouter_ShouldSendConfiguredModel_WhenRequestModelIsNull()
+    {
+        var handler = new QueuedHttpHandler((HttpStatusCode.OK, ChatBody));
+        var sut = OpenRouter(handler, model: "openai/gpt-4o-mini");
+
+        await sut.CompleteAsync(new LlmRequest("hello"), CancellationToken.None);
+
+        Assert.Equal("openai/gpt-4o-mini", ModelOf(handler.RequestBodies.Single()));
+    }
+
+    [Fact]
+    public async Task OpenRouter_ShouldSendRequestModel_WhenSet()
+    {
+        var handler = new QueuedHttpHandler((HttpStatusCode.OK, ChatBody));
+        var sut = OpenRouter(handler, model: "openai/gpt-4o-mini");
+
+        await sut.CompleteAsync(new LlmRequest("hello", Model: "a/b"), CancellationToken.None);
+
+        Assert.Equal("a/b", ModelOf(handler.RequestBodies.Single()));
+    }
+
+    [Fact]
+    public async Task OpenRouter_ShouldMapUsageAndCost()
+    {
+        var handler = new QueuedHttpHandler((HttpStatusCode.OK, """
+            {"choices":[{"message":{"role":"assistant","content":"hi"}}],
+             "usage":{"prompt_tokens":120,"completion_tokens":30,"total_tokens":150,"cost":0.00042}}
+            """));
+        var sut = OpenRouter(handler);
+
+        var response = await sut.CompleteAsync(new LlmRequest("hello"), CancellationToken.None);
+
+        Assert.Equal(120, response.InputTokens);
+        Assert.Equal(30, response.OutputTokens);
+        Assert.Equal(0.00042m, response.Cost);
+    }
+
+    [Fact]
+    public async Task OpenRouter_ShouldReturnNullCost_WhenCostMissing()
+    {
+        var handler = new QueuedHttpHandler((HttpStatusCode.OK, """
+            {"choices":[{"message":{"role":"assistant","content":"hi"}}],
+             "usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+            """));
+        var sut = OpenRouter(handler);
+
+        var response = await sut.CompleteAsync(new LlmRequest("hello"), CancellationToken.None);
+
+        Assert.Null(response.Cost);
+    }
+
+    private const string ChatBody = """
+        {"choices":[{"message":{"role":"assistant","content":"hi"}}],"usage":{"total_tokens":3}}
+        """;
+
+    private static OpenRouterLlmService OpenRouter(HttpMessageHandler handler, string model = "openai/gpt-4o-mini") =>
+        new(
+            new FixedHttpClientFactory(new HttpClient(handler) { BaseAddress = new Uri("https://openrouter.test/api/v1/") }),
+            Options.Create(new LlmOptions
+            {
+                Provider = LlmProviders.OpenRouter,
+                ApiKey = "or-key",
+                Model = model,
+                BaseUrl = "https://openrouter.test/api/v1"
+            }));
+
+    private static string? ModelOf(string json) =>
+        System.Text.Json.JsonDocument.Parse(json).RootElement.GetProperty("model").GetString();
 }
 
 public sealed class MicrosoftAgentFrameworkLlmServiceTests
@@ -67,6 +137,34 @@ public sealed class MicrosoftAgentFrameworkLlmServiceTests
         Assert.NotNull(handler.RequestUri);
         Assert.Contains("maf.test", handler.RequestUri!.Host, StringComparison.Ordinal);
         Assert.Equal(HttpMethod.Post, handler.Method);
+    }
+
+    [Fact]
+    public async Task Maf_ShouldMapInputOutputTokens_WithNullCost()
+    {
+        var handler = new RecordingHandler(HttpStatusCode.OK, """
+            {
+              "id": "chatcmpl-2",
+              "object": "chat.completion",
+              "choices": [{"index":0,"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],
+              "usage": {"prompt_tokens":40,"completion_tokens":7,"total_tokens":47}
+            }
+            """);
+        var sut = new MicrosoftAgentFrameworkLlmService(
+            new FixedHttpClientFactory(new HttpClient(handler)),
+            Options.Create(new LlmOptions
+            {
+                Provider = LlmProviders.MicrosoftAgentFramework,
+                ApiKey = "sk-test",
+                Model = "gpt-4o-mini",
+                BaseUrl = "https://maf.test/v1"
+            }));
+
+        var response = await sut.CompleteAsync(new LlmRequest("hello"), CancellationToken.None);
+
+        Assert.Equal(40, response.InputTokens);
+        Assert.Equal(7, response.OutputTokens);
+        Assert.Null(response.Cost);
     }
 }
 

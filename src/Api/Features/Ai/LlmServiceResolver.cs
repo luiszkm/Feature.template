@@ -16,10 +16,17 @@ internal static class LlmServiceResolver
         return false;
     }
 
-    public static (string Provider, string Model) UsageLabels(IHostEnvironment environment, LlmOptions options) =>
-        UseStub(environment, options)
-            ? ("stub", "stub")
-            : (LlmProviders.Normalize(options.Provider), options.Model);
+    public const string StubProvider = "stub";
+
+    public static string ProviderLabel(IHostEnvironment environment, LlmOptions options) =>
+        UseStub(environment, options) ? StubProvider : LlmProviders.Normalize(options.Provider);
+
+    public static bool IsMicrosoftAgentFramework(IHostEnvironment environment, LlmOptions options) =>
+        !UseStub(environment, options)
+        && string.Equals(
+            LlmProviders.Normalize(options.Provider),
+            LlmProviders.MicrosoftAgentFramework,
+            StringComparison.Ordinal);
 
     public static string EffectiveBaseUrl(LlmOptions options)
     {

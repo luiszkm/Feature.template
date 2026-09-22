@@ -23,7 +23,10 @@ public static class AiModule
         services.AddSingleton<ITenantQueryFilterConfigurator, AiTenantQueryFilters>();
         services.AddScoped<ToolRegistry>();
         services.AddScoped<AgentLoop>();
-        services.AddSingleton<IAiUsageTracker, NoOpAiUsageTracker>();
+        services.AddScoped<IAiUsageRepository, AiUsageRepository>();
+        services.AddScoped<IAiUsageTracker, AiUsageTracker>();
+        services.AddScoped<IModelComparisonRepository, ModelComparisonRepository>();
+        services.AddMemoryCache();
 
         services.AddHttpClient(OpenRouterLlmService.HttpClientName, (sp, client) =>
         {
@@ -48,6 +51,18 @@ public static class AiModule
                 StringComparison.Ordinal)
                 ? ActivatorUtilities.CreateInstance<MicrosoftAgentFrameworkLlmService>(sp)
                 : ActivatorUtilities.CreateInstance<OpenRouterLlmService>(sp);
+        });
+
+        services.AddSingleton<IModelCatalog>(sp =>
+        {
+            var environment = sp.GetRequiredService<IHostEnvironment>();
+            var options = sp.GetRequiredService<IOptions<LlmOptions>>().Value;
+            if (LlmServiceResolver.UseStub(environment, options))
+                return ActivatorUtilities.CreateInstance<StubModelCatalog>(sp);
+
+            return LlmServiceResolver.IsMicrosoftAgentFramework(environment, options)
+                ? ActivatorUtilities.CreateInstance<ConfiguredModelCatalog>(sp)
+                : ActivatorUtilities.CreateInstance<OpenRouterModelCatalog>(sp);
         });
 
         services.AddScoped<ITool, GetUsersSummaryTool>();
@@ -82,6 +97,12 @@ internal sealed class AiTenantQueryFilters : ITenantQueryFilterConfigurator
             entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
 
         modelBuilder.Entity<AgentFile>().HasQueryFilter(
+            entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
+
+        modelBuilder.Entity<AiUsageEntry>().HasQueryFilter(
+            entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
+
+        modelBuilder.Entity<ModelComparison>().HasQueryFilter(
             entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
     }
 }

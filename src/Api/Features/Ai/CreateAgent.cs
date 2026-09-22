@@ -7,11 +7,12 @@ namespace Api.Features.Ai;
 public sealed record CreateAgentCommand(
     string Name,
     string Instructions,
-    IReadOnlyList<string> ToolNames) : ICommand<AgentOutput>;
+    IReadOnlyList<string> ToolNames,
+    string? Model = null) : ICommand<AgentOutput>;
 
 public sealed class CreateAgentValidator : AbstractValidator<CreateAgentCommand>
 {
-    public CreateAgentValidator(ToolRegistry tools)
+    public CreateAgentValidator(ToolRegistry tools, IModelCatalog catalog)
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Instructions).NotEmpty().MaximumLength(4000);
@@ -19,6 +20,12 @@ public sealed class CreateAgentValidator : AbstractValidator<CreateAgentCommand>
         RuleForEach(x => x.ToolNames)
             .Must(tools.IsKnown)
             .WithMessage("Unknown tool '{PropertyValue}'.");
+        RuleFor(x => x.Model)
+            .MaximumLength(200)
+            .MustAsync(async (model, cancellationToken) =>
+                string.IsNullOrWhiteSpace(model) || await catalog.ContainsAsync(model.Trim(), cancellationToken))
+            .WithMessage("Model '{PropertyValue}' is not in the model catalog.")
+            .When(x => x.Model is not null);
     }
 }
 
@@ -36,7 +43,7 @@ public sealed class CreateAgentHandler(
         if (existing is not null)
             throw new BusinessRuleException($"Agent with name '{request.Name}' already exists.");
 
-        var agent = Agent.Create(tenantId, request.Name, request.Instructions, request.ToolNames);
+        var agent = Agent.Create(tenantId, request.Name, request.Instructions, request.ToolNames, model: request.Model);
         await agents.AddAsync(agent, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return AgentMapper.ToOutput(agent);
@@ -61,6 +68,7 @@ public sealed class CreateAgentEndpoint : IEndpoint
         .RequireAuthorization(SecurityPolicies.AiAgentsManage)
         .Produces<AgentOutput>(StatusCodes.Status201Created)
         .ProducesProblem(StatusCodes.Status400BadRequest)
-        .ProducesProblem(StatusCodes.Status409Conflict);
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 }

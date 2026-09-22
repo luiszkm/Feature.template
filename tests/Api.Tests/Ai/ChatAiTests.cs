@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -89,6 +90,21 @@ public sealed class ChatAiTests
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.Equal("Unexpected error", problem?.Title);
+    }
+
+    [Fact]
+    public async Task ChatAi_ShouldReturnOnlyReplyAndIterations()
+    {
+        await using var factory = AiHttp.Factory();
+        using var client = await AiHttp.AdminClientAsync(factory);
+
+        var response = await client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "hello" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(
+            new[] { "iterationsUsed", "reply" },
+            json.RootElement.EnumerateObject().Select(p => p.Name).Order().ToArray());
     }
 
     private static async Task<HttpClient> CreateAuthenticatedClientAsync(WebApplicationFactory<Program> factory)
