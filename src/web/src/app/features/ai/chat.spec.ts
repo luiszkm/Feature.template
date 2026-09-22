@@ -220,4 +220,49 @@ describe('Chat', () => {
     expect(text(fixture, 'chat-history')).toContain('renovado');
     expect(maybeEl(fixture, 'chat-error')).toBeNull();
   });
+  it('429 mostra o detail e mantem a mensagem', async () => {
+    stubAgents();
+    server.use(
+      api.post(CHAT, () =>
+        problem(429, {
+          title: 'AI rate limit exceeded',
+          detail: 'Limite de pedidos de IA do tenant atingido. Tente novamente dentro de instantes.',
+          status: 429,
+        }),
+      ),
+    );
+    authenticate();
+
+    const fixture = TestBed.createComponent(Chat);
+    await settle(fixture, 2);
+    await type(fixture, 'chat-input', 'olá');
+    await click(fixture, 'chat-send');
+
+    expect(text(fixture, 'chat-error')).toBe(
+      'Limite de pedidos de IA do tenant atingido. Tente novamente dentro de instantes.',
+    );
+    expect(text(fixture, 'chat-history')).toContain('olá');
+  });
+
+  it('400 mostra o erro de message', async () => {
+    stubAgents();
+    server.use(
+      api.post(CHAT, () =>
+        problem(400, {
+          title: 'Validation failed',
+          status: 400,
+          errors: { Message: ['A mensagem foi bloqueada pela política de conteúdo.'] },
+        }),
+      ),
+    );
+    authenticate();
+
+    const fixture = TestBed.createComponent(Chat);
+    await settle(fixture, 2);
+    await type(fixture, 'chat-input', 'olá');
+    await click(fixture, 'chat-send');
+
+    expect(text(fixture, 'chat-error')).toBe('A mensagem foi bloqueada pela política de conteúdo.');
+    expect(text(fixture, 'chat-error')).not.toContain('Validation failed');
+  });
 });

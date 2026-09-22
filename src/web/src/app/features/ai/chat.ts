@@ -7,7 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE, PaginatedList } from '../../core/api';
-import { parseProblem } from '../../shared/problem-details';
+import { fieldError, parseProblem } from '../../shared/problem-details';
 import { AgentOutput } from './ai.contracts';
 import { AI_DISABLED_TITLE, AiAvailability } from './ai-availability';
 
@@ -141,7 +141,7 @@ export class Chat {
       if (problem.status === 404 && problem.title === AI_DISABLED_TITLE) {
         return;
       }
-      this.error.set(problem.detail || problem.title);
+      this.error.set(fieldError(problem, 'message') ?? (problem.detail || problem.title));
     } finally {
       this.pending.set(false);
     }
