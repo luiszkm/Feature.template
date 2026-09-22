@@ -90,10 +90,19 @@ public sealed class DevBootstrapSeederTests
         }
     }
 
+    /// <summary>Own store root, so "restart" providers of one test still see each other's rows.</summary>
+    private static readonly Microsoft.EntityFrameworkCore.Storage.InMemoryDatabaseRoot SeedDatabaseRoot = new();
+
     private static ServiceProvider CreateSeedProvider(string databaseName)
     {
         var services = new ServiceCollection();
-        services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase(databaseName));
+        // This container registers only some modules' tenant filters. EF caches the model per
+        // internal service provider, which every InMemory context in the process shares - so
+        // without its own provider this test could build the model first and strip the filters
+        // of the modules it leaves out (Ai) from every other test in the run.
+        services.AddDbContext<AppDbContext>(options => options
+            .UseInMemoryDatabase(databaseName, SeedDatabaseRoot)
+            .EnableServiceProviderCaching(false));
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddIdentityModule();
         services.AddAuthorizationModule();

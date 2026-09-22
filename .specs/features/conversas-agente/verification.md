@@ -1,19 +1,16 @@
 # Conversas persistidas (threads/runs) verification
 
-**Verdict**: PASS
+**Verdict**: FAIL
 **Profile**: ui
-**Diff range**: 9b0db04..37de0a6 (fix range 43eb477..37de0a6)
-**Round**: 2 - scoped
+**Diff range**: 9b0db04..6370024 (round-3 range 37de0a6..6370024)
+**Round**: 3 - scoped
 **Verifier**: independent sub-agent (author != verifier)
 
-Round 2 scope, per verify.md "Re-verifying after a fix": the fix diff `43eb477..37de0a6` plus every
-round-1 verdict that was not PASS (C6, C8, C14, C16, C17, C19, C20, C22, C33, the arrangement
-findings, the unproven coverage rows, the two unmet Test policy rows), plus the new checks C46-C48.
-All proofs of all 48 checks re-ran at `37de0a6`. Citations in files the fix touched are refreshed
-(`ChatAiHandlerTests.cs` shifted by one line; `ChatAiTests.cs`, `chat.spec.ts` and the
-first half of the S2 test files did not move). Anything else says `carried from 43eb477`.
+Round 3 scope: commit `6370024` (one new test, `ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenGuardBlocksOrAgentIsInactive`, added as a C16 proof; the checks.md Coverage row now lists 8 members; nothing changed in `src/`). All proofs of all 48 checks re-ran at `6370024`. The C16 row, the chat-exits Coverage row and the fault table are verified at `6370024`. Citations in `ChatAiHandlerTests.cs` after line 477 moved by +44 and are refreshed (C6, C14). Everything else is `carried from 37de0a6` (round 2), which itself carried from `43eb477` where marked.
 
-Real-tree porcelain was empty before, and afterwards showed only this file being rewritten. The backend faults ran in a scratch worktree, which is now removed. The front fault ran in the real tree under a `git diff --quiet` guard before and after, and was restored with `git checkout -- <file>`. No `.angular/cache` was created at the repo root.
+**New finding this round, outside the one-row scope but surfaced by the mandatory full re-run:** the C5 boundary proof `ChatAiTests.ChatAi_ShouldReturn400_WhenHistoryIsProvided_AndNotCallLlmOrPersist` is non-deterministic. It failed in 2 of 5 runs of the Api.Tests proof batch at `6370024` (`tests/Api.Tests/Ai/ChatAiTests.cs:219` - `Assert.Equal() Failure: Expected: 3 Actual: 4`) and passed alone and in 3 full-suite runs. The assertion counts the seeded admin's conversations (`ChatAiTests.cs:272-276`) in the host's process-wide InMemory store `AppDb` (`src/Api/Shared/Infrastructure.cs:87`), while other test classes running in parallel start conversations as the same admin (`GetConversationTests`, `DeleteConversationTests`, `ChatAiTests` siblings via `AiHttp.AdminClientAsync`). A red run at HEAD means C5's "sem persistir" proof is not reliably green, so C5 is FAIL. The product path is not implicated: the validator rejects `history` before the handler, and the handler-level C5 proof passes every time.
+
+Real-tree porcelain was empty before and after the fault run, and afterwards showed only this file being rewritten. The fault ran in a scratch worktree under the scratchpad, which is now removed. No `git stash`. No `.angular/cache` at the repo root.
 Step 5 (walk with the user) cannot run from a sub-agent and did not run - the orchestrator owes it.
 
 ## Binding sources
@@ -30,11 +27,11 @@ Verified at `37de0a6` for the two screens; the other rows carried from `43eb477`
 
 ## Checks
 
-Proof runs at `37de0a6`, one call per target:
-- **Api.Tests:** 72 distinct names joined by `|`, with a trx logger. Exit 0; 74 passed (two 2-row Theories); every name found individually in the trx as Passed; none missing.
-- **Front:** `ng test --no-watch` with 5 `--include` files and one `--filter` alternation of the 17 check names, plus the guardrails C26 name. Run as `npx -y node@24.15.0 node_modules/@angular/cli/bin/ng.js`, an environment workaround. Exit 0; 18 passed; each of the 17 names listed individually as passed.
+Proof runs at `6370024`, one call per target:
+- **Api.Tests:** 73 distinct names joined by `|`, with a trx logger. First run: 74 passed, 1 failed (`ChatAi_ShouldReturn400_WhenHistoryIsProvided_AndNotCallLlmOrPersist`); every other name found individually in the trx as Passed; none missing; the new C16 name passed. Re-runs of the same batch: passed, passed, failed (same test), so 2 of 5 were red. The same test alone passed.
+- **Front:** `ng test --no-watch` with 5 `--include` files and one `--filter` alternation of the 17 check names (run through `npx -y node@24.15.0`, environment workaround). Exit 0; 17 passed, each listed individually.
 - **ArchitectureTests:** 18 passed.
-- **E2ETests:** 13 passed. This includes `OpenApiDocumentTests`, which pins the regenerated contract with the `400`s.
+- **E2ETests:** 13 passed.
 
 | Check | Claim | Proof run | Evidence | Result |
 | --- | --- | --- | --- | --- |
@@ -42,8 +39,8 @@ Proof runs at `37de0a6`, one call per target:
 | C2 | one SaveChangesAsync per successful turn | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:95` - `Assert.Equal(1, counter.Calls)` | PASS |
 | C3 | append after highest sequence, 200 same id | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:110` - sequences `1..5`; `tests/Api.Tests/Ai/ChatAiTests.cs:197` - same `ConversationId` | PASS |
 | C4 | window of last HistoryWindow user/assistant items, oldest first, body ignored | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:126-128`; `:146` - `new[] { "a1", "u2", "a2" }` | PASS |
-| C5 | history -> 400 Validation failed, key history, no LLM, no persist | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:61-63`; `tests/Api.Tests/Ai/ChatAiTests.cs:214-219` | PASS |
-| C6 | unknown or foreign conversationId -> 404 Not found, same body | batch, 4 names passed | boundary: `tests/Api.Tests/Ai/ChatAiTests.cs:284-289` - both `NotFound`, `Assert.Equal(unknownBody, foreignBody)` after id substitution, title `Not found`; another tenant, same user id: `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:496-499` - `NotFoundException`, same message, no LLM call; own level `:172`, `:185` | PASS |
+| C5 | history -> 400 Validation failed, key history, no LLM, no persist (verified at 6370024) | batch: handler proof passed 5 of 5; HTTP proof FAILED in 2 of 5 batch runs | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:61-63` - `ShouldHaveValidationErrorFor("history")`; `tests/Api.Tests/Ai/ChatAiTests.cs:214-218` - 400, `Validation failed`, key `history`, no LLM request; `:219` - `Assert.Equal(before, await ConversationCountAsync(client))` is FLAKY: it counts the seeded admin's conversations in the shared `AppDb` store while parallel classes create conversations as the same admin (observed `Expected: 3 Actual: 4`). The no-persist half of the claim has no reliably green proof | FAIL |
+| C6 | unknown or foreign conversationId -> 404 Not found, same body | batch, 4 names passed | boundary: `tests/Api.Tests/Ai/ChatAiTests.cs:284-289` - both `NotFound`, `Assert.Equal(unknownBody, foreignBody)` after id substitution, title `Not found`; another tenant, same user id: `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:540-543` - `NotFoundException`, same message, no LLM call; own level `:172`, `:185` | PASS |
 | C7 | agentId mismatch -> 409, no items appended | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:201-203`; `tests/Api.Tests/Ai/ChatAiTests.cs:238-240` | PASS |
 | C8 | fixed agent inactive -> 404 Not found, loop not run | batch, both passed | boundary: `tests/Api.Tests/Ai/ChatAiTests.cs:306-308` - `NotFound`, `"Not found"`, `Assert.Equal(before, llm.Requests.Count)`; own level `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:223` | PASS |
 | C9 | loop throws -> counts unchanged, nothing created, 500 Unexpected error | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:235`, `:245-246`; `tests/Api.Tests/Ai/ChatAiTests.cs:90-92` | PASS |
@@ -51,9 +48,9 @@ Proof runs at `37de0a6`, one call per target:
 | C11 | lastActivityAt = append instant | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:322` | PASS |
 | C12 | title first 80 chars + ellipsis | batch, 2 rows passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:336` | PASS |
 | C13 | MaxItems -> 409, no LLM | batch, passed | `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:352-353`; `tests/Api.Tests/Ai/ChatAiTests.cs:255-258` | PASS |
-| C14 | concurrent same sequence -> second write 409, no overwrite | batch, 3 names passed | boundary: `tests/Api.Tests/Ai/ChatAiTests.cs:335-341` - statuses `{ OK, Conflict }`, title `Business rule violation`, detail `ConcurrentAppendMessage`; no overwrite: `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:386-388` - seed rows 1,2 keep content, winner at 3,4; model: `:511` `Assert.True(index.IsUnique)` on `(ConversationId, Sequence)` and `:512-513` `LastActivityAt` is a concurrency token. Judged as written: the claim is proven. Declared limit (plan Impact): rollback of the loser's rows and DB enforcement of the unique index are Postgres-only and not exercised by InMemory | PASS |
+| C14 | concurrent same sequence -> second write 409, no overwrite | batch, 3 names passed | boundary: `tests/Api.Tests/Ai/ChatAiTests.cs:335-341` - statuses `{ OK, Conflict }`, title `Business rule violation`, detail `ConcurrentAppendMessage`; no overwrite: `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:386-388` - seed rows 1,2 keep content, winner at 3,4; model: `:555` `Assert.True(index.IsUnique)` on `(ConversationId, Sequence)` and `:556-557` `LastActivityAt` is a concurrency token. Judged as written: the claim is proven. Declared limit (plan Impact): rollback of the loser's rows and DB enforcement of the unique index are Postgres-only and not exercised by InMemory | PASS |
 | C15 | EnableAI false -> 404 Feature disabled on 4 routes | batch, 4 passed | `tests/Api.Tests/Ai/ChatAiTests.cs:34-36`; `tests/Api.Tests/Ai/ListConversationsTests.cs:90-91`; `tests/Api.Tests/Ai/GetConversationTests.cs:119-120`; `tests/Api.Tests/Ai/DeleteConversationTests.cs:101-102` | PASS |
-| C16 | every chat exit logs tenantId, agentId, conversationId | batch, 4 names passed | code: one outer `try`/`finally` around `RunTurnAsync` writes the line on every exit after tenant and user resolve (`src/Api/Features/Ai/ChatAi.cs:62-78`); success `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:403-406`; loop throws `:421-424`; MaxItems 409, agent mismatch 409, unknown 404 `:448-451` - 3 finished lines, 2 naming conversation+agent, 1 naming the unknown id; quota 429 `:472-475` - tenant, agent, conversation, `success False`. Fault R2-1 killed | PASS |
+| C16 | every chat exit logs tenantId, agentId, conversationId (verified at 6370024) | batch, 5 names passed | code: one outer `try`/`finally` around `RunTurnAsync` writes the line on every exit after tenant and user resolve (`src/Api/Features/Ai/ChatAi.cs:62-78`); success `tests/Api.Tests/Ai/ChatAiHandlerTests.cs:403-406`; loop throws `:421-424`; MaxItems 409, agent mismatch 409, unknown 404 `:448-451`; quota 429 `:472-475`; guard block 400 `:495-497` - tenant, `seeded.AgentId`, `seeded.Id` in the single finished line; inactive agent 404 `:516-519` - tenant, agent, conversation, `success False`. Faults R2-1 and R3-1 killed | PASS |
 | C17 | GET list: defaults, only caller's, lastActivityAt desc | batch, 3 names passed | boundary: `tests/Api.Tests/Ai/ListConversationsTests.cs:45-47` - two distinct plain users, `TotalCount` 2, `new[] { alicesSecond, alicesFirst }`, Bob's absent; defaults `:25-28`; search and sorts `:63-66` | PASS |
 | C18 | GET one: user+assistant by sequence (carried from 43eb477, citations refreshed) | batch, passed | `tests/Api.Tests/Ai/GetConversationTests.cs:27`; boundary `:134` | PASS |
 | C19 | includeToolItems=true includes tool items as stored | batch, both passed | boundary: `tests/Api.Tests/Ai/GetConversationTests.cs:94-97` - no tool without the parameter, one tool with `?includeToolItems=true`, content starts `<tool_output>\n`, sequences `1..4`; own level `:38-39`. Fault R2-3 killed only by the HTTP proof | PASS |
@@ -100,7 +97,7 @@ Rows the fix touched are recomputed at `37de0a6`; the rest are carried from `43e
 | list search and sort (5) - verified at 37de0a6 | Surface In + `Conversation.cs:104-127` | `searchTerm` `ListConversationsTests.cs:63` · `title` asc `:64` · `title` desc `:65` · `lastActivityAt` asc `:66` · default desc `:28` and over HTTP `:46` - search and sort asserted at handler level; their query-string binding shares `[AsParameters]` with the HTTP-proven defaults | - |
 | `GET /{id}` inputs (2) - verified at 37de0a6 | Surface | `conversationId` C18 · `includeToolItems` C19 at HTTP | - |
 | conversation not found for the caller (4) - verified at 37de0a6 | AC 6 + door 3 + tenant filter `AiModule.cs:118-119` | random id C6 (HTTP) · another user C6 (HTTP), C20 · another tenant, same user id C6 `ChatAiHandlerTests.cs:496-499` (fault R2-2 killed) · Admin non-owner C22 | - |
-| chat exits that write the completion line (8) - verified at 37de0a6 | AC 16 + `ChatAi.cs:62-78` | success, loop throws, MaxItems 409, agent mismatch 409, unknown 404, quota 429 each asserted (C16). Guard block 400 and inactive agent 404 exit through the same single `finally` and are not asserted one by one; a mutation of that `finally` is killed (R2-1). Tenant or user missing (`ChatAi.cs:54-57`) throws before the line; neither is reachable over HTTP under the `Authenticated` policy with a resolved tenant | - |
+| chat exits that write the completion line (8) - verified at 6370024 | AC 16 + `ChatAi.cs:62-78` + checks.md Coverage row | success `ChatAiHandlerTests.cs:403-406` · loop throws `:421-424` · unknown conversation 404, agent mismatch 409, MaxItems 409 `:448-451` · quota 429 `:472-475` · guard block 400 `:495-497` · inactive agent 404 `:516-519` - all 8 asserted individually. Tenant or user missing (`ChatAi.cs:54-57`) throws before the line and is unreachable over HTTP with the `Authenticated` policy and a resolved tenant | - |
 | refusals before the turn that persist nothing (3) - carried | plan Assumptions | loop throws C9 · guard C42 · quota C42 | - |
 | one-way doors (7) - door 3 and 4 verified at 37de0a6 | Landing | 1 C1,C2 · 2 C5 · 3 C6,C17,C20,C22 (now at HTTP) · 4 C10,C14 (HTTP 409, unique index and concurrency token asserted on the model) · 5 C21,C37 · 6 C37-C41 · 7 C7 · declared in plan Impact and not exercised on InMemory: DB enforcement of the unique index and the loser's rollback (Postgres-only) | - |
 | Relations entities (2) - carried | Relations | Conversation C1 · ConversationItem C2,C10 | - |
@@ -125,27 +122,21 @@ touch `ChatAi.cs:23`, `chat.spec.ts:196`, `chat.spec.ts:248-250`, `AiRateLimitTe
 
 ## Faults injected
 
-Round 2, on the surfaces the fix touched or created. Round-1 faults (owner filter, window role filter,
-conflict translation, `IgnoreQueryFilters`, validator) are carried from `43eb477`: all killed. Their files
-changed only in `ChatAi.cs`, and the conflict-translation catch there is byte-identical.
+Round 3, on the surface the new test creates. Rounds 1 and 2 faults are carried from `37de0a6` (all ten killed; `src/` unchanged since).
 
 | Mutation | Location | Killed |
 | --- | --- | --- |
-| R2-1: completion line written only when `log.Success` (the outer `finally` no longer logs refused exits) | `src/Api/Features/Ai/ChatAi.cs:71-77` | yes - `ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenTurnIsRefusedBeforeTheLoop` failed |
-| R2-2: Conversation tenant query filter reduced to `CurrentTenantId != null` (TenantId no longer compared) | `src/Api/Features/Ai/AiModule.cs:118-119` | yes - `ChatAiHandlerTests.Handle_ShouldThrow_WhenConversationBelongsToAnotherTenant` failed |
-| R2-3: endpoint ignores `includeToolItems` (always `false`) | `src/Api/Features/Ai/GetConversation.cs:62` | yes - `GetConversationTests.Get_ShouldIncludeToolItems_OnlyWhenQueryParameterIsTrue` failed; the handler-level C19 proof passed, which confirms the round-1 level gap was real and is now closed |
-| R2-4: `NotEmpty` on `ConversationId` removed | `src/Api/Features/Ai/GetConversation.cs:23` | yes - `GetConversationTests.Get_ShouldReturn400_WhenConversationIdIsEmpty` failed |
-| R2-5 (front, real tree, guarded and restored): header children swapped, `a` before `h1` | `src/web/src/app/features/ai/conversations-list.ts:60-61` | yes - `arranjo e copy: cabecalho, pesquisa, tabela e paginador` failed (`expected [ 'a', 'h1' ] to deeply equal [ 'h1', 'a' ]`) |
-
-Not mutated this round (cap of five): the list sort branches (`Conversation.cs:117-127`, proven at
-`ListConversationsTests.cs:63-66`) and the chat toolbar arrangement (C47).
+| R3-1: the conversation's agent is no longer recorded for the log before agent resolution (`log.AgentId = conversation.AgentId` removed), so an inactive-agent refusal logs no agent id | `src/Api/Features/Ai/ChatAi.cs:89-90` | yes - `ChatAiHandlerTests.Handle_ShouldLogTenantAgentAndConversationId_WhenGuardBlocksOrAgentIsInactive` failed (`Assert.Contains() Failure: Sub-string not found`) |
+| R2-1 to R2-5 (carried from 37de0a6) | see round 2 | yes |
+| round-1 five faults (carried from 43eb477) | see round 1 | yes |
 
 ## Gate
 
-At `37de0a6`:
-- `dotnet test tests/Api.Tests`: 302 passed, 0 failed.
+At `6370024`:
+- `dotnet test tests/Api.Tests`, full suite: 303 passed, 0 failed, in 3 of 3 runs.
 - `dotnet test tests/ArchitectureTests`: 18 passed, 0 failed.
 - `dotnet test tests/E2ETests`: 13 passed, 0 failed.
 - `ng test --no-watch` (src/web, all specs): 145 passed, 0 failed.
+- The filtered Api.Tests proof batch: 2 of 5 runs had 1 failure (C5, see above).
 
-Total: 478 passed, 0 failed.
+Full suites total 479 passed, 0 failed; the proof batch is not deterministic, so C5 fails.

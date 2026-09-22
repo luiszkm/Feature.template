@@ -202,7 +202,8 @@ public sealed class ChatAiTests
     {
         var llm = ScriptedLlmService.Replying();
         await using var factory = WithServices(services => services.AddSingleton<ILlmService>(llm));
-        using var client = await AiHttp.AdminClientAsync(factory);
+        // A fresh user: the host InMemory store is process-wide, so the shared admin's count moves under parallel tests.
+        using var client = await AiHttp.PlainUserClientAsync(factory);
         var before = await ConversationCountAsync(client);
 
         var response = await client.PostAsJsonAsync("/api/v1/ai/chat", new
