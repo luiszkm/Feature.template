@@ -73,7 +73,7 @@ describe('Shell', () => {
     expect(session.user()).not.toBeNull();
   });
 
-  it('esconde AI e Agentes quando a flag esta off', async () => {
+  it('esconde AI, Agentes e Conversas quando a flag esta off', async () => {
     const session = TestBed.inject(SessionStore);
     session.setTenantKey('dev');
     session.apply({ ...authToken({ roles: ['Admin'] }), accessToken: tokenWith([]) });
@@ -84,5 +84,17 @@ describe('Shell', () => {
 
     expect(maybeEl(fixture, 'nav-ai')).toBeNull();
     expect(maybeEl(fixture, 'nav-agents')).toBeNull();
+    expect(maybeEl(fixture, 'nav-conversations')).toBeNull();
+  });
+
+  it('mostra Conversas quando a flag esta on', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: ['Admin'] }), accessToken: tokenWith([]) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(text(fixture, 'nav-conversations')).toBe('Conversas');
   });
 });

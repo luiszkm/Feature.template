@@ -70,6 +70,15 @@ export const routes: Routes = [
       },
       { path: 'ai', loadComponent: () => import('./features/ai/chat').then((m) => m.Chat) },
       {
+        path: 'ai/conversations',
+        loadComponent: () =>
+          import('./features/ai/conversations-list').then((m) => m.ConversationsList),
+      },
+      {
+        path: 'ai/conversations/:conversationId',
+        loadComponent: () => import('./features/ai/chat').then((m) => m.Chat),
+      },
+      {
         path: 'ai/agents',
         loadComponent: () => import('./features/ai/agents-list').then((m) => m.AgentsList),
         canActivate: [permissionGuard(Permissions.agentRead)],

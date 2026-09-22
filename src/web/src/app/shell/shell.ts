@@ -51,6 +51,9 @@ import { firstValueFrom } from 'rxjs';
         >
         @if (ai.available()) {
           <a routerLink="/ai" routerLinkActive="active" data-testid="nav-ai">AI</a>
+          <a routerLink="/ai/conversations" routerLinkActive="active" data-testid="nav-conversations"
+            >Conversas</a
+          >
           <a
             *appHasPermission="permissions.agentRead"
             routerLink="/ai/agents"

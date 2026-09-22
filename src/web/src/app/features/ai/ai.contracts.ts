@@ -92,3 +92,28 @@ export const KNOWN_AGENT_TOOLS = [
   { name: 'list_agent_files', label: 'Listar ficheiros' },
   { name: 'read_agent_file', label: 'Ler ficheiro' },
 ] as const;
+
+export interface ConversationSummary {
+  conversationId: string;
+  title: string;
+  agentId: string;
+  lastActivityAt: string;
+  itemCount: number;
+}
+
+export interface ConversationItemOutput {
+  itemId: string;
+  role: string;
+  content: string;
+  sequence: number;
+  createdAt: string;
+}
+
+export interface ConversationOutput {
+  conversationId: string;
+  title: string;
+  agentId: string;
+  createdAt: string;
+  lastActivityAt: string;
+  items: ConversationItemOutput[];
+}
