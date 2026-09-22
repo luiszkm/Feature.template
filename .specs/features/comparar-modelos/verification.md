@@ -1,23 +1,51 @@
 # Comparar modelos — Verification
 
-**Verdict**: FAIL
+**Verdict**: PASS
 **Profile**: light (no `## tlc-implement` declaration in `AGENTS.md`)
-**Diff range**: 7148c0c..20a47c6 (HEAD)
-**Round**: 1 - full
+**Diff range**: 7148c0c..417a685 (HEAD)
+**Round**: 2 - scoped (fix diff 20a47c6..417a685)
 **Verifier**: independent sub-agent (author != verifier)
 
-61/62 checks proven. **C60 fails at HEAD**: `dotnet test tests/ArchitectureTests` is 15/17 in a
-clean worktree of `20a47c6`. It goes green only against the dirty working tree. Commit `b563ded`
-regenerated `src/Api/openapi.json` from a working tree whose uncommitted `GetRole.cs` had dropped
-`GET /api/v1/authorization/roles/{roleId}`. So the committed contract lost that operation
-(base `paths["/api/v1/authorization/roles/{roleId}"]` = `delete,get,put`, HEAD = `delete,put`).
-HEAD's `GetRole.cs:26` still maps it and HEAD's `features.json` still lists `GetRole`.
+62/62 checks proven at `417a685` in a clean detached worktree. C60 now passes: `src/Api/openapi.json`
+was regenerated from a clean tree and `paths["/api/v1/authorization/roles/{roleId}"]` is back to
+`delete,get,put`. `ArchitectureTests` is 17/17 at HEAD.
 
-Failing at HEAD:
-- `OpenApiContractTests.EveryFeatureRoute_ShouldExist_InTheDocument` (`OpenApiContractTests.cs:75`) - "Routes in features.json missing from openapi.json: GET /api/v1/authorization/roles/{roleId}"
-- `OpenApiContractTests.Document_ShouldCover_EveryFeatureRoute` (`OpenApiContractTests.cs:95`) - Expected 43, Actual 42
+## Round 2 (verified at 417a685)
 
-The 4 new routes themselves are in the committed `openapi.json` (`/ai/models` get, `/ai/comparisons` post+get, `/ai/comparisons/{comparisonId}` get) and in `features.json`.
+Proofs were re-run in full at HEAD in `git worktree add --detach … HEAD`. The worktree had its own
+`npm ci`. The main tree's `git status --porcelain` was the same before and after, and the worktree was removed.
+
+| Tree | Command | Result |
+|---|---|---|
+| HEAD worktree | `dotnet test tests/Api.Tests --logger trx` (all) | 200 passed, 0 failed |
+| HEAD worktree | `dotnet test tests/ArchitectureTests` | 17 passed, 0 failed |
+| HEAD worktree | `node node_modules/@angular/cli/bin/bootstrap.js test --no-watch --include src/app/features/ai/agent-form.spec.ts --include src/app/architecture.spec.ts --reporters=verbose` | 17 passed (2 files) |
+
+Re-judged items (the fix diff touched these):
+
+| Check | Proof run | Evidence | Round 1 → Round 2 |
+|---|---|---|---|
+| C60 | `ArchitectureTests` 17/17 at HEAD | `OpenApiContractTests` `EveryFeatureRoute_ShouldExist_InTheDocument` and `Document_ShouldCover_EveryFeatureRoute` pass. `openapi.json` +39 lines restore `GET /api/v1/authorization/roles/{roleId}` | FAIL → **PASS** |
+| C5 | + `AgentModelTests.Validator_ShouldRejectModelOver200Chars_EvenWhenInCatalog` Passed | `AgentModelTests.cs:186` `FakeModelCatalog(longId)` (the 201-char id **is** in the catalog, so the catalog rule passes); `:191` `Assert.Single(result.Errors, e => e.PropertyName == "Model")`; `:192` `Assert.Equal("MaximumLengthValidator", error.ErrorCode)`. The length rule is now isolated at the validator level | PASS (weak) → PASS |
+| C8 | `ChatAiHandlerTests.Handle_ShouldSendNullModel_WhenAgentHasNoModel` Passed | `ChatAiHandlerTests.cs:222` `Assert.NotEmpty(llm.Requests)`; `:223` `Assert.All(..., Assert.Null(request.Model))` | PASS (weak) → PASS |
+| C18 | `ListModelsTests.Maf_ShouldReturnConfiguredModels_WithNullPrices` Passed | `ListModelsTests.cs:73` fixture `AllowedModels = ["gpt-4o"]` with `Model = "gpt-4o-mini"`; `:78` ids `{"gpt-4o","gpt-4o-mini"}`. The union is now observed (`ModelCatalog.cs:109` `.Concat(llm.AllowedModels)`) | PASS (weak) → PASS |
+| C21 | + `AgentModelTests.Put_ShouldReturn503_WhenCatalogUnavailable` Passed | `AgentModelTests.cs:214` `Assert.Equal(HttpStatusCode.ServiceUnavailable, …)`; `:216` `"Service unavailable"`. Closes the task 18 PUT omission. Note: the agent is seeded in a separate factory (`:198-200`), so the PUT target may not exist in the 503 factory. The validator (`UpdateAgent.cs:25-30`) runs before the handler, so the 503 claim still holds | PASS → PASS (scope widened) |
+
+## Carried from 20a47c6
+
+These items were not touched by the fix diff. Their status carries forward, and their proofs re-ran green above.
+
+| Check | Status | Gap |
+|---|---|---|
+| C54 | PASS (precision gap) | task 44 "estável por `id`" tiebreak not asserted (`CompareModelsTests.cs:194` asserts order by createdAt only) |
+| C56 | PASS (partial level gap) | other-tenant 404 proven only at handler level (`CompareModelsTests.cs:242` `ThrowsAsync<NotFoundException>`), not over HTTP |
+| C20 | PASS (precision gap) | only non-2xx (502) exercised. Task 18 `HttpRequestException` and timeout are not (`ListModelsTests.cs:113`) |
+| C22 | PASS (precision gap) | 1h TTL not asserted, only in code (`ModelCatalog.cs:42`) |
+| All other checks (C1-C4, C6-C7, C9-C17, C19, C23-C53, C55, C57-C59, C61-C62) | PASS | names re-ran green in the 200-test TRX at HEAD. Citations in files the fix did not touch are unchanged |
+
+---
+
+# Round 1 (carried from 20a47c6)
 
 ## Steps run / not run
 
