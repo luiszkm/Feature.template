@@ -181,6 +181,7 @@ public sealed class AiRateLimitTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var repository = scope.ServiceProvider.GetRequiredService<IAiUsageRepository>();
 
         Assert.Equal(7, await repository.SumTokensSinceAsync(DateTime.UtcNow.AddMinutes(-1)));
@@ -229,6 +230,7 @@ public sealed class AiRateLimitTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var result = await scope.ServiceProvider.GetRequiredService<ChatAiHandler>()
             .Handle(new ChatAiCommand("hello"), CancellationToken.None);
 

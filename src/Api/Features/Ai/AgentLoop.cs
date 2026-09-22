@@ -20,6 +20,7 @@ public sealed class AgentLoop(
         string? model = null)
     {
         var conversationHistory = history?.ToList() ?? [];
+        var turnStart = conversationHistory.Count;
         var toolDefinitions = toolRegistry.GetDefinitions(allowedToolNames);
         var guardedSystemPrompt = AgentGuardrails.WithSuffix(systemPrompt);
         var iterations = 0;
@@ -40,7 +41,7 @@ public sealed class AgentLoop(
             usage.Add(response);
 
             if (response.ToolCalls is not { Count: > 0 })
-                return usage.ToResult(await GuardReplyAsync(response.Text, cancellationToken), iterations);
+                return usage.ToResult(await GuardReplyAsync(response.Text, cancellationToken), iterations, conversationHistory[turnStart..]);
 
             conversationHistory.Add(new LlmMessage("assistant", response.Text, ToolCalls: response.ToolCalls));
 
@@ -65,7 +66,7 @@ public sealed class AgentLoop(
             cancellationToken);
 
         usage.Add(fallback);
-        return usage.ToResult(await GuardReplyAsync(fallback.Text, cancellationToken), iterations);
+        return usage.ToResult(await GuardReplyAsync(fallback.Text, cancellationToken), iterations, conversationHistory[turnStart..]);
     }
 
     /// <summary>Whatever a tool returns reaches the model as delimited data, never as an exception.</summary>
@@ -135,7 +136,7 @@ public sealed class AgentLoop(
                 _costUnknown = true;
         }
 
-        public AgentResult ToResult(string reply, int iterations) =>
-            new(reply, iterations, _total, _input, _output, _costUnknown ? null : _cost);
+        public AgentResult ToResult(string reply, int iterations, IReadOnlyList<LlmMessage> turnMessages) =>
+            new(reply, iterations, _total, _input, _output, _costUnknown ? null : _cost, turnMessages);
     }
 }

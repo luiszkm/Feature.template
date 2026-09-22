@@ -67,6 +67,16 @@ public sealed class LlmOptions
     public int CompareTimeoutSeconds { get; set; } = 60;
 }
 
+public sealed class ConversationOptions
+{
+    public const string SectionName = "Ai:Conversations";
+
+    public int HistoryWindow { get; set; } = 20;
+    public int MaxItems { get; set; } = 200;
+    public int RetentionDays { get; set; } = 90;
+    public int PurgeIntervalHours { get; set; } = 24;
+}
+
 public interface IAgentRuntimeContext
 {
     Guid? AgentId { get; }

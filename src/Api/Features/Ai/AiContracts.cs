@@ -65,6 +65,7 @@ public sealed record AgentResult(
     int TotalTokens,
     int InputTokens = 0,
     int OutputTokens = 0,
-    decimal? Cost = null);
+    decimal? Cost = null,
+    IReadOnlyList<LlmMessage>? TurnMessages = null);
 
-public sealed record ChatAiOutput(string Reply, int IterationsUsed);
+public sealed record ChatAiOutput(string Reply, int IterationsUsed, Guid ConversationId);

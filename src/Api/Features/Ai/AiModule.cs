@@ -16,6 +16,8 @@ public static class AiModule
         services.AddOptions<LlmOptions>()
             .BindConfiguration(LlmOptions.SectionName);
         services.AddHostedService<LlmStartupGuard>();
+        services.AddHostedService<ConversationRetentionService>();
+        services.AddOptions<ConversationOptions>().BindConfiguration(ConversationOptions.SectionName);
         services.AddOptions<GuardrailOptions>().BindConfiguration(GuardrailOptions.SectionName);
         services.AddOptions<AiRateLimitOptions>().BindConfiguration(AiRateLimitOptions.SectionName);
         services.AddOptions<AiQuotaOptions>().BindConfiguration(AiQuotaOptions.SectionName);
@@ -36,6 +38,7 @@ public static class AiModule
         services.AddScoped<IAiUsageRepository, AiUsageRepository>();
         services.AddScoped<IAiUsageTracker, AiUsageTracker>();
         services.AddScoped<IModelComparisonRepository, ModelComparisonRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddMemoryCache();
 
         services.AddHttpClient(OpenRouterLlmService.HttpClientName, (sp, client) =>
@@ -110,6 +113,9 @@ internal sealed class AiTenantQueryFilters : ITenantQueryFilterConfigurator
             entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
 
         modelBuilder.Entity<AiUsageEntry>().HasQueryFilter(
+            entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
+
+        modelBuilder.Entity<Conversation>().HasQueryFilter(
             entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
 
         modelBuilder.Entity<ModelComparison>().HasQueryFilter(

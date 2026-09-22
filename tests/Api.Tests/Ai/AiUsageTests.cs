@@ -25,6 +25,7 @@ public sealed class AiUsageTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var agent = await CreateAgentAsync(scope.ServiceProvider, model: null);
 
         await scope.ServiceProvider.GetRequiredService<ChatAiHandler>()
@@ -50,6 +51,7 @@ public sealed class AiUsageTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var agent = await CreateAgentAsync(scope.ServiceProvider, model: StubModelCatalog.ModelB);
 
         await scope.ServiceProvider.GetRequiredService<ChatAiHandler>()
@@ -68,6 +70,7 @@ public sealed class AiUsageTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
 
         await Assert.ThrowsAsync<HttpRequestException>(() =>
@@ -91,6 +94,7 @@ public sealed class AiUsageTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var chat = scope.ServiceProvider.GetRequiredService<ChatAiHandler>();
 
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -114,6 +118,7 @@ public sealed class AiUsageTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         var agent = await CreateAgentAsync(scope.ServiceProvider, model: null);
         FailingSaveInterceptor.Armed.Value = true;
         try
@@ -139,6 +144,7 @@ public sealed class AiUsageTests
 
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         await scope.ServiceProvider.GetRequiredService<ChatAiHandler>()
             .Handle(new ChatAiCommand("hello"), CancellationToken.None);
 
@@ -175,6 +181,7 @@ public sealed class AiUsageTests
         using (var scope = provider.CreateScope())
         {
             TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+            TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
             await scope.ServiceProvider.GetRequiredService<ChatAiHandler>()
                 .Handle(new ChatAiCommand("hello"), CancellationToken.None);
         }
@@ -192,6 +199,7 @@ public sealed class AiUsageTests
     {
         using var scope = provider.CreateScope();
         TestServiceFactory.SetTenant(scope.ServiceProvider, tenantId ?? TenantId);
+        TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         return await scope.ServiceProvider.GetRequiredService<IAiUsageRepository>().ListAsync();
     }
 }

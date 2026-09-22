@@ -207,6 +207,9 @@ public static class TestServiceFactory
         services.AddScoped<GetAgentFileHandler>();
         services.AddScoped<DeleteAgentFileHandler>();
         services.AddScoped<CreateTenantHandler>();
+        services.AddScoped<ListConversationsHandler>();
+        services.AddScoped<GetConversationHandler>();
+        services.AddScoped<DeleteConversationHandler>();
         configure?.Invoke(services);
         return BuildProvider(services);
     }
@@ -216,6 +219,26 @@ public static class TestServiceFactory
         var context = provider.GetRequiredService<ITenantContext>();
         if (context is TenantContext mutable)
             mutable.SetTenant(tenantId, tenantKey);
+    }
+
+    /// <summary>
+    /// Signs <paramref name="userId"/> in for handlers that read <c>ICurrentUserAccessor</c>. The
+    /// accessor is AsyncLocal-backed, so the principal flows to every handler awaited afterwards.
+    /// </summary>
+    public static readonly Guid DefaultUserId = Guid.Parse("7d5f0a52-3c1e-4c7a-9a55-0b8f1e2d4c61");
+
+    public static void SetUser(IServiceProvider provider, Guid userId, params string[] roles)
+    {
+        var claims = new List<System.Security.Claims.Claim>
+        {
+            new(System.Security.Claims.ClaimTypes.NameIdentifier, userId.ToString())
+        };
+        claims.AddRange(roles.Select(role => new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, role)));
+        provider.GetRequiredService<Microsoft.AspNetCore.Http.IHttpContextAccessor>().HttpContext =
+            new Microsoft.AspNetCore.Http.DefaultHttpContext
+            {
+                User = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(claims, "test"))
+            };
     }
 
     public static async Task<User> SeedUserAsync(

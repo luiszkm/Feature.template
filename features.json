@@ -231,6 +231,30 @@
     "featureFlag": "EnableAI",
     "policy": "Authenticated"
   },
+  "ListConversations": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListConversations.cs",
+    "test": "tests/Api.Tests/Ai/ListConversationsTests.cs",
+    "route": "GET /api/v1/ai/conversations",
+    "featureFlag": "EnableAI",
+    "policy": "Authenticated"
+  },
+  "GetConversation": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetConversation.cs",
+    "test": "tests/Api.Tests/Ai/GetConversationTests.cs",
+    "route": "GET /api/v1/ai/conversations/{conversationId}",
+    "featureFlag": "EnableAI",
+    "policy": "Authenticated"
+  },
+  "DeleteConversation": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/DeleteConversation.cs",
+    "test": "tests/Api.Tests/Ai/DeleteConversationTests.cs",
+    "route": "DELETE /api/v1/ai/conversations/{conversationId}",
+    "featureFlag": "EnableAI",
+    "policy": "Authenticated"
+  },
   "CreateAgent": {
     "m": "Ai",
     "app": "src/Api/Features/Ai/CreateAgent.cs",
