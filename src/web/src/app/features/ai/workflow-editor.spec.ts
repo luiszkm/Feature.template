@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ComponentFixture } from '@angular/core/testing';
+import { DatePipe } from '@angular/common';
 import { By } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { HttpResponse, delay } from 'msw';
@@ -269,6 +270,46 @@ describe('WorkflowEditor', () => {
     });
   });
 
+  it('arrastar move o no e guardar envia a posicao: setas acompanham', async () => {
+    serve();
+    const fixture = await renderEditor();
+    const before = el(fixture, 'edge-a-b').getAttribute('d');
+    const node = fixture.debugElement.query(By.css('[data-testid="node-a"]'));
+
+    node.triggerEventHandler('cdkDragMoved', { distance: { x: 100, y: 30 } });
+    await settle(fixture);
+    const during = el(fixture, 'edge-a-b').getAttribute('d');
+    expect(during).not.toBe(before);
+    expect(during!.startsWith('M 290 82')).toBe(true);
+
+    node.triggerEventHandler('cdkDragEnded', {
+      distance: { x: 100, y: 30 },
+      source: { reset: () => undefined },
+    });
+    await settle(fixture);
+    expect(el(fixture, 'edge-a-b').getAttribute('d')).toBe(during);
+  });
+
+  it('arranjo: paleta, canvas e painel a direita, com os rotulos', async () => {
+    serve();
+    const fixture = await renderEditor();
+
+    const regions = [
+      ...(fixture.nativeElement as HTMLElement).querySelector('.workspace')!.children,
+    ].map((child) => child.getAttribute('data-testid'));
+    expect(regions).toEqual(['palette', 'canvas', 'panel']);
+    expect(el(fixture, 'palette').querySelector('h2')?.textContent?.trim()).toBe(
+      'Adicionar agente',
+    );
+    expect(text(fixture, 'save')).toBe('Guardar');
+    expect(text(fixture, 'run-start')).toBe('Executar');
+
+    await click(fixture, 'node-a');
+    expect(text(fixture, 'remove-node')).toBe('Remover nó');
+    await clickSvg(fixture, 'edge-a-b');
+    expect(text(fixture, 'remove-edge')).toBe('Remover ligação');
+  });
+
   it('ligar porta de saida a outro no cria aresta', async () => {
     serve({ existing: workflow({ edges: [] }) });
     const fixture = await renderEditor({ existing: workflow({ edges: [] }) });
@@ -389,7 +430,11 @@ describe('WorkflowEditor', () => {
         problem(400, {
           title: 'Validation failed',
           status: 400,
-          errors: { edges: ['As ligações formam um ciclo.'] },
+          errors: {
+            name: ['O nome é obrigatório.'],
+            nodes: ['Cada nó precisa de uma key única.'],
+            edges: ['As ligações formam um ciclo.'],
+          },
         }),
       ),
     );
@@ -399,6 +444,8 @@ describe('WorkflowEditor', () => {
     await click(fixture, 'save');
 
     expect(text(fixture, 'error-edges')).toBe('As ligações formam um ciclo.');
+    expect(text(fixture, 'error-name')).toBe('O nome é obrigatório.');
+    expect(text(fixture, 'error-nodes')).toBe('Cada nó precisa de uma key única.');
     expect(maybeEl(fixture, 'node-a')).not.toBeNull();
     expect(maybeEl(fixture, 'node-b')).not.toBeNull();
     expect(maybeEl(fixture, 'edge-a-b')).not.toBeNull();
@@ -523,6 +570,33 @@ describe('WorkflowEditor', () => {
     expect(text(fixture, 'run-status')).toBe('Concluído');
   });
 
+  it('polling para no estado terminal e ao sair: para em Failed', async () => {
+    serve();
+    let reads = 0;
+    server.use(
+      api.post(RUNS, () => HttpResponse.json(runOf({ status: 'Running' }), { status: 202 })),
+      api.get(`${RUNS}/run-1`, () => {
+        reads++;
+        return HttpResponse.json(
+          runOf({
+            status: 'Failed',
+            steps: [step('a', 'Failed', { errorCode: 'Timeout' }), step('b', 'Skipped')],
+          }),
+        );
+      }),
+    );
+    const fixture = await renderEditor({ pollMs: 10 });
+
+    await type(fixture, 'run-input', 'olá');
+    await click(fixture, 'run-start');
+    await waitUntil(() => expect(reads).toBe(1));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await settle(fixture);
+
+    expect(reads).toBe(1);
+    expect(text(fixture, 'run-status')).toBe('Falhou');
+  });
+
   it('polling para no estado terminal e ao sair: para ao destruir', async () => {
     serve();
     let reads = 0;
@@ -563,6 +637,7 @@ describe('WorkflowEditor', () => {
       await openRun(fixture);
 
       expect(text(fixture, 'node-status-a')).toBe(label);
+      expect(el(fixture, 'node-a').contains(el(fixture, 'node-status-a'))).toBe(true);
       const spinner = el(fixture, 'node-status-a').querySelector('mat-progress-spinner');
       expect(spinner !== null).toBe(status === 'Running');
     },
@@ -633,6 +708,20 @@ describe('WorkflowEditor', () => {
 
     await openRun(fixture, 'run-9');
     expect(maybeEl(fixture, 'run-view')).not.toBeNull();
+  });
+
+  it('lista de execucoes: ordem da API e inicio', async () => {
+    const newer = runOf({ runId: 'run-2', createdAt: '2026-09-23T12:00:00Z' });
+    const older = runOf({ runId: 'run-1', createdAt: '2026-09-22T08:30:00Z' });
+    serve({ runs: [newer, older] });
+    const fixture = await renderEditor({ runs: [newer, older] });
+
+    const rows = [...el(fixture, 'runs-table').querySelectorAll('tbody tr')].map((row) =>
+      row.getAttribute('data-testid'),
+    );
+    expect(rows).toEqual(['run-row-run-2', 'run-row-run-1']);
+    const started = el(fixture, 'run-row-run-2').querySelectorAll('td')[3].textContent?.trim();
+    expect(started).toBe(new DatePipe('en-US').transform(newer.createdAt, 'short'));
   });
 
   it('lista de execucoes: vazia', async () => {

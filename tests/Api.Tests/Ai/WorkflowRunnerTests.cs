@@ -329,15 +329,20 @@ public sealed class WorkflowRunnerTests
     [Fact]
     public async Task RunOnce_ShouldTrackUsage_PerStep_WithWorkflowOperation()
     {
-        var llm = new ScriptedLlmService((request, _) =>
-            Role(request) == "b"
-                ? throw new HttpRequestException("down")
-                : Task.FromResult(new LlmResponse("ok", 7, InputTokens: 3, OutputTokens: 4, Cost: 0.005m)));
+        var llm = new ScriptedLlmService(async (request, ct) =>
+        {
+            if (Role(request) == "b")
+                throw new HttpRequestException("down");
+            await Task.Delay(60, ct);
+            return new LlmResponse("ok", 7, InputTokens: 3, OutputTokens: 4, Cost: 0.005m);
+        });
         await using var factory = Factory(llm);
         using var client = await AiHttp.AdminClientAsync(factory);
-        var agents = await RoleAgentsAsync(client, "a", "b");
-        var workflow = await CreateAsync(client, [Node("a", agents["a"]), Node("b", agents["b"])]);
+        var agents = await RoleAgentsAsync(client, "a", "b", "c");
+        var workflow = await CreateAsync(client, [Node("a", agents["a"]), Node("b", agents["b"]), Node("c", agents["c"])]);
         await StartRunAsync(client, workflow.WorkflowId);
+        // c ends before the model is called: its step still leaves a ledger row.
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/v1/ai/agents/{agents["c"]}")).StatusCode);
 
         await Runner(factory).RunOnceAsync(CancellationToken.None);
 
@@ -345,16 +350,21 @@ public sealed class WorkflowRunnerTests
             services.GetRequiredService<AppDbContext>().Set<AiUsageEntry>()
                 .Where(e => e.Operation == AiUsageOperations.Workflow)
                 .ToListAsync());
-        Assert.Equal(2, entries.Count);
+        Assert.Equal(3, entries.Count);
         var ok = Assert.Single(entries, e => e.AgentId == agents["a"]);
         Assert.True(ok.Success);
         Assert.Equal(3, ok.InputTokens);
         Assert.Equal(4, ok.OutputTokens);
         Assert.Equal(0.005m, ok.Cost);
+        Assert.True(ok.LatencyMs >= 50, $"latency {ok.LatencyMs}");
         Assert.False(string.IsNullOrEmpty(ok.Model));
         var failed = Assert.Single(entries, e => e.AgentId == agents["b"]);
         Assert.False(failed.Success);
         Assert.Equal(nameof(HttpRequestException), failed.ErrorCode);
+        var refused = Assert.Single(entries, e => e.AgentId == agents["c"]);
+        Assert.False(refused.Success);
+        Assert.Equal("AgentUnavailable", refused.ErrorCode);
+        Assert.Equal(0, refused.InputTokens + refused.OutputTokens);
     }
 
     [Fact]
@@ -475,6 +485,11 @@ public sealed class WorkflowRunnerTests
 
         Assert.Contains(logger.Entries, e => e.Level == LogLevel.Error && e.Message.Contains(broken.RunId.ToString()));
         Assert.Equal(WorkflowRunStatus.Succeeded, (await LoadRunAsync(factory, healthy.RunId)).Status);
+        // The broken run is closed rather than left Running until the interrupt sweep.
+        var aborted = await LoadRunAsync(factory, broken.RunId);
+        Assert.Equal(WorkflowRunStatus.Failed, aborted.Status);
+        Assert.Equal("InternalError", aborted.ErrorCode);
+        Assert.NotNull(aborted.FinishedAt);
     }
 
     [Fact]

@@ -168,6 +168,18 @@ describe('Shell', () => {
     expect(order[order.indexOf('nav-agents') + 1]).toBe('nav-ai-workflows');
   });
 
+  it('mostra Workflows depois de Agentes: esconde com a IA indisponivel', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith(['ai.agent.read']) });
+    TestBed.inject(AiAvailability).learnFrom({ status: 404, title: 'Feature disabled' });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(maybeEl(fixture, 'nav-ai-workflows')).toBeNull();
+  });
+
   it('mostra Workflows depois de Agentes: esconde sem ai.agent.read', async () => {
     const session = TestBed.inject(SessionStore);
     session.setTenantKey('dev');

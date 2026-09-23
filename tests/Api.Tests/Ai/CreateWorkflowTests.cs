@@ -82,6 +82,28 @@ public sealed class CreateWorkflowTests
         Assert.True(problem.Errors.ContainsKey(key), $"{caseName}: keys {string.Join(",", problem.Errors.Keys)}");
     }
 
+    public static TheoryData<string, Func<Guid, object>, string> BoundsBeyondPlan() => new()
+    {
+        { "description 1001", id => new { name = "w", description = new string('d', 1001), nodes = new[] { Node("a", id) }, edges = Array.Empty<object>() }, "description" },
+        { "key vazia", id => Body([Node("", id)], []), "nodes" },
+        { "key 51", id => Body([Node(new string('k', 51), id)], []), "nodes" },
+    };
+
+    [Theory]
+    [MemberData(nameof(BoundsBeyondPlan))]
+    public async Task Post_ShouldReturn400_ForBoundsBeyondPlan(string caseName, Func<Guid, object> body, string key)
+    {
+        await using var factory = Factory();
+        using var client = await AiHttp.AdminClientAsync(factory);
+        var agent = await AiHttp.CreateAgentAsync(client);
+
+        var response = await client.PostAsJsonAsync(Base, body(agent.AgentId));
+
+        Assert.True(response.StatusCode == HttpStatusCode.BadRequest, $"{caseName}: got {(int)response.StatusCode}");
+        var problem = (await response.Content.ReadFromJsonAsync<ValidationProblemDetails>())!;
+        Assert.True(problem.Errors.ContainsKey(key), $"{caseName}: keys {string.Join(",", problem.Errors.Keys)}");
+    }
+
     [Fact]
     public async Task Post_ShouldAcceptDiamond()
     {

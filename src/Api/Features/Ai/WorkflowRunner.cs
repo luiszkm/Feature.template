@@ -245,53 +245,53 @@ internal sealed class WorkflowRunner(
         services.GetRequiredService<BackgroundPrincipal>().Set(principal.ToClaimsPrincipal());
         services.GetRequiredService<IAgentRuntimeContext>().Set(agentId);
 
-        var agent = await services.GetRequiredService<IAgentRepository>().GetByIdAsync(agentId, cancellationToken);
-        if (agent is null || !agent.IsActive)
-            return StepOutcome.Failed(AgentUnavailableErrorCode, 0);
-
-        try
-        {
-            await services.GetRequiredService<AiQuota>().EnsureWithinAsync(cancellationToken);
-        }
-        catch (TooManyRequestsException)
-        {
-            return StepOutcome.Failed(QuotaExceededErrorCode, 0);
-        }
-
         var llmOptions = services.GetRequiredService<IOptions<LlmOptions>>().Value;
         var environment = services.GetRequiredService<IHostEnvironment>();
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, options.Value.StepTimeoutSeconds)));
+        var agent = await services.GetRequiredService<IAgentRepository>().GetByIdAsync(agentId, cancellationToken);
         var stopwatch = Stopwatch.StartNew();
 
         StepOutcome outcome;
-        try
+        if (agent is null || !agent.IsActive)
         {
-            var result = await services.GetRequiredService<AgentLoop>().RunAsync(
-                message,
-                agent.Instructions,
-                history: null,
-                agent.ToolNames,
-                timeout.Token,
-                agent.Model);
-            outcome = StepOutcome.Succeeded(result, stopwatch.ElapsedMilliseconds);
+            outcome = StepOutcome.Failed(AgentUnavailableErrorCode, stopwatch.ElapsedMilliseconds);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        else if (!await WithinQuotaAsync(services, cancellationToken))
         {
-            logger.LogWarning("Workflow step for agent {AgentId} timed out", agentId);
-            outcome = StepOutcome.Failed(TimeoutErrorCode, stopwatch.ElapsedMilliseconds);
+            outcome = StepOutcome.Failed(QuotaExceededErrorCode, stopwatch.ElapsedMilliseconds);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        else
         {
-            logger.LogWarning(ex, "Workflow step for agent {AgentId} failed", agentId);
-            outcome = StepOutcome.Failed(ex.GetType().Name, stopwatch.ElapsedMilliseconds);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(Math.Max(1, options.Value.StepTimeoutSeconds)));
+            try
+            {
+                var result = await services.GetRequiredService<AgentLoop>().RunAsync(
+                    message,
+                    agent.Instructions,
+                    history: null,
+                    agent.ToolNames,
+                    timeout.Token,
+                    agent.Model);
+                outcome = StepOutcome.Succeeded(result, stopwatch.ElapsedMilliseconds);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                logger.LogWarning("Workflow step for agent {AgentId} timed out", agentId);
+                outcome = StepOutcome.Failed(TimeoutErrorCode, stopwatch.ElapsedMilliseconds);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Workflow step for agent {AgentId} failed", agentId);
+                outcome = StepOutcome.Failed(ex.GetType().Name, stopwatch.ElapsedMilliseconds);
+            }
         }
 
+        // Every step that ends leaves a ledger row, including the ones refused before the model.
         await services.GetRequiredService<IAiUsageTracker>().TrackAsync(
             new AiUsageRecord(
                 Service: "llm",
                 Provider: LlmServiceResolver.ProviderLabel(environment, llmOptions),
-                Model: agent.Model ?? llmOptions.Model,
+                Model: agent?.Model ?? llmOptions.Model,
                 Module: "ai",
                 Operation: AiUsageOperations.Workflow,
                 TenantId: tenantId,
@@ -305,6 +305,19 @@ internal sealed class WorkflowRunner(
             CancellationToken.None);
 
         return outcome;
+    }
+
+    private static async Task<bool> WithinQuotaAsync(IServiceProvider services, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await services.GetRequiredService<AiQuota>().EnsureWithinAsync(cancellationToken);
+            return true;
+        }
+        catch (TooManyRequestsException)
+        {
+            return false;
+        }
     }
 
     private async Task TryAbortAsync(WorkflowRun run, AppDbContext db)

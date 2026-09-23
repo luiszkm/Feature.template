@@ -129,6 +129,7 @@ describe('WorkflowsList', () => {
       .mockResolvedValueOnce(true);
     const fixture = await renderList(['ai.agent.read', 'ai.agent.manage'], ask);
 
+    expect(text(fixture, 'deactivate-wf-2')).toBe('Desativar');
     await click(fixture, 'deactivate-wf-2');
     expect(ask).toHaveBeenLastCalledWith(
       expect.objectContaining({ message: 'Desativar o workflow "Triagem"?' }),
