@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 30,
+  "next_id": 34,
   "lessons": [
     {
       "id": "L-001",
@@ -526,6 +526,78 @@
       ],
       "created": "2026-09-22T19:25:09Z",
       "last_seen": "2026-09-22T19:25:09Z"
+    },
+    {
+      "id": "L-030",
+      "key": "ac_gap::put the completion log in a finally that wraps every exit of the handler including the refusals before the main try",
+      "text": "Put the completion log in a finally that wraps every exit of the handler, including the refusals before the main try",
+      "signal": "ac_gap",
+      "scope": "api-handlers",
+      "status": "candidate",
+      "features": [
+        "conversas-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 - ChatAi.cs:61-68 (C16) (api-handlers)"
+      ],
+      "created": "2026-09-23T11:44:13Z",
+      "last_seen": "2026-09-23T11:44:13Z"
+    },
+    {
+      "id": "L-031",
+      "key": "ac_gap::prove every claim that names a status code or a query parameter with a test that crosses the http boundary not only at handler level",
+      "text": "Prove every claim that names a status code or a query parameter with a test that crosses the HTTP boundary, not only at handler level",
+      "signal": "ac_gap",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "conversas-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 - C6 C8 C14 C17 C19 C20 C22 level gaps (api-tests)"
+      ],
+      "created": "2026-09-23T11:44:13Z",
+      "last_seen": "2026-09-23T11:44:13Z"
+    },
+    {
+      "id": "L-032",
+      "key": "gate_fail::never count rows owned by a shared seeded user in http tests because the host inmemory store is process wide create a fresh user for any count assertion",
+      "text": "Never count rows owned by a shared seeded user in HTTP tests, because the host InMemory store is process-wide; create a fresh user for any count assertion",
+      "signal": "gate_fail",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "conversas-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 3 - ChatAiTests.cs:219 (C5) (api-tests)"
+      ],
+      "created": "2026-09-23T11:44:13Z",
+      "last_seen": "2026-09-23T11:44:13Z"
+    },
+    {
+      "id": "L-033",
+      "key": "gate_fail::disable ef service provider caching in any test container that registers only some modules because the cached model decides the tenant filters for every inmemory context in the process",
+      "text": "Disable EF service provider caching in any test container that registers only some modules, because the cached model decides the tenant filters for every InMemory context in the process",
+      "signal": "gate_fail",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "conversas-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 4 - DevBootstrapSeederTests.cs CreateSeedProvider (api-tests)"
+      ],
+      "created": "2026-09-23T11:44:13Z",
+      "last_seen": "2026-09-23T11:44:13Z"
     }
   ]
 }

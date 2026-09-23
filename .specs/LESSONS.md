@@ -188,6 +188,30 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: verification.md round 1 gap 3 - AiRateLimitTests.cs:138 (api-tests)
 - last seen: 2026-09-22T19:25:09Z
 
+### L-030 - Put the completion log in a finally that wraps every exit of the handler, including the refusals before the main try
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `api-handlers` · harmful: 0
+- features: conversas-agente
+- evidence: verification.md round 1 - ChatAi.cs:61-68 (C16) (api-handlers)
+- last seen: 2026-09-23T11:44:13Z
+
+### L-031 - Prove every claim that names a status code or a query parameter with a test that crosses the HTTP boundary, not only at handler level
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: conversas-agente
+- evidence: verification.md round 1 - C6 C8 C14 C17 C19 C20 C22 level gaps (api-tests)
+- last seen: 2026-09-23T11:44:13Z
+
+### L-032 - Never count rows owned by a shared seeded user in HTTP tests, because the host InMemory store is process-wide; create a fresh user for any count assertion
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: conversas-agente
+- evidence: verification.md round 3 - ChatAiTests.cs:219 (C5) (api-tests)
+- last seen: 2026-09-23T11:44:13Z
+
+### L-033 - Disable EF service provider caching in any test container that registers only some modules, because the cached model decides the tenant filters for every InMemory context in the process
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: conversas-agente
+- evidence: verification.md round 4 - DevBootstrapSeederTests.cs CreateSeedProvider (api-tests)
+- last seen: 2026-09-23T11:44:13Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

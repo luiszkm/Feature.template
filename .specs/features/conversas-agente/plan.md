@@ -170,10 +170,10 @@ primária à direita, `mat-form-field` Pesquisar, `app-list-state`, `mat-table` 
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| CONV-01 | S1 | 1–16, 42–44 | Pending |
-| CONV-02 | S2 | 17–24 | Pending |
-| CONV-03 | S3 | 25–36 | Pending |
-| CONV-04 | S4 | 37–41 | Pending |
+| CONV-01 | S1 | 1–16, 42–44 | Verified |
+| CONV-02 | S2 | 17–24 | Verified |
+| CONV-03 | S3 | 25–36 | Verified |
+| CONV-04 | S4 | 37–41 | Verified |
 
 **ID format:** `CATEGORY-NUMBER`. **Status:** Pending → In checks → Implementing → Verified.
 
