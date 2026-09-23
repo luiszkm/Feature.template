@@ -4,7 +4,7 @@ Profile: ui
 Plan: `.specs/features/workflows-agente/plan.md`
 Base: `6c038f0` (branch `feat/comparar-modelos`, árvore limpa)
 
-86 checks in 7 slices · 7 one-way doors · 0 open, of which 0 block
+88 checks in 7 slices · 7 one-way doors · 0 open, of which 0 block
 
 Comandos: `dotnet test tests/Api.Tests --filter ...` e `dotnet test tests/ArchitectureTests --filter ...`
 (CI, `make verify`); front `cd src/web && npx ng test --no-watch --include <spec> --filter "<nome>"`
@@ -291,6 +291,12 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~CreateWorkflowTe
 **C86** - enquanto o `GET` do workflow não responde, o editor mostra o estado de carregamento partilhado e não desenha o canvas (WF-05, AC 45)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/workflow-editor.spec.ts --filter "mostra carregamento antes do canvas"`
 
+**C87** - o editor tem três regiões pela ordem paleta, canvas, painel (à direita), e os rótulos `Adicionar agente`, `Guardar`, `Executar`, `Remover nó`, `Remover ligação` (WF-05, AC 50, Observable `workflow-editor` density and ordering) *(acrescentado na ronda 2 do Verifier)*
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/workflow-editor.spec.ts --filter "arranjo: paleta, canvas e painel a direita, com os rotulos"`
+
+**C88** - `description` com 1001, `key` vazia e `key` com 51 → `400` nas chaves `description`, `nodes`, `nodes` (3 casos) (WF-01, AC 5) *(acrescentado na ronda 2 do Verifier)*
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~CreateWorkflowTests.Post_ShouldReturn400_ForBoundsBeyondPlan`
+
 ## Coverage
 
 | Set (size) | Member -> proof | Unproven |
@@ -371,3 +377,4 @@ testes Ai (doubles, `CompareModelsTests`, `AiRateLimitTests`, retenção), ~50 K
 - **Abandoned:** nada.
 - **Nota para o Verifier:** `shell.spec.ts` 'Uso fica depois de Agentes na navegacao' (de `observabilidade-agente`) mudou de `slice(-4)` para `slice(-5)` com `nav-ai-workflows` entre `nav-agents` e `nav-ai-usage` - é a ordem que AC 44 e o `Impact` aprovaram, não um afrouxamento.
 - **Round 1 do Verifier (FAIL):** C41 era verdade só para passos que chamavam o LLM - `AgentUnavailable`/`QuotaExceeded` saíam antes do `TrackAsync`. Corrigido no código (todo o passo que termina grava uma linha) e o teste de C41 passou a cobrir o caminho recusado e a latência. Reforços sem mudar nenhuma claim: C46 assere `Failed`/`InternalError` no run partido; C75 ganhou o caso `Failed`; C60 o caso IA indisponível; C63 as setas durante o arrasto; C69 as mensagens de `name` e `nodes`; C76 o estado dentro do nó; C79 a ordem e a célula `Início`; um teste do arranjo paleta/canvas/painel com os rótulos dos botões; e `Post_ShouldReturn400_ForBoundsBeyondPlan` para `description` > 1000 e `key` vazia/> 50.
+- **Round 2 do Verifier (FAIL):** mutante sobrevivente - retorno antecipado antes do `TrackAsync` em `QuotaExceeded`. C36 e C38 passaram a asserir a linha do ledger (`Timeout`, `QuotaExceeded`). C87 e C88 acrescentados (aditivos) para os testes de arranjo/rótulos e limites extra que a ronda 2 encontrou sem check.

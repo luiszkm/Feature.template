@@ -230,6 +230,10 @@ public sealed class WorkflowRunnerTests
         Assert.Equal(WorkflowStepStatus.Failed, run.Step("a").Status);
         Assert.Equal("Timeout", run.Step("a").ErrorCode);
         Assert.Equal(WorkflowRunStatus.Failed, run.Status);
+        var entry = Assert.Single(await WorkflowUsageAsync(factory));
+        Assert.False(entry.Success);
+        Assert.Equal("Timeout", entry.ErrorCode);
+        Assert.True(entry.LatencyMs >= 900, $"latency {entry.LatencyMs}");
     }
 
     [Fact]
@@ -270,6 +274,10 @@ public sealed class WorkflowRunnerTests
         Assert.Equal(WorkflowStepStatus.Failed, run.Step("a").Status);
         Assert.Equal("QuotaExceeded", run.Step("a").ErrorCode);
         Assert.Equal(callsBefore, llm.Requests.Count);
+        var entry = Assert.Single(await WorkflowUsageAsync(factory));
+        Assert.False(entry.Success);
+        Assert.Equal("QuotaExceeded", entry.ErrorCode);
+        Assert.Equal(0, entry.InputTokens + entry.OutputTokens);
     }
 
     [Theory]
@@ -512,6 +520,13 @@ public sealed class WorkflowRunnerTests
     }
 
     // ---- helpers ---------------------------------------------------------------------------
+
+    private static Task<List<AiUsageEntry>> WorkflowUsageAsync(
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> factory) =>
+        InTenantAsync(factory, services =>
+            services.GetRequiredService<AppDbContext>().Set<AiUsageEntry>()
+                .Where(e => e.Operation == AiUsageOperations.Workflow)
+                .ToListAsync());
 
     private static LlmResponse Reply(string text) => new(text, 2, InputTokens: 1, OutputTokens: 1, Cost: 0.001m);
 
