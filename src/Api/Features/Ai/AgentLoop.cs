@@ -33,7 +33,7 @@ public sealed class AgentLoop(
             var request = new LlmRequest(
                 UserPrompt: userMessage,
                 SystemPrompt: guardedSystemPrompt,
-                History: conversationHistory.Count > 0 ? conversationHistory : null,
+                History: conversationHistory.Count > 0 ? conversationHistory.ToArray() : null,
                 Tools: toolDefinitions.Count > 0 ? toolDefinitions : null,
                 Model: model);
 
@@ -42,6 +42,14 @@ public sealed class AgentLoop(
 
             if (response.ToolCalls is not { Count: > 0 })
                 return usage.ToResult(await GuardReplyAsync(response.Text, cancellationToken), iterations, conversationHistory[turnStart..]);
+
+            if (userMessage.Length > 0)
+            {
+                // From here on the message travels in the history, ahead of the turn it caused;
+                // it is not a turn message - the caller already has it.
+                conversationHistory.Add(new LlmMessage("user", userMessage));
+                turnStart = conversationHistory.Count;
+            }
 
             conversationHistory.Add(new LlmMessage("assistant", response.Text, ToolCalls: response.ToolCalls));
 
@@ -61,7 +69,7 @@ public sealed class AgentLoop(
             new LlmRequest(
                 UserPrompt: "Resuma o que foi encontrado com base nos dados das ferramentas.",
                 SystemPrompt: guardedSystemPrompt,
-                History: conversationHistory,
+                History: conversationHistory.ToArray(),
                 Model: model),
             cancellationToken);
 
