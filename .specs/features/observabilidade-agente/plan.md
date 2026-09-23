@@ -280,3 +280,13 @@ módulo. Entra em `features.json` como slice `GetAiUsage` e em `src/Api/openapi.
 | config | `OpenTelemetry:EnableTraces` deixa de ligar só a instrumentação ASP.NET Core e passa a ligar também os spans do módulo Ai. Sem pacote de exportador no `csproj`, os spans ficam em processo (pergunta aberta 1). Nenhuma chave nova |
 | docs | `src/Api/Features/Ai/AGENTS.md` — infra do módulo (tracker real, fonte de spans) e o gotcha de que o usage já não é no-op; `docs/security/RBAC_MATRIX.md` só se S3 entrar |
 | ops | os nomes de span e os atributos `gen_ai.*` passam a ser vocabulário externo no momento em que um collector os lê (door 5), e a convenção está em estabilidade `development` — uma renomeação futura da convenção obriga a renomear aqui |
+
+## Rebase
+
+2026-09-23, sobre `dc21725`. S1 foi absorvido por `comparar-modelos`. `guardrails-agente` passou a
+apanhar as excepções de tool no `AgentLoop`, por isso o span `execute_tool` abre-se lá e não no
+`ToolRegistry` (AC 12–14 inalterados no que observam). `conversas-agente` trouxe o `conversationId`:
+o span `invoke_agent` passa a levar `gen_ai.conversation.id` (C34). A resposta do chat tem
+`conversationId` (AC 19). Pergunta aberta 1 sem resposta: default do plano — spans em processo,
+sem exportador; pergunta 2: S3 entra.
+
