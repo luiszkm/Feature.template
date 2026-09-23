@@ -113,7 +113,8 @@ describe('Shell', () => {
     const session = TestBed.inject(SessionStore);
     session.setTenantKey('dev');
     session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith(['ai.agent.read']) });
-    TestBed.inject(AiAvailability).disable();
+    // What the gate answers when EnableAI is off - the same path every AI screen feeds.
+    TestBed.inject(AiAvailability).learnFrom({ status: 404, title: 'Feature disabled' });
 
     const fixture = TestBed.createComponent(Shell);
     await settle(fixture, 2);
@@ -130,5 +131,18 @@ describe('Shell', () => {
     await settle(fixture, 2);
 
     expect(maybeEl(fixture, 'nav-ai-usage')).toBeNull();
+  });
+  it('Uso fica depois de Agentes na navegacao', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: ['Admin'] }), accessToken: tokenWith([]) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    const order = [...(fixture.nativeElement as HTMLElement).querySelectorAll('nav a')].map((a) =>
+      a.getAttribute('data-testid'),
+    );
+    expect(order.slice(-4)).toEqual(['nav-ai', 'nav-conversations', 'nav-agents', 'nav-ai-usage']);
   });
 });

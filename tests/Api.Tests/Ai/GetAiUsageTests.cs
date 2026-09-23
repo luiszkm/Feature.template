@@ -99,6 +99,41 @@ public sealed class GetAiUsageTests
     }
 
     [Fact]
+    public async Task Get_ShouldUseDefaultPage_OverHttp()
+    {
+        await using var factory = WithLlm();
+        using var client = await AiHttp.AdminClientAsync(factory);
+
+        using var json = JsonDocument.Parse(await client.GetStringAsync("/api/v1/ai/usage"));
+
+        Assert.Equal(1, json.RootElement.GetProperty("pageNumber").GetInt32());
+        Assert.Equal(20, json.RootElement.GetProperty("pageSize").GetInt32());
+    }
+
+    [Fact]
+    public async Task Get_ShouldReadOffsetRange_AsUtcInstants_OverHttp()
+    {
+        await using var factory = WithLlm();
+        using var client = await AiHttp.PlainUserClientAsync(factory);
+        using var admin = await AiHttp.AdminClientAsync(factory);
+        var agent = await AiHttp.CreateAgentAsync(admin);
+        Assert.Equal(HttpStatusCode.OK, (await admin.PostAsJsonAsync("/api/v1/ai/chat", new { message = "x", agentId = agent.AgentId })).StatusCode);
+        var now = DateTimeOffset.UtcNow;
+
+        // The same instants written at +05:00: read as wall-clock UTC they would sit 5h in the future.
+        string At(DateTimeOffset instant) => Uri.EscapeDataString(instant.ToOffset(TimeSpan.FromHours(5)).ToString("yyyy-MM-ddTHH:mm:sszzz"));
+        async Task<bool> Includes(DateTimeOffset from, DateTimeOffset to)
+        {
+            using var page = JsonDocument.Parse(await admin.GetStringAsync($"/api/v1/ai/usage?from={At(from)}&to={At(to)}&pageSize=100"));
+            return page.RootElement.GetProperty("data").EnumerateArray()
+                .Any(row => row.GetProperty("agentId").GetGuid() == agent.AgentId);
+        }
+
+        Assert.True(await Includes(now.AddHours(-2), now.AddHours(1)));
+        Assert.False(await Includes(now.AddHours(1), now.AddHours(2)));
+    }
+
+    [Fact]
     public async Task Get_ShouldReturn400_WhenFromIsAfterTo()
     {
         await using var factory = WithLlm();

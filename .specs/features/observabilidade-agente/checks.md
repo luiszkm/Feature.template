@@ -5,7 +5,7 @@ Plan: `.specs/features/observabilidade-agente/plan.md`
 
 ## Intent
 
-22 checks in 2 slices (S1 superseded) · 4 one-way doors · 2 open, of which 0 block (1 blocks go-live)
+24 checks in 2 slices (S1 superseded) · 4 one-way doors · 2 open, of which 0 block (1 blocks go-live)
 
 ## Checks
 
@@ -15,6 +15,7 @@ Grouped by the plan's slices; numbering runs across the whole feature. Commands 
 
 **C10** - Com `OpenTelemetry:EnableTraces = true`, um chat regista um span `invoke_agent {nome do agente}` com `gen_ai.operation.name = invoke_agent`, `gen_ai.provider.name` (rótulo em minúsculas), `gen_ai.request.model = Ai:Llm:Model`, `gen_ai.agent.id` e `gen_ai.agent.name` do agente resolvido (OBS-02, AC 10)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.Handle_ShouldStartInvokeAgentSpan_WithGenAiAttributes`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.ProviderValue_ShouldMapEveryProviderLabel`
 
 **C11** - Cada chamada a `ILlmService.CompleteAsync` — incluindo a chamada de resumo depois das 5 iterações — regista um span filho `chat {modelo}` com `gen_ai.operation.name = chat`, `gen_ai.request.model`, `gen_ai.usage.input_tokens` e `gen_ai.usage.output_tokens` (OBS-02, AC 11)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.RunAsync_ShouldStartChatSpan_PerLlmCall_IncludingSummaryFallback`
@@ -28,9 +29,11 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTe
 **C14** - Uma excepção na chamada ao LLM, ou na execução de uma tool (que o loop converte em `tool_failed`/`permission_denied` para o modelo), marca o span dessa operação com `error.type` igual ao nome do tipo da excepção e estado `Error` (OBS-02, AC 14)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.ChatSpan_ShouldSetErrorTypeAndErrorStatus_WhenLlmThrows`
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.ExecuteToolSpan_ShouldSetErrorTypeAndErrorStatus_WhenToolThrows`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.ExecuteToolSpan_ShouldSetErrorType_WhenToolDeniesPermission`
 
 **C15** - Uma falha do chat por qualquer razão marca o span `invoke_agent` com `error.type` igual ao nome do tipo da excepção que subiu (OBS-02, AC 15)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.InvokeAgentSpan_ShouldSetErrorType_WhenChatFails`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.InvokeAgentSpan_ShouldSetErrorType_ForEveryWayTheChatFails`
 
 **C16** - Nenhum span regista `gen_ai.tool.call.arguments`, `gen_ai.tool.call.result`, `gen_ai.input.messages` ou `gen_ai.output.messages` (OBS-02, AC 16)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.Spans_ShouldNotContain_ContentAttributes`
@@ -57,9 +60,11 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.
 
 **C21** - `GET /api/v1/ai/usage` sem parâmetros ordena por `totalTokens` desc, estável por `agentId`, com `pageNumber = 1` e `pageSize = 20` (OBS-03, AC 21)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Handle_ShouldSortByTotalTokensDesc_StableByAgentId_WhenNoParamsGiven`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Get_ShouldUseDefaultPage_OverHttp`
 
 **C22** - Com `from` e `to`, só contam linhas cujo `createdAt` cai dentro do intervalo, fronteiras incluídas (OBS-03, AC 22)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Handle_ShouldFilterByCreatedAt_WithinInclusiveRange`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Get_ShouldReadOffsetRange_AsUtcInstants_OverHttp`
 
 **C23** - `from` posterior a `to` responde `400` com title `Validation failed` (OBS-03, AC 23)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Validator_ShouldFail_WhenFromIsAfterTo`
@@ -86,6 +91,8 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/usage
 **C30** - Com a flag disponível e `ai.agent.read`, a shell mostra o item de navegação `Uso` (`data-testid="nav-ai-usage"`); a `AiAvailability` esconde-o quando a flag responde `404` (OBS-03, AC 30)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/shell/shell.spec.ts --filter "mostra Uso quando ai.agent.read e a flag esta on"`
 Proof: `cd src/web && npx ng test --no-watch --include src/app/shell/shell.spec.ts --filter "esconde Uso quando a flag esta off"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shell/shell.spec.ts --filter "esconde Uso sem ai.agent.read"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shell/shell.spec.ts --filter "Uso fica depois de Agentes na navegacao"`
 
 **C31** - O cliente do uso vive como ficheiro plano em `src/web/src/app/features/ai/usage.ts`, sem pastas de camada (OBS-03, AC 31)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec.ts --filter "todas as rotas de features.json tem cliente"`
@@ -93,6 +100,14 @@ Proof: `cd src/web && npx ng test --no-watch --include src/app/architecture.spec
 
 **C33** - `GET /api/v1/ai/usage` sem autenticação responde `401` (OBS-03, Surface)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Get_ShouldReturn401_WhenNotAuthenticated`
+
+**C35** - O ecrã `usage` tem três regiões por esta ordem — `header` só com o `h1` `Uso do AI` (sem acção primária), `app-list-state` com a tabela, `mat-paginator` — sem caixa de pesquisa nem `mat-sort-header`, e colunas `Agente`, `Chamadas`, `Falhas`, `Tokens entrada`, `Tokens saída`, `Total`, `Último uso` por esta ordem (OBS-03, binding S3) *(ronda 1)*
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/usage.spec.ts --filter "arranjo: cabecalho so com titulo, lista e paginador"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/usage.spec.ts --filter "mostra uma linha por agente com os totais"`
+
+**C36** - Cada span `chat` leva `gen_ai.provider.name` (atributo Required nas inference spans da semconv GenAI) com o valor do provider activo — `openrouter`, `microsoft.agent_framework` ou `stub` —, também atravessando o host real (OBS-02, semconv) *(ronda 1)*
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AgentTelemetryTests.ChatSpan_ShouldCarryProviderName`
+Proof: `dotnet test tests/E2ETests --filter FullyQualifiedName~AiTelemetryE2ETests.InvokeAgentSpan_ShouldShareTraceId_WithAspNetCoreRequestSpan`
 
 ## Coverage
 
@@ -103,11 +118,16 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.
 | `chat` span call sites (2) | chamada de iteração C11 · chamada de resumo pós-5ª iteração C11 | - |
 | atributos de `invoke_agent` (6) | `gen_ai.operation.name` C10 · `gen_ai.provider.name` C10 · `gen_ai.request.model` C10 · `gen_ai.agent.id` C10 · `gen_ai.agent.name` C10 · `gen_ai.conversation.id` C34 | - |
 | span `error.type` outcomes (3) | `tool_not_found` C13 · tipo da excepção no próprio span C14 · tipo da excepção em `invoke_agent` C15 | - |
+| `execute_tool` com erro (3) | `tool_not_found` C13 · `UnauthorizedAccessException` (permission_denied) C14 · outra excepção C14 | - |
+| causas de falha do `invoke_agent` (5) | excepção do LLM C15 · `NotFoundException` C15 · `BusinessRuleException` C15 · `TooManyRequestsException` C15 · `ContentBlockedException` C15 | - |
+| `gen_ai.provider.name` (3 valores) | `openrouter` C10, C36 · `microsoft.agent_framework` C10, C36 · `stub` C10, C36 | - |
+| atributos de `chat` (5) | `gen_ai.operation.name` C11 · `gen_ai.request.model` C11 · `gen_ai.usage.input_tokens` C11 · `gen_ai.usage.output_tokens` C11 · `gen_ai.provider.name` C36 | - |
+| ecrã `usage` arranjo e copy (4) | regiões e ordem C35 · header só `h1` sem acção C35 · sem pesquisa nem sort C35 · colunas e ordem C35 | - |
 | atributos de conteúdo excluídos dos spans (4) | C16, table-driven over all 4 | - |
 | one-way doors deste rebase (4) | tokens de entrada/saída no `LlmResponse` C11 · primeira `ActivitySource` do repo C10 · vocabulário GenAI dos spans C10,C11,C12,C34 · contrato de leitura do uso C20 | - |
 | Relations entities (1) | `AiUsageEntry` (lido, não mudado) C20 | - |
 | screen `usage` states (4) | vazio C26 · loading C27 · erro C28 · forbidden C29 | - |
-| shell nav item `Uso` (2) | visível com permissão + flag C30 · escondido quando a flag responde `404` C30 | - |
+| shell nav item `Uso` (4) | visível com permissão + flag C30 · escondido quando a flag responde `404` C30 · escondido sem `ai.agent.read` C30 · depois de `Agentes` C30 | - |
 
 - Claims que nomeiam um status code, rota ou forma de resposta: C20, C21, C22, C23, C24, C25, C33 - cada um tem uma prova que atravessa a fronteira HTTP
 - Claims que nomeiam um span ou atributo GenAI: C10, C11, C12, C13, C14, C15, C16, C17, C18, C34 - cada um tem uma prova que atravessa a fronteira do `ActivitySource`
@@ -204,4 +224,6 @@ Proof: `dotnet test tests/ArchitectureTests --filter FullyQualifiedName~SliceStr
 - **Boundary:** C10–C31, C33, C34 fechados num só builder sobre `fca5c96`
 - **Settled mid-build:** (1) sem resposta à pergunta 1 — spans em processo, sem exportador (documentado em `getting-started.md`). (2) `AddObservability` lê `OpenTelemetry:EnableTraces` no registo de serviços; os settings em memória da `WebApplicationFactory` só existem depois do `Build()`, por isso os testes ligam/desligam o flag com `UseSetting` — sem isso C18/C19 eram verdadeiros por acaso; C18 ganhou um controlo positivo (ligado → `TracerProvider` e listener existem). (3) Testes com `ActivityListener` numa collection xUnit sequencial e filtrados pelo `TraceId` de uma raiz própria. (4) `from`/`to` entram como `DateTimeOffset` e passam a UTC — `DateTime` a partir de `…Z` virava hora local. (5) Proofs C27/C28 citam `'usage'` entre aspas (interpolação do `it.each`). (6) `AgentLoop` recebe `IOptions<LlmOptions>` opcional para o nome do modelo por omissão nos spans
 - **Abandoned:** nada
+
+Ronda 1 do Verifier (FAIL): fechado acrescentando proofs e dois checks — nenhuma claim mudou de valor. O span `chat` passou a levar `gen_ai.provider.name` (C36, código novo no `AgentLoop`: recebe `IHostEnvironment` opcional). C17 passou a depender do flag: o listener do teste regista mas não amostra a fonte Ai, e o mesmo teste corre com traces desligados e verifica zero spans Ai. C21/C22 ganharam proof por HTTP (paginação por omissão, `from`/`to` com offset lidos como instantes UTC). C10 distingue modelo de provider com um agente com modelo próprio.
 

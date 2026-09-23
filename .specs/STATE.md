@@ -81,3 +81,10 @@ Verificação ronda 1 (`.specs/features/agentes/verification.md`): **FAIL**, 31/
 | # | Achado |
 | --- | --- |
 | 10 | Passo 5 do `verify.md` (percorrer o fluxo com o utilizador) não correu em nenhuma das features: um sub-agente não tem canal para o utilizador. É a única parte do procedimento que fica por fazer e precisa de uma pessoa. |
+
+### comparar-modelos (achado pela verificação de `observabilidade-agente`, 2026-09-23)
+
+| # | Achado | Porque ficou |
+| --- | --- | --- |
+| 1 | O S1 do W1 foi absorvido aqui, mas dois comportamentos que o W1 reclamava não têm teste: duas execuções iguais gravam duas linhas (W1 C9) e o rótulo `stub` no gatilho `Development` sem `Ai:Llm:ApiKey` (W1 C5, só o gatilho `Testing` está provado) | não é regressão; precisa de dois testes em `AiUsageTests`, fora do âmbito do W1 |
+

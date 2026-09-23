@@ -79,4 +79,23 @@ describe('Usage', () => {
     await settle(fixture, 2);
     expect(text(fixture, 'forbidden')).toContain('Sem permissão para esta operação');
   });
+  it('arranjo: cabecalho so com titulo, lista e paginador', async () => {
+    server.use(api.get(USAGE, () => HttpResponse.json({ pageNumber: 1, pageSize: 20, totalCount: 0, data: [] })));
+    provideRouteStub();
+    authenticate(['ai.agent.read']);
+
+    const fixture = TestBed.createComponent(Usage);
+    await settle(fixture);
+
+    const root = fixture.nativeElement as HTMLElement;
+    expect([...root.children].map((child) => child.tagName.toLowerCase())).toEqual([
+      'header',
+      'app-list-state',
+      'mat-paginator',
+    ]);
+    const header = root.querySelector('header') as HTMLElement;
+    expect([...header.children].map((child) => child.tagName.toLowerCase())).toEqual(['h1']);
+    expect(header.textContent?.trim()).toBe('Uso do AI');
+    expect(root.querySelector('mat-form-field')).toBeNull();
+  });
 });

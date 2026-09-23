@@ -9,7 +9,8 @@ public sealed class AgentLoop(
     IContentGuard contentGuard,
     IOptions<GuardrailOptions> guardrailOptions,
     ILogger<AgentLoop> logger,
-    IOptions<LlmOptions>? llmOptions = null)
+    IOptions<LlmOptions>? llmOptions = null,
+    IHostEnvironment? environment = null)
 {
     private const int MaxIterations = 5;
 
@@ -86,6 +87,8 @@ public sealed class AgentLoop(
         using var activity = AiTelemetry.Source.StartActivity($"{AiTelemetry.Chat} {model}", ActivityKind.Client);
         activity?.SetTag(AiTelemetry.OperationName, AiTelemetry.Chat);
         activity?.SetTag(AiTelemetry.RequestModel, model);
+        if (activity is not null && llmOptions is not null && environment is not null)
+            activity.SetTag(AiTelemetry.ProviderName, AiTelemetry.ProviderValue(LlmServiceResolver.ProviderLabel(environment, llmOptions.Value)));
         try
         {
             var response = await llm.CompleteAsync(request, cancellationToken);

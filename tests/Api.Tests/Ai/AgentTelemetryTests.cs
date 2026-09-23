@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using Api.Features.Ai;
+using Api.Shared;
 using Api.Tests.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,16 +29,23 @@ public sealed class AgentTelemetryTests
         using var capture = new SpanCapture();
         var provider = Provider(nameof(Handle_ShouldStartInvokeAgentSpan_WithGenAiAttributes), ScriptedLlmService.Replying());
         var agent = await DefaultAgentAsync(provider);
+        var modelled = await CreateAgentAsync(provider, "Modelled", StubModelCatalog.ModelA);
 
         await ChatAsync(provider, new ChatAiCommand("hi"));
+        await ChatAsync(provider, new ChatAiCommand("hi", AgentId: modelled));
 
-        var span = Assert.Single(capture.Spans(AiTelemetry.InvokeAgent));
-        Assert.Equal("invoke_agent Default", span.DisplayName);
+        var spans = capture.Spans(AiTelemetry.InvokeAgent);
+        var span = Assert.Single(spans, s => s.DisplayName == "invoke_agent Default");
         Assert.Equal("invoke_agent", span.GetTagItem("gen_ai.operation.name"));
         Assert.Equal("stub", span.GetTagItem("gen_ai.provider.name"));
         Assert.Equal("stub", span.GetTagItem("gen_ai.request.model"));
         Assert.Equal(agent.Id.ToString(), span.GetTagItem("gen_ai.agent.id"));
         Assert.Equal("Default", span.GetTagItem("gen_ai.agent.name"));
+        // An agent with its own model: provider and model are distinct values, each from its own source.
+        var own = Assert.Single(spans, s => s.DisplayName == "invoke_agent Modelled");
+        Assert.Equal(StubModelCatalog.ModelA, own.GetTagItem("gen_ai.request.model"));
+        Assert.Equal("stub", own.GetTagItem("gen_ai.provider.name"));
+        Assert.Equal(modelled.ToString(), own.GetTagItem("gen_ai.agent.id"));
     }
 
     [Fact]
@@ -164,6 +172,85 @@ public sealed class AgentTelemetryTests
         Assert.All(spans, span => Assert.DoesNotContain(span.TagObjects, t => t.Value?.ToString()?.Contains("segredo") == true));
     }
 
+    [Theory]
+    [InlineData(LlmProviders.OpenRouter, "openrouter")]
+    [InlineData(LlmProviders.MicrosoftAgentFramework, "microsoft.agent_framework")]
+    [InlineData("stub", "stub")]
+    public void ProviderValue_ShouldMapEveryProviderLabel(string label, string expected)
+    {
+        Assert.Equal(expected, AiTelemetry.ProviderValue(label));
+    }
+
+    [Theory]
+    [InlineData(LlmProviders.OpenRouter, "Production", "key", "openrouter")]
+    [InlineData(LlmProviders.MicrosoftAgentFramework, "Production", "key", "microsoft.agent_framework")]
+    [InlineData(LlmProviders.OpenRouter, "Testing", "", "stub")]
+    public async Task ChatSpan_ShouldCarryProviderName(string configured, string environment, string apiKey, string expected)
+    {
+        using var capture = new SpanCapture();
+        var loop = new AgentLoop(
+            ScriptedLlmService.Replying(),
+            new ToolRegistry([]),
+            new AllowAllContentGuard(),
+            Options.Create(new GuardrailOptions()),
+            NullLogger<AgentLoop>.Instance,
+            Options.Create(new LlmOptions { Provider = configured, ApiKey = apiKey, Model = "m" }),
+            new FixedEnvironment(environment));
+
+        await loop.RunAsync("go", "sys", null, []);
+
+        var span = Assert.Single(capture.Spans(AiTelemetry.Chat));
+        Assert.Equal(expected, span.GetTagItem("gen_ai.provider.name"));
+        Assert.Equal("m", span.GetTagItem("gen_ai.request.model"));
+    }
+
+    [Fact]
+    public async Task ExecuteToolSpan_ShouldSetErrorType_WhenToolDeniesPermission()
+    {
+        using var capture = new SpanCapture();
+
+        var result = await Loop(CallsToolOnce("t"), new LambdaTool("t", (_, _) => throw new UnauthorizedAccessException("no")))
+            .RunAsync("go", "sys", null, ["t"]);
+
+        var span = Assert.Single(capture.Spans(AiTelemetry.ExecuteTool));
+        Assert.Equal("UnauthorizedAccessException", span.GetTagItem("error.type"));
+        Assert.Equal(ActivityStatusCode.Error, span.Status);
+        Assert.Equal("done", result.Reply);
+    }
+
+    [Fact]
+    public async Task InvokeAgentSpan_ShouldSetErrorType_ForEveryWayTheChatFails()
+    {
+        using var capture = new SpanCapture();
+        var provider = TestServiceFactory.CreateWithAi(nameof(InvokeAgentSpan_ShouldSetErrorType_ForEveryWayTheChatFails), services =>
+        {
+            services.AddSingleton<ILlmService>(ScriptedLlmService.Replying(input: 1, output: 1));
+            services.Configure<AiQuotaOptions>(o => o.DailyTokensPerTenant = 2);
+        });
+        var other = await CreateAgentAsync(provider, "Other", null);
+        var first = await ChatAsync(provider, new ChatAiCommand("spends the quota"));
+
+        await Assert.ThrowsAsync<NotFoundException>(() => ChatAsync(provider, new ChatAiCommand("hi", ConversationId: Guid.NewGuid())));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => ChatAsync(provider, new ChatAiCommand("hi", AgentId: other, ConversationId: first.ConversationId)));
+        await Assert.ThrowsAsync<TooManyRequestsException>(() => ChatAsync(provider, new ChatAiCommand("hi")));
+
+        var blocked = TestServiceFactory.CreateWithAi($"{nameof(InvokeAgentSpan_ShouldSetErrorType_ForEveryWayTheChatFails)}-guard", services =>
+        {
+            services.AddSingleton<ILlmService>(ScriptedLlmService.Replying());
+            services.AddSingleton<IContentGuard>(new BlockingContentGuard(GuardSubject.UserMessage));
+        });
+        await Assert.ThrowsAsync<ContentBlockedException>(() => ChatAsync(blocked, new ChatAiCommand("hi")));
+
+        var failures = capture.Spans(AiTelemetry.InvokeAgent)
+            .Where(s => s.Status == ActivityStatusCode.Error)
+            .Select(s => s.GetTagItem("error.type") as string)
+            .Order()
+            .ToArray();
+        Assert.Equal(
+            new[] { "BusinessRuleException", "ContentBlockedException", "NotFoundException", "TooManyRequestsException" },
+            failures);
+    }
+
     [Fact]
     public async Task ActivitySource_ShouldHaveNoListeners_WhenTracesDisabled()
     {
@@ -204,6 +291,23 @@ public sealed class AgentTelemetryTests
         TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
         TestServiceFactory.SetUser(scope.ServiceProvider, TestServiceFactory.DefaultUserId);
         return await scope.ServiceProvider.GetRequiredService<ChatAiHandler>().Handle(command, CancellationToken.None);
+    }
+
+    private static async Task<Guid> CreateAgentAsync(IServiceProvider provider, string name, string? model)
+    {
+        using var scope = provider.CreateScope();
+        TestServiceFactory.SetTenant(scope.ServiceProvider, TenantId);
+        return (await scope.ServiceProvider.GetRequiredService<CreateAgentHandler>()
+            .Handle(new CreateAgentCommand(name, "x", [], Model: model), CancellationToken.None)).AgentId;
+    }
+
+    private sealed class FixedEnvironment(string name) : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = name;
+        public string ApplicationName { get; set; } = "Api.Tests";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } =
+            new Microsoft.Extensions.FileProviders.NullFileProvider();
     }
 
     private static async Task<Agent> DefaultAgentAsync(IServiceProvider provider)
