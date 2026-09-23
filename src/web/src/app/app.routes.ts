@@ -84,6 +84,11 @@ export const routes: Routes = [
         canActivate: [permissionGuard(Permissions.agentRead)],
       },
       {
+        path: 'ai/usage',
+        loadComponent: () => import('./features/ai/usage').then((m) => m.Usage),
+        canActivate: [permissionGuard(Permissions.agentRead)],
+      },
+      {
         path: 'ai/agents/new',
         loadComponent: () => import('./features/ai/agent-form').then((m) => m.AgentForm),
         canActivate: [permissionGuard(Permissions.agentManage)],

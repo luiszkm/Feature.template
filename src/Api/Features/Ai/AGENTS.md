@@ -18,6 +18,7 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 | Slice | Rota | Policy | Flag |
 |-------|------|--------|------|
 | ChatAi | `POST /api/v1/ai/chat` | `Authenticated` | `EnableAI` |
+| GetAiUsage | `GET /api/v1/ai/usage` | `AiAgentsRead` | `EnableAI` |
 | ListConversations | `GET /api/v1/ai/conversations` | `Authenticated` | `EnableAI` |
 | GetConversation | `GET /api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
 | DeleteConversation | `DELETE /api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
@@ -50,6 +51,7 @@ Ver `features.json` com `"m": "Ai"`.
 | `OpenRouterLlmService.cs` | Provider `OpenRouter` |
 | `MicrosoftAgentFrameworkLlmService.cs` | Provider `MicrosoftAgentFramework` |
 | `AgentSystemPrompt.cs` | Texto do seed default |
+| `AiTelemetry.cs` | `ActivitySource` `Api.Features.Ai` e vocabulário GenAI (`invoke_agent`, `chat`, `execute_tool`); registado em `Host/Configurations/ObservabilityConfiguration.cs` |
 | `ContentGuard.cs` | `IContentGuard` (default `AllowAllContentGuard`), `GuardrailOptions`, `AgentGuardrails` (sufixo, delimitador, erros de tool) |
 | `ConversationRetentionService.cs` | `BackgroundService`: apaga conversas com `LastActivityAt` anterior a `Ai:Conversations:RetentionDays` (90; `0` desliga), a cada `PurgeIntervalHours` (24), `IgnoreQueryFilters` |
 | `AiRateLimit.cs` | Policy `ai` (`IRateLimiterPolicy`, partição por tenant), `AiQuota` (tokens/dia), opções |
@@ -89,6 +91,7 @@ Ver `features.json` com `"m": "Ai"`.
 - Agente fixado na conversa: outro `agentId` → `409`; agente desactivado → `404`; `MaxItems` (200) → `409`
 - Chat e comparações: `.RequireRateLimiting(RateLimitPolicies.AiRateLimitPolicy)` + `429` declarado; quota via `AiQuota.EnsureWithinAsync` antes do guard
 - Testes de quota por HTTP precisam de ledger isolado: a InMemory do host é `AppDb` para o processo inteiro (`AiRateLimitTests.IsolatedLedgerFactory`)
+- Spans GenAI: `invoke_agent {agente}` no `ChatAiHandler` (com `gen_ai.conversation.id`), `chat {modelo}` por chamada ao LLM e `execute_tool {tool}` no `AgentLoop`; nunca conteúdo (mensagens, argumentos, resultados). Só existem com `OpenTelemetry:EnableTraces=true` — e o flag é lido no registo de serviços, por isso nos testes liga-se com `UseSetting`, não com settings em memória
 - Catálogo inacessível → `ServiceUnavailableException` → `503`
 
 - Features ↛ Features/Host: seed em `CreateTenant` via `IDefaultAgentProvisioner` (Shared)
@@ -112,6 +115,8 @@ tests/Api.Tests/Ai/
   CompareModelsTests.cs
   AgentLoopGuardrailTests.cs
   AiRateLimitTests.cs
+  AgentTelemetryTests.cs
+  GetAiUsageTests.cs
   ListConversationsTests.cs
   GetConversationTests.cs
   DeleteConversationTests.cs

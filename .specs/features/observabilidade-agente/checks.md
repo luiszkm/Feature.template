@@ -53,6 +53,7 @@ Binding screen: `usage` (análogo a `agents-list`: header `h1` `Uso do AI`, `app
 
 **C20** - `GET /api/v1/ai/usage` com `ai.agent.read` responde `200` com uma página de linhas agregadas por agente do tenant corrente, cada uma com `agentId`, `agentName`, `calls`, `failures`, `inputTokens`, `outputTokens`, `totalTokens` e `lastUsedAt` (OBS-03, AC 20)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Handle_ShouldReturnAggregatedRows_PerAgent`
+Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Get_ShouldReturn200_WithAggregatedRowShape`
 
 **C21** - `GET /api/v1/ai/usage` sem parâmetros ordena por `totalTokens` desc, estável por `agentId`, com `pageNumber = 1` e `pageSize = 20` (OBS-03, AC 21)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.Handle_ShouldSortByTotalTokensDesc_StableByAgentId_WhenNoParamsGiven`
@@ -74,10 +75,10 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~GetAiUsageTests.
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/usage.spec.ts --filter "estado vazio"`
 
 **C27** - Enquanto a lista de uso está `loading`, mostra `mat-progress-bar` (`data-testid="list-loading"`) e o paginator fica desactivado (OBS-03, AC 27)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento: usage"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de carregamento: 'usage'"`
 
 **C28** - `GET /api/v1/ai/usage` a devolver `500` mostra o `title` do ProblemDetails e o botão `Tentar de novo` do `app-list-state` (OBS-03, AC 28)
-Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query: usage"`
+Proof: `cd src/web && npx ng test --no-watch --include src/app/shared/list-state.spec.ts --filter "estado de erro repete a query: 'usage'"`
 
 **C29** - Abrir `/ai/usage` sem `ai.agent.read` renderiza o ecrã `forbidden` com a copy `Sem permissão para esta operação` (OBS-03, AC 29)
 Proof: `cd src/web && npx ng test --no-watch --include src/app/features/ai/usage.spec.ts --filter "sem permissao vai para forbidden"`
@@ -197,4 +198,10 @@ Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~ChatAiUsageTests
 **C32** - `AiModule` regista `IAiUsageTracker` como `AiUsageTracker` (`AddScoped`), não `NoOpAiUsageTracker`, e `NoOpAiUsageTracker` deixa de existir no código (OBS-01, Landing door 6)
 Proof: `dotnet test tests/Api.Tests --filter FullyQualifiedName~AiModuleTests.AddAiModule_ShouldRegisterAiUsageTracker_NotNoOp`
 Proof: `dotnet test tests/ArchitectureTests --filter FullyQualifiedName~SliceStructureTests.Ai_ShouldNotContain_NoOpAiUsageTracker`
+
+## Handoff (build 2026-09-23)
+
+- **Boundary:** C10–C31, C33, C34 fechados num só builder sobre `fca5c96`
+- **Settled mid-build:** (1) sem resposta à pergunta 1 — spans em processo, sem exportador (documentado em `getting-started.md`). (2) `AddObservability` lê `OpenTelemetry:EnableTraces` no registo de serviços; os settings em memória da `WebApplicationFactory` só existem depois do `Build()`, por isso os testes ligam/desligam o flag com `UseSetting` — sem isso C18/C19 eram verdadeiros por acaso; C18 ganhou um controlo positivo (ligado → `TracerProvider` e listener existem). (3) Testes com `ActivityListener` numa collection xUnit sequencial e filtrados pelo `TraceId` de uma raiz própria. (4) `from`/`to` entram como `DateTimeOffset` e passam a UTC — `DateTime` a partir de `…Z` virava hora local. (5) Proofs C27/C28 citam `'usage'` entre aspas (interpolação do `it.each`). (6) `AgentLoop` recebe `IOptions<LlmOptions>` opcional para o nome do modelo por omissão nos spans
+- **Abandoned:** nada
 

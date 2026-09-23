@@ -257,6 +257,13 @@ public sealed class AiRateLimitTests
         public Task<IReadOnlyList<AiUsageEntry>> ListAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<AiUsageEntry>>([]);
 
+        public Task<PaginatedListOutput<AgentUsageSummary>> SummarizeByAgentAsync(
+            DateTime? from,
+            DateTime? to,
+            ListQuery listQuery,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(new PaginatedListOutput<AgentUsageSummary>(1, 20, 0, []));
+
         public Task<long> SumTokensSinceAsync(DateTime since, CancellationToken cancellationToken = default)
         {
             SumCalls++;

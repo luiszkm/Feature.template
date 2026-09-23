@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Options;
 
 namespace Api.Features.Ai;
@@ -7,7 +8,8 @@ public sealed class AgentLoop(
     ToolRegistry toolRegistry,
     IContentGuard contentGuard,
     IOptions<GuardrailOptions> guardrailOptions,
-    ILogger<AgentLoop> logger)
+    ILogger<AgentLoop> logger,
+    IOptions<LlmOptions>? llmOptions = null)
 {
     private const int MaxIterations = 5;
 
@@ -37,7 +39,7 @@ public sealed class AgentLoop(
                 Tools: toolDefinitions.Count > 0 ? toolDefinitions : null,
                 Model: model);
 
-            var response = await llm.CompleteAsync(request, cancellationToken);
+            var response = await CompleteAsync(request, cancellationToken);
             usage.Add(response);
 
             if (response.ToolCalls is not { Count: > 0 })
@@ -65,7 +67,7 @@ public sealed class AgentLoop(
 
         logger.LogWarning("AgentLoop reached max iterations ({Max})", MaxIterations);
 
-        var fallback = await llm.CompleteAsync(
+        var fallback = await CompleteAsync(
             new LlmRequest(
                 UserPrompt: "Resuma o que foi encontrado com base nos dados das ferramentas.",
                 SystemPrompt: guardedSystemPrompt,
@@ -77,28 +79,61 @@ public sealed class AgentLoop(
         return usage.ToResult(await GuardReplyAsync(fallback.Text, cancellationToken), iterations, conversationHistory[turnStart..]);
     }
 
+    /// <summary>One <c>chat {model}</c> span per model call, with the tokens the provider reported.</summary>
+    private async Task<LlmResponse> CompleteAsync(LlmRequest request, CancellationToken cancellationToken)
+    {
+        var model = request.Model ?? llmOptions?.Value.Model ?? string.Empty;
+        using var activity = AiTelemetry.Source.StartActivity($"{AiTelemetry.Chat} {model}", ActivityKind.Client);
+        activity?.SetTag(AiTelemetry.OperationName, AiTelemetry.Chat);
+        activity?.SetTag(AiTelemetry.RequestModel, model);
+        try
+        {
+            var response = await llm.CompleteAsync(request, cancellationToken);
+            activity?.SetTag(AiTelemetry.InputTokens, response.InputTokens);
+            activity?.SetTag(AiTelemetry.OutputTokens, response.OutputTokens);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            AiTelemetry.RecordError(activity, ex);
+            throw;
+        }
+    }
+
     /// <summary>Whatever a tool returns reaches the model as delimited data, never as an exception.</summary>
     private async Task<string> ExecuteToolAsync(
         ToolCall toolCall,
         IReadOnlyList<string>? allowedToolNames,
         CancellationToken cancellationToken)
     {
+        using var activity = AiTelemetry.Source.StartActivity($"{AiTelemetry.ExecuteTool} {toolCall.Name}");
+        activity?.SetTag(AiTelemetry.OperationName, AiTelemetry.ExecuteTool);
+        activity?.SetTag(AiTelemetry.ToolName, toolCall.Name);
+        activity?.SetTag(AiTelemetry.ToolCallId, toolCall.Id);
+
+        var allowed = allowedToolNames is null || allowedToolNames.Contains(toolCall.Name, StringComparer.Ordinal);
+        if (!allowed || !toolRegistry.IsKnown(toolCall.Name))
+            AiTelemetry.RecordError(activity, AiTelemetry.ToolNotFound);
+
         string output;
         try
         {
             output = await toolRegistry.ExecuteAsync(toolCall, allowedToolNames, cancellationToken);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
+            AiTelemetry.RecordError(activity, ex);
             throw;
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException ex)
         {
+            AiTelemetry.RecordError(activity, ex);
             logger.LogWarning("Tool {ToolName} denied: current user lacks permission", toolCall.Name);
             return AgentGuardrails.Wrap(AgentGuardrails.ToolError(AgentGuardrails.PermissionDenied, toolCall.Name));
         }
         catch (Exception ex)
         {
+            AiTelemetry.RecordError(activity, ex);
             logger.LogError(ex, "Tool {ToolName} failed", toolCall.Name);
             return AgentGuardrails.Wrap(AgentGuardrails.ToolError(AgentGuardrails.ToolFailed, toolCall.Name));
         }

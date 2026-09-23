@@ -117,3 +117,14 @@ export interface ConversationOutput {
   lastActivityAt: string;
   items: ConversationItemOutput[];
 }
+
+export interface AiUsageRow {
+  agentId: string;
+  agentName: string;
+  calls: number;
+  failures: number;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  lastUsedAt: string;
+}

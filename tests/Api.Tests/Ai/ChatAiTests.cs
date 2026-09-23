@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using Api.Features.Ai;
 using Api.Features.Identity;
 using Api.Tests.Common;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -340,6 +341,26 @@ public sealed class ChatAiTests
         var problem = await conflict.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.Equal("Business rule violation", problem!.Title);
         Assert.Equal(ChatAiHandler.ConcurrentAppendMessage, problem.Detail);
+    }
+
+    [Fact]
+    public async Task ChatAi_ShouldReturn200WithReplyAndIterationsUsed_WhenTracesDisabled()
+    {
+        await using var factory = AiHttp.Factory().WithWebHostBuilder(builder =>
+        {
+            // Host setting: AddObservability reads it before the in-memory configuration exists.
+            builder.UseSetting("OpenTelemetry:EnableTraces", "false");
+            builder.ConfigureTestServices(services => services.AddSingleton<ILlmService>(ScriptedLlmService.Replying("olá")));
+        });
+        using var client = await AiHttp.AdminClientAsync(factory);
+
+        var response = await client.PostAsJsonAsync("/api/v1/ai/chat", new { message = "hello" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatAiResponse>();
+        Assert.Equal("olá", body!.Reply);
+        Assert.Equal(1, body.IterationsUsed);
+        Assert.NotEqual(Guid.Empty, body.ConversationId);
     }
 
     private static async Task<int> ConversationCountAsync(HttpClient client)

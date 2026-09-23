@@ -255,6 +255,14 @@
     "featureFlag": "EnableAI",
     "policy": "Authenticated"
   },
+  "GetAiUsage": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetAiUsage.cs",
+    "test": "tests/Api.Tests/Ai/GetAiUsageTests.cs",
+    "route": "GET /api/v1/ai/usage",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
   "CreateAgent": {
     "m": "Ai",
     "app": "src/Api/Features/Ai/CreateAgent.cs",

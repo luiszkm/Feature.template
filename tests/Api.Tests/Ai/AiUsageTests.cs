@@ -170,7 +170,7 @@ public sealed class AiUsageTests
     {
         var methods = typeof(IAiUsageRepository).GetMethods().Select(m => m.Name).Order().ToArray();
 
-        Assert.Equal(new[] { "AddAsync", "ListAsync", "SumTokensSinceAsync" }, methods);
+        Assert.Equal(new[] { "AddAsync", "ListAsync", "SummarizeByAgentAsync", "SumTokensSinceAsync" }, methods);
     }
 
     [Fact]

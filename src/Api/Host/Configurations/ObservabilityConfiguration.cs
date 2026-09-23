@@ -25,7 +25,9 @@ public static class ObservabilityConfiguration
                 if (!enableTraces)
                     return;
 
-                tracing.AddAspNetCoreInstrumentation();
+                tracing
+                    .AddAspNetCoreInstrumentation()
+                    .AddSource(Api.Features.Ai.AiTelemetry.ActivitySourceName);
             })
             .WithMetrics(metrics =>
             {

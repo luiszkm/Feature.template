@@ -24,6 +24,7 @@ import { UsersList } from '../features/identity/users-list';
 import { TenantsList } from '../features/tenants/tenants-list';
 import { AgentsList } from '../features/ai/agents-list';
 import { ConversationsList } from '../features/ai/conversations-list';
+import { Usage } from '../features/ai/usage';
 
 interface ListScreen {
   readonly name: string;
@@ -47,6 +48,7 @@ const LIST_SCREENS: ListScreen[] = [
     component: ConversationsList,
     path: `${API_ORIGIN}/api/v1/ai/conversations`,
   },
+  { name: 'usage', component: Usage, path: `${API_ORIGIN}/api/v1/ai/usage` },
 ];
 
 function authenticate(): void {

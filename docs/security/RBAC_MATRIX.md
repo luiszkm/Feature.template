@@ -86,6 +86,7 @@ Matriz de autorização por endpoint. Toda rota protegida usa `[RequireAuthoriza
 | POST | `/api/v1/ai/comparisons` | `AiAgentsManage` | `EnableAI` |
 | GET | `/api/v1/ai/comparisons` | `AiAgentsRead` | `EnableAI` |
 | GET | `/api/v1/ai/comparisons/{comparisonId}` | `AiAgentsRead` | `EnableAI` |
+| GET | `/api/v1/ai/usage` | `AiAgentsRead` | `EnableAI` |
 | GET | `/api/v1/ai/conversations` | `Authenticated` | `EnableAI` |
 | GET | `/api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |
 | DELETE | `/api/v1/ai/conversations/{conversationId}` | `Authenticated` | `EnableAI` |

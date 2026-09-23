@@ -210,6 +210,7 @@ public static class TestServiceFactory
         services.AddScoped<ListConversationsHandler>();
         services.AddScoped<GetConversationHandler>();
         services.AddScoped<DeleteConversationHandler>();
+        services.AddScoped<GetAiUsageHandler>();
         configure?.Invoke(services);
         return BuildProvider(services);
     }

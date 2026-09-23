@@ -61,6 +61,13 @@ import { firstValueFrom } from 'rxjs';
             data-testid="nav-agents"
             >Agentes</a
           >
+          <a
+            *appHasPermission="permissions.agentRead"
+            routerLink="/ai/usage"
+            routerLinkActive="active"
+            data-testid="nav-ai-usage"
+            >Uso</a
+          >
         }
       </nav>
 

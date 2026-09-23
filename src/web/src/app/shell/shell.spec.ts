@@ -97,4 +97,38 @@ describe('Shell', () => {
 
     expect(text(fixture, 'nav-conversations')).toBe('Conversas');
   });
+  it('mostra Uso quando ai.agent.read e a flag esta on', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith(['ai.agent.read']) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(text(fixture, 'nav-ai-usage')).toBe('Uso');
+    expect(el<HTMLAnchorElement>(fixture, 'nav-ai-usage').getAttribute('href')).toBe('/ai/usage');
+  });
+
+  it('esconde Uso quando a flag esta off', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith(['ai.agent.read']) });
+    TestBed.inject(AiAvailability).disable();
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(maybeEl(fixture, 'nav-ai-usage')).toBeNull();
+  });
+
+  it('esconde Uso sem ai.agent.read', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith([]) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(maybeEl(fixture, 'nav-ai-usage')).toBeNull();
+  });
 });

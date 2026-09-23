@@ -1,5 +1,6 @@
 using Api.Shared;
 using FluentValidation;
+using System.Diagnostics;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -60,12 +61,21 @@ public sealed class ChatAiHandler(
 
         // Every exit - 404, 409, 429, 400, 500 or success - leaves one line naming the turn.
         var log = new TurnLog(request.AgentId, request.ConversationId);
+        using var activity = AiTelemetry.Source.StartActivity(AiTelemetry.InvokeAgent);
+        activity?.SetTag(AiTelemetry.OperationName, AiTelemetry.InvokeAgent);
+        activity?.SetTag(AiTelemetry.ProviderName, AiTelemetry.ProviderValue(LlmServiceResolver.ProviderLabel(environment, llmOptions.Value)));
         try
         {
-            var output = await RunTurnAsync(request, tenantId, userId, log, cancellationToken);
+            var output = await RunTurnAsync(request, tenantId, userId, log, activity, cancellationToken);
             log.ConversationId = output.ConversationId;
             log.Success = true;
+            activity?.SetTag(AiTelemetry.ConversationId, output.ConversationId.ToString());
             return output;
+        }
+        catch (Exception ex)
+        {
+            AiTelemetry.RecordError(activity, ex);
+            throw;
         }
         finally
         {
@@ -83,6 +93,7 @@ public sealed class ChatAiHandler(
         Guid tenantId,
         Guid userId,
         TurnLog log,
+        Activity? span,
         CancellationToken cancellationToken)
     {
         var conversation = await ResolveConversationAsync(request.ConversationId, cancellationToken);
@@ -90,6 +101,13 @@ public sealed class ChatAiHandler(
             log.AgentId = conversation.AgentId;
         var agent = await ResolveAgentAsync(request.AgentId, conversation, cancellationToken);
         log.AgentId = agent.Id;
+        if (span is not null)
+        {
+            span.DisplayName = $"{AiTelemetry.InvokeAgent} {agent.Name}";
+            span.SetTag(AiTelemetry.AgentId, agent.Id.ToString());
+            span.SetTag(AiTelemetry.AgentName, agent.Name);
+            span.SetTag(AiTelemetry.RequestModel, agent.Model ?? llmOptions.Value.Model);
+        }
         var options = conversationOptions.Value;
         if (conversation is not null && conversation.Items.Count >= options.MaxItems)
             throw new BusinessRuleException(MaxItemsMessage);

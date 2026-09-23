@@ -53,7 +53,22 @@ public interface IAiUsageRepository
     Task AddAsync(AiUsageEntry entry, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<AiUsageEntry>> ListAsync(CancellationToken cancellationToken = default);
     Task<long> SumTokensSinceAsync(DateTime since, CancellationToken cancellationToken = default);
+    Task<PaginatedListOutput<AgentUsageSummary>> SummarizeByAgentAsync(
+        DateTime? from,
+        DateTime? to,
+        ListQuery listQuery,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>One agent's usage in the current tenant, over the rows the range selects.</summary>
+public sealed record AgentUsageSummary(
+    Guid AgentId,
+    int Calls,
+    int Failures,
+    long InputTokens,
+    long OutputTokens,
+    long TotalTokens,
+    DateTime LastUsedAt);
 
 internal sealed class AiUsageRepository(AppDbContext db) : IAiUsageRepository
 {
@@ -62,6 +77,35 @@ internal sealed class AiUsageRepository(AppDbContext db) : IAiUsageRepository
 
     public async Task<IReadOnlyList<AiUsageEntry>> ListAsync(CancellationToken cancellationToken = default) =>
         await db.Set<AiUsageEntry>().AsNoTracking().OrderBy(e => e.CreatedAt).ToListAsync(cancellationToken);
+
+    public async Task<PaginatedListOutput<AgentUsageSummary>> SummarizeByAgentAsync(
+        DateTime? from,
+        DateTime? to,
+        ListQuery listQuery,
+        CancellationToken cancellationToken = default)
+    {
+        var rows = db.Set<AiUsageEntry>().AsNoTracking();
+        if (from is { } start)
+            rows = rows.Where(e => e.CreatedAt >= start);
+        if (to is { } end)
+            rows = rows.Where(e => e.CreatedAt <= end);
+
+        return await rows
+            .GroupBy(e => e.AgentId)
+            .Select(g => new
+            {
+                AgentId = g.Key,
+                Calls = g.Count(),
+                Failures = g.Count(e => !e.Success),
+                Input = g.Sum(e => (long)e.InputTokens),
+                Output = g.Sum(e => (long)e.OutputTokens),
+                LastUsedAt = g.Max(e => e.CreatedAt)
+            })
+            .OrderByDescending(s => s.Input + s.Output)
+            .ThenBy(s => s.AgentId)
+            .Select(s => new AgentUsageSummary(s.AgentId, s.Calls, s.Failures, s.Input, s.Output, s.Input + s.Output, s.LastUsedAt))
+            .ToPaginatedListAsync(listQuery, cancellationToken);
+    }
 
     public async Task<long> SumTokensSinceAsync(DateTime since, CancellationToken cancellationToken = default) =>
         await db.Set<AiUsageEntry>()
