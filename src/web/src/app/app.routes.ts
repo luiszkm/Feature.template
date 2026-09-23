@@ -3,6 +3,9 @@ import { authGuard, permissionGuard } from './core/guards/guards';
 import { Permissions } from './core/permissions';
 import { Forbidden, NotFound } from './shared/screens';
 
+/** The workflow editor asks before discarding unsaved changes. */
+const leaveEditor = (component: { canLeave(): Promise<boolean> }) => component.canLeave();
+
 export const routes: Routes = [
   {
     path: 'login',
@@ -82,6 +85,23 @@ export const routes: Routes = [
         path: 'ai/agents',
         loadComponent: () => import('./features/ai/agents-list').then((m) => m.AgentsList),
         canActivate: [permissionGuard(Permissions.agentRead)],
+      },
+      {
+        path: 'ai/workflows',
+        loadComponent: () => import('./features/ai/workflows-list').then((m) => m.WorkflowsList),
+        canActivate: [permissionGuard(Permissions.agentRead)],
+      },
+      {
+        path: 'ai/workflows/new',
+        loadComponent: () => import('./features/ai/workflow-editor').then((m) => m.WorkflowEditor),
+        canActivate: [permissionGuard(Permissions.agentManage)],
+        canDeactivate: [leaveEditor],
+      },
+      {
+        path: 'ai/workflows/:workflowId',
+        loadComponent: () => import('./features/ai/workflow-editor').then((m) => m.WorkflowEditor),
+        canActivate: [permissionGuard(Permissions.agentRead)],
+        canDeactivate: [leaveEditor],
       },
       {
         path: 'ai/usage',

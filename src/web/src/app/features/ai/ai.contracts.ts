@@ -128,3 +128,83 @@ export interface AiUsageRow {
   totalTokens: number;
   lastUsedAt: string;
 }
+
+export interface WorkflowNode {
+  key: string;
+  agentId: string;
+  instruction: string | null;
+  x: number;
+  y: number;
+}
+
+export interface WorkflowEdge {
+  from: string;
+  to: string;
+}
+
+/** POST and PUT carry the same body: PUT replaces the whole graph. */
+export interface WorkflowRequest {
+  name: string;
+  description: string | null;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
+export interface WorkflowOutput extends WorkflowRequest {
+  workflowId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkflowSummaryOutput {
+  workflowId: string;
+  name: string;
+  nodeCount: number;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export type WorkflowRunStatus = 'Queued' | 'Running' | 'Succeeded' | 'Failed';
+
+export type WorkflowStepStatus = 'Pending' | 'Running' | 'Succeeded' | 'Failed' | 'Skipped';
+
+export interface WorkflowRunStepOutput {
+  nodeKey: string;
+  agentId: string;
+  status: WorkflowStepStatus;
+  output: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number | null;
+  latencyMs: number;
+  iterationsUsed: number;
+  errorCode: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface WorkflowRunOutput {
+  runId: string;
+  workflowId: string;
+  status: WorkflowRunStatus;
+  input: string;
+  errorCode: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdByUserId: string | null;
+  totalCost: number | null;
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+  steps: WorkflowRunStepOutput[];
+}
+
+export interface WorkflowRunSummaryOutput {
+  runId: string;
+  status: WorkflowRunStatus;
+  inputPreview: string;
+  totalCost: number | null;
+  createdAt: string;
+  finishedAt: string | null;
+}

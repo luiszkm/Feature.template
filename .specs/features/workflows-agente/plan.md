@@ -169,12 +169,12 @@ tokens e custo de cada passo, e o histórico de execuções.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| WF-01 | S1 | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 | Pending |
-| WF-02 | S2 | 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 | Pending |
-| WF-03 | S3 | 33, 34, 35, 36, 37 | Pending |
-| WF-04 | S4 | 38, 39, 40, 41, 42, 43, 44 | Pending |
-| WF-05 | S5 | 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 | Pending |
-| WF-06 | S6 | 58, 59, 60, 61, 62, 63, 64, 65, 66 | Pending |
+| WF-01 | S1 | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 | Implementing |
+| WF-02 | S2 | 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 | Implementing |
+| WF-03 | S3 | 33, 34, 35, 36, 37 | Implementing |
+| WF-04 | S4 | 38, 39, 40, 41, 42, 43, 44 | Implementing |
+| WF-05 | S5 | 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 | Implementing |
+| WF-06 | S6 | 58, 59, 60, 61, 62, 63, 64, 65, 66 | Implementing |
 
 ## Observable
 
@@ -318,8 +318,9 @@ usa para o caso da flag. Um agente desconhecido é `400` (AC 6), não `404`.
 | --- | --- |
 | domain | new term: `Workflow` - grafo gravado de nós-agente ligados por dependência, no módulo Ai |
 | domain | new term: `WorkflowRun` / passo - uma execução do grafo com estado por nó, no módulo Ai |
-| domain | existing term: `ICurrentUserAccessor` - até aqui só lia o `HttpContext`; no scope do worker passa a devolver o principal do run (door 3). Quem ramifica nele hoje: `ToolAuthorization`, `ConversationRepository`, `CompareModelsHandler`, `ChatAiHandler` - só `ToolAuthorization` corre dentro de um passo |
+| domain | existing term: `ICurrentUserAccessor` - até aqui só lia o `HttpContext`; `CurrentUserAccessor` (Shared) passa a preferir um `BackgroundPrincipal` scoped quando alguém o preencheu, e o worker preenche-o com o principal do run em cada scope de passo (door 3). Fora do worker fica vazio e nada muda. Quem ramifica nele hoje: `ToolAuthorization`, `ConversationRepository`, `CompareModelsHandler`, `ChatAiHandler` - só `ToolAuthorization` corre dentro de um passo |
 | domain | existing term: `AiUsageOperations` - ganha `workflow`; `GET /ai/usage` agrega por operação e passa a mostrá-la |
 | stored data | nothing to migrate - cinco tabelas novas (`AddWorkflows`); FK `Restrict` de `AiWorkflowNodes` para `AiAgents` não afecta o soft-delete de agentes |
 | contract | `openapi.json` ganha 8 operações; `features.json` ganha 8 slices; `architecture.spec.ts` exige cliente para cada uma |
+| worker | um run de cada vez por passagem, pela ordem de `createdAt`; o paralelismo é entre passos do mesmo run (`MaxParallelSteps`) |
 | front | `shell.ts` ganha o 9.º item de navegação (`Workflows`, entre `Agentes` e `Uso`); `app.routes.ts` ganha `ai/workflows`, `ai/workflows/new`, `ai/workflows/:workflowId` |

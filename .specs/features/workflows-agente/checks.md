@@ -365,3 +365,8 @@ testes Ai (doubles, `CompareModelsTests`, `AiRateLimitTests`, retenção), ~50 K
 (`agent-form`, `agents-list`, `shell`, contratos) ≈ 45k tokens de leitura; soma dos slices
 ~99k < 150k → **um batch**, sem handoff. O orquestrador constrói e depois despacha o Verifier sobre
 `6c038f0..HEAD`.
+
+- **Ambiente:** o Node local é 24.11.1 e a Angular CLI 22 exige ≥ 24.15; os proofs `npx ng test` falham antes de correr. Correr com `npx -y node@24.15.0 node_modules/@angular/cli/bin/ng.js test --no-watch --include <spec> --filter "<nome>"` (o CI usa `node-version: "24"`, a última 24.x).
+- **Settled mid-build:** nenhum esclarecimento do utilizador depois da aprovação.
+- **Abandoned:** nada.
+- **Nota para o Verifier:** `shell.spec.ts` 'Uso fica depois de Agentes na navegacao' (de `observabilidade-agente`) mudou de `slice(-4)` para `slice(-5)` com `nav-ai-workflows` entre `nav-agents` e `nav-ai-usage` - é a ordem que AC 44 e o `Impact` aprovaram, não um afrouxamento.

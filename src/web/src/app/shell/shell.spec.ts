@@ -143,6 +143,39 @@ describe('Shell', () => {
     const order = [...(fixture.nativeElement as HTMLElement).querySelectorAll('nav a')].map((a) =>
       a.getAttribute('data-testid'),
     );
-    expect(order.slice(-4)).toEqual(['nav-ai', 'nav-conversations', 'nav-agents', 'nav-ai-usage']);
+    expect(order.slice(-5)).toEqual([
+      'nav-ai',
+      'nav-conversations',
+      'nav-agents',
+      'nav-ai-workflows',
+      'nav-ai-usage',
+    ]);
+  });
+
+  it('mostra Workflows depois de Agentes com ai.agent.read', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith(['ai.agent.read']) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(text(fixture, 'nav-ai-workflows')).toBe('Workflows');
+    expect(el<HTMLAnchorElement>(fixture, 'nav-ai-workflows').getAttribute('href')).toBe('/ai/workflows');
+    const order = [...(fixture.nativeElement as HTMLElement).querySelectorAll('nav a')].map((a) =>
+      a.getAttribute('data-testid'),
+    );
+    expect(order[order.indexOf('nav-agents') + 1]).toBe('nav-ai-workflows');
+  });
+
+  it('mostra Workflows depois de Agentes: esconde sem ai.agent.read', async () => {
+    const session = TestBed.inject(SessionStore);
+    session.setTenantKey('dev');
+    session.apply({ ...authToken({ roles: [] }), accessToken: tokenWith([]) });
+
+    const fixture = TestBed.createComponent(Shell);
+    await settle(fixture, 2);
+
+    expect(maybeEl(fixture, 'nav-ai-workflows')).toBeNull();
   });
 });
