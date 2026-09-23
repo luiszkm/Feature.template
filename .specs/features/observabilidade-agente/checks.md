@@ -5,7 +5,7 @@ Plan: `.specs/features/observabilidade-agente/plan.md`
 
 ## Intent
 
-24 checks in 2 slices (S1 superseded) · 4 one-way doors · 2 open, of which 0 block (1 blocks go-live)
+26 checks in 2 slices (S1 superseded) · 4 one-way doors · 2 open, of which 0 block (1 blocks go-live)
 
 ## Checks
 

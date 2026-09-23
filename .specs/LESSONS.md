@@ -212,6 +212,30 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: verification.md round 4 - DevBootstrapSeederTests.cs CreateSeedProvider (api-tests)
 - last seen: 2026-09-23T11:44:13Z
 
+### L-034 - Give every catch branch that records telemetry its own asserted case, not only the generic exception branch
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `telemetry` · harmful: 0
+- features: observabilidade-agente
+- evidence: verification.md round 1 - AgentLoop.cs:128-130 (C14 permission_denied) (telemetry)
+- last seen: 2026-09-23T13:21:43Z
+
+### L-035 - A test ActivityListener must not sample the source under test when the claim is that the app's own tracer provider creates the spans; run the same test with the switch off as a negative control
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `telemetry` · harmful: 0
+- features: observabilidade-agente
+- evidence: verification.md round 1 gap 8 - AiTelemetryE2ETests.cs:19-25 (C17) (telemetry)
+- last seen: 2026-09-23T13:21:43Z
+
+### L-036 - Check every span against the attributes the semantic convention marks Required before writing the checks, not only the attributes the plan listed
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · scope: `telemetry` · harmful: 0
+- features: observabilidade-agente
+- evidence: verification.md round 1 gap 3 - AgentLoop.cs:86-88 (chat span provider) (telemetry)
+- last seen: 2026-09-23T13:21:43Z
+
+### L-037 - Toggle host flags that are read during service registration with UseSetting in WebApplicationFactory tests, because in-memory settings only exist after Build
+- signal: `gate_fail` · recurrence: 1 feature(s) · scope: `api-tests` · harmful: 0
+- features: observabilidade-agente
+- evidence: handoff build 2026-09-23 - ObservabilityConfiguration.cs (C18 C19) (api-tests)
+- last seen: 2026-09-23T13:21:43Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.

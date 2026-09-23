@@ -158,9 +158,9 @@ pesquisa, sem cabeçalhos ordenáveis.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| OBS-01 | S1 | 1–9 | Implementing |
-| OBS-02 | S2 | 10–19 | Implementing |
-| OBS-03 | S3 | 20–31 | Implementing |
+| OBS-01 | S1 | 1–9 | Verified |
+| OBS-02 | S2 | 10–19 | Verified |
+| OBS-03 | S3 | 20–31 | Verified |
 
 **ID format:** `CATEGORY-NUMBER`. **Status:** Pending → In checks → Implementing → Verified.
 

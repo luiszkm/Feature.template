@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 34,
+  "next_id": 38,
   "lessons": [
     {
       "id": "L-001",
@@ -598,6 +598,78 @@
       ],
       "created": "2026-09-23T11:44:13Z",
       "last_seen": "2026-09-23T11:44:13Z"
+    },
+    {
+      "id": "L-034",
+      "key": "surviving_mutant::give every catch branch that records telemetry its own asserted case not only the generic exception branch",
+      "text": "Give every catch branch that records telemetry its own asserted case, not only the generic exception branch",
+      "signal": "surviving_mutant",
+      "scope": "telemetry",
+      "status": "candidate",
+      "features": [
+        "observabilidade-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 - AgentLoop.cs:128-130 (C14 permission_denied) (telemetry)"
+      ],
+      "created": "2026-09-23T13:21:43Z",
+      "last_seen": "2026-09-23T13:21:43Z"
+    },
+    {
+      "id": "L-035",
+      "key": "ac_gap::a test activitylistener must not sample the source under test when the claim is that the app s own tracer provider creates the spans run the same test with the switch off as a negative control",
+      "text": "A test ActivityListener must not sample the source under test when the claim is that the app's own tracer provider creates the spans; run the same test with the switch off as a negative control",
+      "signal": "ac_gap",
+      "scope": "telemetry",
+      "status": "candidate",
+      "features": [
+        "observabilidade-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 gap 8 - AiTelemetryE2ETests.cs:19-25 (C17) (telemetry)"
+      ],
+      "created": "2026-09-23T13:21:43Z",
+      "last_seen": "2026-09-23T13:21:43Z"
+    },
+    {
+      "id": "L-036",
+      "key": "spec_precision_gap::check every span against the attributes the semantic convention marks required before writing the checks not only the attributes the plan listed",
+      "text": "Check every span against the attributes the semantic convention marks Required before writing the checks, not only the attributes the plan listed",
+      "signal": "spec_precision_gap",
+      "scope": "telemetry",
+      "status": "candidate",
+      "features": [
+        "observabilidade-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "verification.md round 1 gap 3 - AgentLoop.cs:86-88 (chat span provider) (telemetry)"
+      ],
+      "created": "2026-09-23T13:21:43Z",
+      "last_seen": "2026-09-23T13:21:43Z"
+    },
+    {
+      "id": "L-037",
+      "key": "gate_fail::toggle host flags that are read during service registration with usesetting in webapplicationfactory tests because in memory settings only exist after build",
+      "text": "Toggle host flags that are read during service registration with UseSetting in WebApplicationFactory tests, because in-memory settings only exist after Build",
+      "signal": "gate_fail",
+      "scope": "api-tests",
+      "status": "candidate",
+      "features": [
+        "observabilidade-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "handoff build 2026-09-23 - ObservabilityConfiguration.cs (C18 C19) (api-tests)"
+      ],
+      "created": "2026-09-23T13:21:43Z",
+      "last_seen": "2026-09-23T13:21:43Z"
     }
   ]
 }
