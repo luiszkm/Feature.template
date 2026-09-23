@@ -366,5 +366,69 @@
     "route": "GET /api/v1/ai/comparisons/{comparisonId}",
     "featureFlag": "EnableAI",
     "policy": "AiAgentsRead"
+  },
+  "CreateWorkflow": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/CreateWorkflow.cs",
+    "test": "tests/Api.Tests/Ai/CreateWorkflowTests.cs",
+    "route": "POST /api/v1/ai/workflows",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "ListWorkflows": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListWorkflows.cs",
+    "test": "tests/Api.Tests/Ai/CreateWorkflowTests.cs",
+    "route": "GET /api/v1/ai/workflows",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "GetWorkflow": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetWorkflow.cs",
+    "test": "tests/Api.Tests/Ai/CreateWorkflowTests.cs",
+    "route": "GET /api/v1/ai/workflows/{workflowId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "UpdateWorkflow": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/UpdateWorkflow.cs",
+    "test": "tests/Api.Tests/Ai/CreateWorkflowTests.cs",
+    "route": "PUT /api/v1/ai/workflows/{workflowId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "DeactivateWorkflow": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/DeactivateWorkflow.cs",
+    "test": "tests/Api.Tests/Ai/CreateWorkflowTests.cs",
+    "route": "DELETE /api/v1/ai/workflows/{workflowId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "RunWorkflow": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/RunWorkflow.cs",
+    "test": "tests/Api.Tests/Ai/RunWorkflowTests.cs",
+    "route": "POST /api/v1/ai/workflows/{workflowId}/runs",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsManage"
+  },
+  "ListWorkflowRuns": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/ListWorkflowRuns.cs",
+    "test": "tests/Api.Tests/Ai/RunWorkflowTests.cs",
+    "route": "GET /api/v1/ai/workflows/{workflowId}/runs",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
+  },
+  "GetWorkflowRun": {
+    "m": "Ai",
+    "app": "src/Api/Features/Ai/GetWorkflowRun.cs",
+    "test": "tests/Api.Tests/Ai/RunWorkflowTests.cs",
+    "route": "GET /api/v1/ai/workflows/{workflowId}/runs/{runId}",
+    "featureFlag": "EnableAI",
+    "policy": "AiAgentsRead"
   }
 }

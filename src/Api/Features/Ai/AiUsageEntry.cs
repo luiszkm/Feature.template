@@ -45,6 +45,7 @@ public static class AiUsageOperations
 {
     public const string Chat = "chat";
     public const string Compare = "compare";
+    public const string Workflow = "workflow";
 }
 
 /// <summary>Append-only: add and read, no update or delete.</summary>

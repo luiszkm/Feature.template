@@ -17,6 +17,8 @@ public static class AiModule
             .BindConfiguration(LlmOptions.SectionName);
         services.AddHostedService<LlmStartupGuard>();
         services.AddHostedService<ConversationRetentionService>();
+        services.AddHostedService<WorkflowRunner>();
+        services.AddOptions<WorkflowOptions>().BindConfiguration(WorkflowOptions.SectionName);
         services.AddOptions<ConversationOptions>().BindConfiguration(ConversationOptions.SectionName);
         services.AddOptions<GuardrailOptions>().BindConfiguration(GuardrailOptions.SectionName);
         services.AddOptions<AiRateLimitOptions>().BindConfiguration(AiRateLimitOptions.SectionName);
@@ -24,6 +26,7 @@ public static class AiModule
         services.AddRateLimiter(options =>
             options.AddPolicy<string, AiRateLimitPolicy>(RateLimitPolicies.AiRateLimitPolicy));
 
+        services.AddScoped<BackgroundPrincipal>();
         services.AddScoped<ICurrentUserAccessor, CurrentUserAccessor>();
         services.AddScoped<IAgentRepository, AgentRepository>();
         services.AddScoped<IAgentFileRepository, AgentFileRepository>();
@@ -39,6 +42,8 @@ public static class AiModule
         services.AddScoped<IAiUsageTracker, AiUsageTracker>();
         services.AddScoped<IModelComparisonRepository, ModelComparisonRepository>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IWorkflowRepository, WorkflowRepository>();
+        services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
         services.AddMemoryCache();
 
         services.AddHttpClient(OpenRouterLlmService.HttpClientName, (sp, client) =>
@@ -119,6 +124,12 @@ internal sealed class AiTenantQueryFilters : ITenantQueryFilterConfigurator
             entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
 
         modelBuilder.Entity<ModelComparison>().HasQueryFilter(
+            entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
+
+        modelBuilder.Entity<Workflow>().HasQueryFilter(
+            entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
+
+        modelBuilder.Entity<WorkflowRun>().HasQueryFilter(
             entity => dbContext.CurrentTenantId != null && entity.TenantId == dbContext.CurrentTenantId);
     }
 }

@@ -12,6 +12,8 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 | `Conversation.cs` | Conversation (agregado, `TenantId` + `UserId` + `AgentId`, `Items`) + `IConversationRepository` (posse por linha) + EF config (`AiConversations`) |
 | `ConversationItem.cs` | ConversationItem (`Sequence`, `Role`, `Content`) + EF config (`AiConversationItems`, único `(ConversationId, Sequence)`, cascade) |
 | `ModelComparison.cs` | ModelComparison (owns `ModelComparisonResult`) + `IModelComparisonRepository` + EF config (`AiModelComparisons`, `AiModelComparisonResults`) |
+| `Workflow.cs` | Workflow (owns `WorkflowNode` com `Key` única e `Position`, `WorkflowEdge`) + `WorkflowGraph` (ciclo, predecessores) + `IWorkflowRepository` + EF config (`AiWorkflows`, `AiWorkflowNodes`, `AiWorkflowEdges`) |
+| `WorkflowRun.cs` | WorkflowRun (estado `Queued`→`Running`→`Succeeded`/`Failed`, cópia do grafo e do principal em JSON, `Version` concurrency token, owns `WorkflowRunStep`) + `IWorkflowRunRepository` (`TryClaimAsync`) + EF config (`AiWorkflowRuns`, `AiWorkflowRunSteps`) |
 
 ## Slices (verbo)
 
@@ -35,6 +37,14 @@ Chat agent com tools; gated por feature flag. Agentes persistidos no Postgres do
 | CompareModels | `POST /api/v1/ai/comparisons` | `AiAgentsManage` | `EnableAI` |
 | ListModelComparisons | `GET /api/v1/ai/comparisons` | `AiAgentsRead` | `EnableAI` |
 | GetModelComparison | `GET /api/v1/ai/comparisons/{comparisonId}` | `AiAgentsRead` | `EnableAI` |
+| CreateWorkflow | `POST /api/v1/ai/workflows` | `AiAgentsManage` | `EnableAI` |
+| ListWorkflows | `GET /api/v1/ai/workflows` | `AiAgentsRead` | `EnableAI` |
+| GetWorkflow | `GET /api/v1/ai/workflows/{workflowId}` | `AiAgentsRead` | `EnableAI` |
+| UpdateWorkflow | `PUT /api/v1/ai/workflows/{workflowId}` | `AiAgentsManage` | `EnableAI` |
+| DeactivateWorkflow | `DELETE /api/v1/ai/workflows/{workflowId}` | `AiAgentsManage` | `EnableAI` |
+| RunWorkflow | `POST /api/v1/ai/workflows/{workflowId}/runs` (`202`) | `AiAgentsManage` | `EnableAI` |
+| ListWorkflowRuns | `GET /api/v1/ai/workflows/{workflowId}/runs` | `AiAgentsRead` | `EnableAI` |
+| GetWorkflowRun | `GET /api/v1/ai/workflows/{workflowId}/runs/{runId}` | `AiAgentsRead` | `EnableAI` |
 
 Ver `features.json` com `"m": "Ai"`.
 
@@ -55,6 +65,7 @@ Ver `features.json` com `"m": "Ai"`.
 | `ContentGuard.cs` | `IContentGuard` (default `AllowAllContentGuard`), `GuardrailOptions`, `AgentGuardrails` (sufixo, delimitador, erros de tool) |
 | `ConversationRetentionService.cs` | `BackgroundService`: apaga conversas com `LastActivityAt` anterior a `Ai:Conversations:RetentionDays` (90; `0` desliga), a cada `PurgeIntervalHours` (24), `IgnoreQueryFilters` |
 | `AiRateLimit.cs` | Policy `ai` (`IRateLimiterPolicy`, partição por tenant), `AiQuota` (tokens/dia), opções |
+| `WorkflowRunner.cs` | `BackgroundService` + `WorkflowOptions` (`Ai:Workflows`): a cada `PollIntervalSeconds` interrompe runs `Running` há mais de `MaxRunMinutes` e executa os `Queued` (`IgnoreQueryFilters`), um scope por passo, até `MaxParallelSteps` em paralelo, timeout `StepTimeoutSeconds` |
 | `ModelCatalog.cs` | `IModelCatalog`: OpenRouter `/models` (só com `tools`, cache 1h), `ConfiguredModelCatalog` (MAF), `StubModelCatalog` |
 
 ## Tools
@@ -93,6 +104,9 @@ Ver `features.json` com `"m": "Ai"`.
 - Testes de quota por HTTP precisam de ledger isolado: a InMemory do host é `AppDb` para o processo inteiro (`AiRateLimitTests.IsolatedLedgerFactory`)
 - Spans GenAI: `invoke_agent {agente}` no `ChatAiHandler` (com `gen_ai.conversation.id`), `chat {modelo}` por chamada ao LLM e `execute_tool {tool}` no `AgentLoop`; nunca conteúdo (mensagens, argumentos, resultados). Só existem com `OpenTelemetry:EnableTraces=true` — e o flag é lido no registo de serviços, por isso nos testes liga-se com `UseSetting`, não com settings em memória
 - Catálogo inacessível → `ServiceUnavailableException` → `503`
+- Workflows: `POST .../runs` só grava (`202`); quem executa é o `WorkflowRunner`. Passo = `AgentLoop` do agente do nó com mensagem `instruction` + input + `--- {key} ---` por predecessor (ordem dos nós). Falha → descendentes `Skipped`, ramos independentes seguem
+- O worker corre as tools com o principal guardado no run (`BackgroundPrincipal` no scope, lido pelo `CurrentUserAccessor`) — AD-014
+- Testes HTTP de workflows usam `WorkflowHttp.Factory` (InMemory isolada): o worker lê a fila de todos os tenants e, com a store `AppDb` partilhada, executaria runs de outro teste com outro LLM double
 
 - Features ↛ Features/Host: seed em `CreateTenant` via `IDefaultAgentProvisioner` (Shared)
 - Soft-delete: `DeactivateAgent`; o último activo do tenant recusa com 409
@@ -113,6 +127,7 @@ tests/Api.Tests/Ai/
   AiUsageTests.cs
   ListModelsTests.cs
   CompareModelsTests.cs
+  CreateWorkflowTests.cs / RunWorkflowTests.cs / WorkflowRunnerTests.cs / WorkflowTestSupport.cs
   AgentLoopGuardrailTests.cs
   AiRateLimitTests.cs
   AgentTelemetryTests.cs
