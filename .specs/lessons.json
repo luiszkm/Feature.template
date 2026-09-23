@@ -3,7 +3,7 @@
   "promote_threshold": 2,
   "window_days": 45,
   "quarantine_threshold": 2,
-  "next_id": 38,
+  "next_id": 44,
   "lessons": [
     {
       "id": "L-001",
@@ -670,6 +670,114 @@
       ],
       "created": "2026-09-23T13:21:43Z",
       "last_seen": "2026-09-23T13:21:43Z"
+    },
+    {
+      "id": "L-038",
+      "key": "ac_gap::every early return branch of a step must reach the same side effect the success path records assert the side effect on each branch",
+      "text": "Every early-return branch of a step must reach the same side effect the success path records; assert the side effect on each branch",
+      "signal": "ac_gap",
+      "scope": "ai-worker",
+      "status": "candidate",
+      "features": [
+        "workflows-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "C41 WorkflowRunner.cs:250 (ai-worker)"
+      ],
+      "created": "2026-09-23T16:44:24Z",
+      "last_seen": "2026-09-23T16:44:24Z"
+    },
+    {
+      "id": "L-039",
+      "key": "surviving_mutant::when a failure is caught and logged also assert the persisted state it leaves behind",
+      "text": "When a failure is caught and logged, also assert the persisted state it leaves behind",
+      "signal": "surviving_mutant",
+      "scope": "ai-worker",
+      "status": "candidate",
+      "features": [
+        "workflows-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round1 fault 3 WorkflowRunner.cs:147 (ai-worker)"
+      ],
+      "created": "2026-09-23T16:44:24Z",
+      "last_seen": "2026-09-23T16:44:24Z"
+    },
+    {
+      "id": "L-040",
+      "key": "surviving_mutant::a claim naming several terminal states needs one asserted case per state",
+      "text": "A claim naming several terminal states needs one asserted case per state",
+      "signal": "surviving_mutant",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "workflows-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round1 fault 5 workflow-editor.ts:938 (web)"
+      ],
+      "created": "2026-09-23T16:44:25Z",
+      "last_seen": "2026-09-23T16:44:25Z"
+    },
+    {
+      "id": "L-041",
+      "key": "surviving_mutant::a navigation item under two gates needs one test per gate",
+      "text": "A navigation item under two gates needs one test per gate",
+      "signal": "surviving_mutant",
+      "scope": "web",
+      "status": "candidate",
+      "features": [
+        "workflows-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round1 fault 4 shell.ts:64 (web)"
+      ],
+      "created": "2026-09-23T16:44:25Z",
+      "last_seen": "2026-09-23T16:44:25Z"
+    },
+    {
+      "id": "L-042",
+      "key": "ac_gap::every test added during a fix round needs a check that names it",
+      "text": "Every test added during a fix round needs a check that names it",
+      "signal": "ac_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "workflows-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round2 unproven C87/C88"
+      ],
+      "created": "2026-09-23T16:44:25Z",
+      "last_seen": "2026-09-23T16:44:25Z"
+    },
+    {
+      "id": "L-043",
+      "key": "spec_precision_gap::when a fix strengthens a test update the check s claim to state what the test now asserts",
+      "text": "When a fix strengthens a test, update the check's claim to state what the test now asserts",
+      "signal": "spec_precision_gap",
+      "scope": "",
+      "status": "candidate",
+      "features": [
+        "workflows-agente"
+      ],
+      "recurrence": 1,
+      "harmful": 0,
+      "evidence": [
+        "round3 C36 C38 C60 C63"
+      ],
+      "created": "2026-09-23T16:44:25Z",
+      "last_seen": "2026-09-23T16:44:25Z"
     }
   ]
 }

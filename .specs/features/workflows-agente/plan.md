@@ -169,12 +169,12 @@ tokens e custo de cada passo, e o histórico de execuções.
 
 | ID | Slice | Criteria | Status |
 | --- | --- | --- | --- |
-| WF-01 | S1 | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 | Implementing |
-| WF-02 | S2 | 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 | Implementing |
-| WF-03 | S3 | 33, 34, 35, 36, 37 | Implementing |
-| WF-04 | S4 | 38, 39, 40, 41, 42, 43, 44 | Implementing |
-| WF-05 | S5 | 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 | Implementing |
-| WF-06 | S6 | 58, 59, 60, 61, 62, 63, 64, 65, 66 | Implementing |
+| WF-01 | S1 | 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13 | Verified |
+| WF-02 | S2 | 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32 | Verified |
+| WF-03 | S3 | 33, 34, 35, 36, 37 | Verified |
+| WF-04 | S4 | 38, 39, 40, 41, 42, 43, 44 | Verified |
+| WF-05 | S5 | 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 | Verified |
+| WF-06 | S6 | 58, 59, 60, 61, 62, 63, 64, 65, 66 | Verified |
 
 ## Observable
 

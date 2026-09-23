@@ -236,6 +236,42 @@ Seen once or not yet corroborated. Tracked, not trusted.
 - evidence: handoff build 2026-09-23 - ObservabilityConfiguration.cs (C18 C19) (api-tests)
 - last seen: 2026-09-23T13:21:43Z
 
+### L-038 - Every early-return branch of a step must reach the same side effect the success path records; assert the side effect on each branch
+- signal: `ac_gap` · recurrence: 1 feature(s) · scope: `ai-worker` · harmful: 0
+- features: workflows-agente
+- evidence: C41 WorkflowRunner.cs:250 (ai-worker)
+- last seen: 2026-09-23T16:44:24Z
+
+### L-039 - When a failure is caught and logged, also assert the persisted state it leaves behind
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `ai-worker` · harmful: 0
+- features: workflows-agente
+- evidence: round1 fault 3 WorkflowRunner.cs:147 (ai-worker)
+- last seen: 2026-09-23T16:44:24Z
+
+### L-040 - A claim naming several terminal states needs one asserted case per state
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: workflows-agente
+- evidence: round1 fault 5 workflow-editor.ts:938 (web)
+- last seen: 2026-09-23T16:44:25Z
+
+### L-041 - A navigation item under two gates needs one test per gate
+- signal: `surviving_mutant` · recurrence: 1 feature(s) · scope: `web` · harmful: 0
+- features: workflows-agente
+- evidence: round1 fault 4 shell.ts:64 (web)
+- last seen: 2026-09-23T16:44:25Z
+
+### L-042 - Every test added during a fix round needs a check that names it
+- signal: `ac_gap` · recurrence: 1 feature(s) · harmful: 0
+- features: workflows-agente
+- evidence: round2 unproven C87/C88
+- last seen: 2026-09-23T16:44:25Z
+
+### L-043 - When a fix strengthens a test, update the check's claim to state what the test now asserts
+- signal: `spec_precision_gap` · recurrence: 1 feature(s) · harmful: 0
+- features: workflows-agente
+- evidence: round3 C36 C38 C60 C63
+- last seen: 2026-09-23T16:44:25Z
+
 ## Quarantined (failed when applied - ignore)
 
 A confirmed lesson that recurred alongside failure. Kept for the maintainer to review.
